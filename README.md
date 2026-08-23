@@ -1,6 +1,8 @@
-# SIH26002 — NER Accessibility & Logistics Intelligence Platform
+# SetuNER — NER Accessibility & Logistics Intelligence Platform
 
-SIH 2026 · Software · Smart Automation · Ministry of Development of North Eastern Region (MDoNER)
+Built for SIH 2026 · Problem Statement SIH26002 · Software · Smart Automation · Ministry of Development of North Eastern Region (MDoNER)
+
+Repo: `setu_ner`
 
 Forecasts how accessibility across the North Eastern Region's road network
 changes under hazard conditions, estimates critical demand, optimizes
@@ -12,11 +14,10 @@ scenarios — starting with floods, architected to extend to other hazards.
 1. **`docs/decisions/0001-gap-analysis-and-enhancements.md`** — the audit of
    the original master reference plus the differentiators baked into this
    build. Read this before touching the data or model layers.
-2. **`docs/decisions/0002-corridor-selection.md`** — the study corridor is
-   not locked yet. Run the scripts below first.
-3. **`scripts/data-access-checks/`** — run these locally (not from a
-   restricted sandbox) before writing any ingestion code, to confirm what
-   CWC/NWDP and ASDMA data access actually looks like.
+2. **`docs/decisions/0002-corridor-selection.md`** — study corridor is
+   locked (provisionally): Silchar/Cachar via Dima Hasao and NH-6.
+3. **`scripts/data-access-checks/`** — the throwaway scripts already run;
+   see 0002 for results. Re-run if data sources need re-verifying later.
 
 ## Status
 
@@ -27,19 +28,18 @@ data → accessibility → optimization → explanation loop works end to end.
 
 ## Repo layout
 
-```
 apps/
-  web/        Next.js frontend (App Router, TS, Tailwind, MapLibre/deck.gl)
-  api/        FastAPI backend
-packages/     Shared TS types/UI, if/when needed across apps
-data/         raw / processed / samples (raw and processed are gitignored)
-ml/           datasets, features, training, evaluation, models
-geo/          OSM, DEM, rainfall, river, satellite processing
+web/ Next.js frontend (App Router, TS, Tailwind, MapLibre/deck.gl)
+api/ FastAPI backend
+packages/ Shared TS types/UI, if/when needed across apps
+data/ raw / processed / samples (raw and processed are gitignored)
+ml/ datasets, features, training, evaluation, models
+geo/ OSM, DEM, rainfall, river, satellite processing
 optimization/ routing, allocation, scenario logic
-scripts/      ingestion, preprocessing, dev helpers, data-access-checks
-docs/         architecture, data, ml, api notes, and numbered decisions
-infra/        docker, migrations
-```
+scripts/ ingestion, preprocessing, dev helpers, data-access-checks
+docs/ architecture, data, ml, api notes, and numbered decisions
+infra/ docker, migrations
+
 
 ## Local development
 
