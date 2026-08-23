@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sih26002}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih26002}
+      POSTGRES_DB: ${POSTGRES_DB:-sih26002}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sih26002}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./apps/api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sih26002}:${POSTGRES_PASSWORD:-sih26002}@postgres:5432/${POSTGRES_DB:-sih26002}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+
+# Not on Day 1 (see docs/decisions/0001-master-reference §20):
+# Redis, background worker, MinIO/object storage -- add when a phase
+# actually needs them, not before.

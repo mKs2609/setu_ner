@@ -1,0 +1,70 @@
+"""
+SIH26002 API entrypoint.
+
+This is a real, runnable FastAPI app -- not a mockup. Every router below is
+currently a stub that returns placeholder data, but the app boots, the
+health check works, and the shape is what the rest of the build fills in.
+
+Run locally:
+    cd apps/api
+    pip install -r requirements.txt
+    uvicorn app.main:app --reload --port 8000
+
+Then visit http://localhost:8000/docs for interactive API docs.
+"""
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import get_settings
+from app.routers import (
+    health,
+    regions,
+    roads,
+    hazards,
+    accessibility,
+    logistics,
+    scenarios,
+    recommendations,
+    field_reports,
+    public,
+)
+
+settings = get_settings()
+
+app = FastAPI(
+    title="SIH26002 — NER Accessibility & Logistics Intelligence API",
+    description=(
+        "Dynamic accessibility forecasting and logistics optimization for "
+        "the North Eastern Region. See /docs for interactive API reference."
+    ),
+    version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(health.router, prefix="/api/v1", tags=["health"])
+app.include_router(regions.router, prefix="/api/v1/regions", tags=["regions"])
+app.include_router(roads.router, prefix="/api/v1/roads", tags=["roads"])
+app.include_router(hazards.router, prefix="/api/v1/hazards", tags=["hazards"])
+app.include_router(accessibility.router, prefix="/api/v1/accessibility", tags=["accessibility"])
+app.include_router(logistics.router, prefix="/api/v1/logistics", tags=["logistics"])
+app.include_router(scenarios.router, prefix="/api/v1/scenarios", tags=["scenarios"])
+app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
+app.include_router(field_reports.router, prefix="/api/v1/field-reports", tags=["field-reports"])
+app.include_router(public.router, prefix="/api/v1/public", tags=["public"])
+
+
+@app.get("/")
+def root():
+    return {
+        "service": "sih26002-api",
+        "status": "ok",
+        "docs": "/docs",
+    }

@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# data (never commit real datasets)
+data/raw/*
+data/processed/*
+!data/raw/README.md
+!data/processed/README.md
+
+# ml artifacts
+ml/models/*.pkl
+ml/models/*.joblib
+!ml/models/README.md
+
+# os / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
