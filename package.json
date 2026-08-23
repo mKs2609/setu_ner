@@ -1,5 +1,5 @@
 {
-  "name": "sih26002",
+  "name": "setu_ner",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
