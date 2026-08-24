@@ -38,3 +38,8 @@ ml/models/*.joblib
 
 # logs
 *.log
+
+# generated geo outputs -- regenerate via the scripts, don't commit
+geo/**/*.geojson
+geo/**/*.graphml
+geo/**/cache/
