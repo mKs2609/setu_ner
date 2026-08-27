@@ -43,3 +43,4 @@ ml/models/*.joblib
 geo/**/*.geojson
 geo/**/*.graphml
 geo/**/cache/
+geo/**/*.json
