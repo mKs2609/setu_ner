@@ -1,6 +1,5 @@
 """
-SQLAlchemy engine/session setup. Not wired to real models yet -- Phase 1
-(static GIS + graph) is when the road/hazard/field_report tables land.
+SQLAlchemy engine/session setup.
 """
 
 from sqlalchemy import create_engine
