@@ -28,6 +28,7 @@ from app.routers import (
     recommendations,
     field_reports,
     public,
+    roads_geojson,
 )
 
 settings = get_settings()
@@ -51,6 +52,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(regions.router, prefix="/api/v1/regions", tags=["regions"])
+app.include_router(roads_geojson.router, prefix="/api/v1/roads", tags=["roads"])
 app.include_router(roads.router, prefix="/api/v1/roads", tags=["roads"])
 app.include_router(hazards.router, prefix="/api/v1/hazards", tags=["hazards"])
 app.include_router(accessibility.router, prefix="/api/v1/accessibility", tags=["accessibility"])
