@@ -44,3 +44,5 @@ geo/**/*.geojson
 geo/**/*.graphml
 geo/**/cache/
 geo/**/*.json
+geo/**/*.png
+apps/web/next-env.d.ts
