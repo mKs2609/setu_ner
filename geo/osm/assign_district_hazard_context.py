@@ -1,37 +1,28 @@
 """
 Phase 2: first-pass hazard context per road edge, via district spatial join.
 
-Takes the road graph (edges.geojson, from build_road_graph.py) and the
-district boundaries (districts.geojson, from fetch_district_boundaries.py),
-spatially joins each edge to the district it falls in, and attaches the
-2025 flood severity for that district from the ASDMA Flood Memorandum.
+Takes the road graph (edges.geojson) and district boundaries
+(districts.geojson, now 6 districts -- see fetch_district_boundaries.py),
+spatially joins each edge to its district, and attaches 2025 flood
+severity for the four Assam districts we have real ASDMA Memorandum data
+for.
 
-IMPORTANT -- what this is and isn't:
-- This is a HISTORICAL / RETROSPECTIVE severity proxy (the 2025 season,
-  already over), not a live hazard_exposure value. It's saved as a
-  separate column (hist_flood_severity_2025) rather than overwriting
-  hazard_exposure, to keep observed/derived/historical data distinguishable
-  (see docs/decisions/0001-gap-analysis-and-enhancements.md section 2.3).
-- It's district-level granularity, not per-road. Every edge in a district
-  gets the same score. This is a coarse first-pass baseline, not a
-  precise hazard signal -- refine later with flood-extent polygons.
-
-Severity metric: % of the district's villages affected during the 2025
-flood season (villages affected / total villages, both from the
-Memorandum). Chosen over raw population-affected count because it's
-normalized and comparable across districts of very different sizes.
+East Jaintia Hills and West Jaintia Hills (Meghalaya) are explicitly
+RECOGNIZED but INTENTIONALLY UNSCORED: their entries in
+DISTRICT_2025_DATA are None on purpose. There's no ASDMA-equivalent
+annual statistical report for Meghalaya, and this area's real documented
+hazard is landslide (Sonapur tunnel, recurring), not flood -- forcing our
+Assam flood-severity formula onto it would mean fabricating a number for
+the wrong hazard type. Roads here now get correctly labeled by district
+(better than the previous "no match at all"), with an honest null score,
+not a guessed one.
 
 CRITICAL NAME MAPPING: Karimganj district was renamed to Sribhumi
 district. The Memorandum's 2025 tables use "Sribhumi"; OSM's boundary
-(and our districts.geojson) still uses "Karimganj". This script maps
-them explicitly -- get this wrong and Sribhumi's real numbers (the
-highest population-affected of our four districts) silently vanish.
+still uses "Karimganj". Mapped explicitly below.
 
-RUN THIS LOCALLY, from the geo/osm folder where edges.geojson and
-districts.geojson already exist (no network needed -- everything it
-reads is already on disk).
+RUN THIS LOCALLY, from geo/osm (no network needed, reads local files).
 
-    pip install -r requirements.txt
     python assign_district_hazard_context.py
 """
 
@@ -41,7 +32,7 @@ from pathlib import Path
 try:
     import geopandas as gpd
 except ImportError:
-    print("Missing dependencies. Run: pip install -r requirements.txt")
+    print("Missing dependencies. Run: pip install geopandas")
     sys.exit(1)
 
 HERE = Path(__file__).parent
@@ -52,37 +43,33 @@ OUTPUT_PATH = HERE / "edges_with_hazard_context.geojson"
 DISTRICT_2025_DATA = {
     "Cachar": {
         "memorandum_name": "Cachar",
-        "total_villages": 1040,
-        "villages_affected": 297,
-        "population_affected": 171610,
-        "flood_deaths": 4,
+        "data": {"total_villages": 1040, "villages_affected": 297, "population_affected": 171610, "flood_deaths": 4},
     },
     "Karimganj": {
         "memorandum_name": "Sribhumi",
-        "total_villages": 936,
-        "villages_affected": 389,
-        "population_affected": 295502,
-        "flood_deaths": 4,
+        "data": {"total_villages": 936, "villages_affected": 389, "population_affected": 295502, "flood_deaths": 4},
     },
     "Hailakandi": {
         "memorandum_name": "Hailakandi",
-        "total_villages": 331,
-        "villages_affected": 221,
-        "population_affected": 219009,
-        "flood_deaths": 2,
+        "data": {"total_villages": 331, "villages_affected": 221, "population_affected": 219009, "flood_deaths": 2},
     },
     "Dima Hasao": {
         "memorandum_name": "Dima Hasao",
-        "total_villages": 695,
-        "villages_affected": 17,
-        "population_affected": 0,
-        "flood_deaths": 0,  # 2 landslide deaths recorded separately -- a different hazard type
+        "data": {"total_villages": 695, "villages_affected": 17, "population_affected": 0, "flood_deaths": 0},
+    },
+    "East Jaintia Hills": {
+        "memorandum_name": None,
+        "data": None,  # no ASDMA-equivalent source; real hazard here is landslide, not flood -- see module docstring
+    },
+    "West Jaintia Hills": {
+        "memorandum_name": None,
+        "data": None,
     },
 }
 
 
-def severity_score(d: dict) -> float:
-    return d["villages_affected"] / d["total_villages"]
+def severity_score(data: dict) -> float:
+    return data["villages_affected"] / data["total_villages"]
 
 
 def match_district(district_query: str) -> str | None:
@@ -97,7 +84,8 @@ def assign_hazard_context(edges_gdf: gpd.GeoDataFrame, districts_gdf: gpd.GeoDat
     districts_gdf["district_key"] = districts_gdf["district_query"].apply(match_district)
     unmatched = districts_gdf[districts_gdf["district_key"].isna()]
     if len(unmatched) > 0:
-        raise ValueError(f"Couldn't match {len(unmatched)} district(s) to our lookup table: "
+        raise ValueError(f"Couldn't match {len(unmatched)} district(s) to our lookup table -- "
+                          f"either a genuinely new district or a name mismatch to fix: "
                           f"{unmatched['district_query'].tolist()}")
 
     joined = gpd.sjoin(edges_gdf, districts_gdf[["district_key", "geometry"]],
@@ -107,8 +95,10 @@ def assign_hazard_context(edges_gdf: gpd.GeoDataFrame, districts_gdf: gpd.GeoDat
     def lookup(key):
         if key is None or key not in DISTRICT_2025_DATA:
             return None, None, None
-        d = DISTRICT_2025_DATA[key]
-        return severity_score(d), d["population_affected"], d["flood_deaths"]
+        data = DISTRICT_2025_DATA[key]["data"]
+        if data is None:
+            return None, None, None  # recognized district, genuinely no hazard data -- not an error
+        return severity_score(data), data["population_affected"], data["flood_deaths"]
 
     scores, pops, deaths = [], [], []
     for key in joined["district_key"]:
@@ -147,17 +137,22 @@ def main():
     print(f"Total edges: {len(result)}")
     matched = result["district"].notna().sum()
     print(f"Edges matched to a district: {matched} ({matched / len(result) * 100:.0f}%)")
-    print("\nEdges per district and their 2025 severity score:")
+    print("\nEdges per district:")
     for district, group in result.groupby("district"):
         if district is None:
             continue
         severity = group["hist_flood_severity_2025"].iloc[0]
-        print(f"  {district:15s}: {len(group):6d} edges, severity {severity:.2f} "
-              f"({severity*100:.0f}% of villages affected in 2025)")
+        if severity is not None and severity == severity:  # NaN-safe: NaN != NaN
+        
+            print(f"  {district:20s}: {len(group):6d} edges, severity {severity:.2f} "
+                  f"({severity*100:.0f}% of villages affected in 2025)")
+        else:
+            print(f"  {district:20s}: {len(group):6d} edges, recognized but genuinely unscored "
+                  f"(no hazard data source yet -- see module docstring)")
     unmatched_count = result["district"].isna().sum()
     if unmatched_count:
-        print(f"\n{unmatched_count} edges fell outside all four district boundaries "
-              f"(expected at the edges of the bounding box used in Phase 1).")
+        print(f"\n{unmatched_count} edges fell outside all district boundaries "
+              f"(may now be smaller than before -- Meghalaya coverage was just added).")
     print(f"\nSaved: {OUTPUT_PATH.name}")
 
 
