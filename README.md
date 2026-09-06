@@ -18,13 +18,31 @@ scenarios — starting with floods, architected to extend to other hazards.
    locked (provisionally): Silchar/Cachar via Dima Hasao and NH-6.
 3. **`scripts/data-access-checks/`** — the throwaway scripts already run;
    see 0002 for results. Re-run if data sources need re-verifying later.
+3. **`docs/decisions/0003-scenario-engine.md`** — what the what-if engine
+   does, its measured results, and exactly what its numbers do and don't
+   mean. Read before quoting any travel time.
 
 ## Status
 
-Scaffold stage. The FastAPI backend boots and its test suite passes; every
-router beyond `/health` is an honest stub. The Next.js frontend has route
-placeholders only — visual design is deliberately deferred until the core
-data → accessibility → optimization → explanation loop works end to end.
+Foundation is real; the intelligence layer is mostly still ahead.
+
+**Working end to end on real data:** the road graph (110,266 segments,
+47,424 junctions for the Barak Valley corridor), 2025 district flood
+severity joined to every road in the four Assam districts that have it, a
+baseline accessibility score, PostGIS + a FastAPI serving real queries, an
+interactive MapLibre map, and the **scenario engine** — close or flood a
+set of roads and get the routing consequence, with the causal trail
+(see `docs/decisions/0003-scenario-engine.md`).
+
+**Deliberately minimal:** the accessibility score is a transparent
+rule-based baseline (district severity × bridge factor), built to be the
+yardstick a future ML model has to beat. That model does not exist yet.
+
+**Not started:** live hazard ingestion, Sentinel-1 flood extent, DEM,
+field reports (rest of Phase 2); demand estimation and logistics
+optimization (Phase 4); natural-language explanation (Phase 6). The web
+app has a real map/dashboard; logistics, scenarios and field-reports pages
+are still scaffold stubs (Phase 7).
 
 ## Repo layout
 
