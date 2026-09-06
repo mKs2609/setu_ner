@@ -46,3 +46,6 @@ geo/**/cache/
 geo/**/*.json
 geo/**/*.png
 apps/web/next-env.d.ts
+# Build/tooling caches
+.turbo/
+*.tsbuildinfo

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, master, develop]
 
 jobs:
   api-tests:
@@ -36,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
-        run: pnpm --filter @sih26002/web lint
+        run: pnpm --filter @setu_ner/web lint
       - name: Type check
-        run: pnpm --filter @sih26002/web type-check
+        run: pnpm --filter @setu_ner/web type-check
       - name: Build
-        run: pnpm --filter @sih26002/web build
+        run: pnpm --filter @setu_ner/web build
