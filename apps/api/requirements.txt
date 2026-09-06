@@ -5,6 +5,10 @@ pydantic-settings==2.15.0
 sqlalchemy==2.0.35
 geoalchemy2==0.15.2
 psycopg2-binary==2.9.12
+# Direct dependency: services/routing/graph.py uses it to snap
+# coordinates to the nearest junction. It also arrives transitively via
+# geopandas/scikit-learn, but a direct import belongs in this file.
+numpy==2.5.3
 geopandas==1.0.1
 shapely==2.1.2
 # rasterio==1.3.11
