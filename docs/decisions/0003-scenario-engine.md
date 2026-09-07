@@ -98,12 +98,14 @@ large snap instead of hiding inside a plausible answer.
 
 ## Testing
 
-22 new tests. **17 unit tests run without a database** on a hand-built
-synthetic graph, covering parallel-road fallback, bidirectional expansion,
-severance, degradation, and the causal explanation. 5 integration tests hit
-the real corridor and skip cleanly when no database is reachable — CI has
-neither Postgres nor the corridor data, since the geo outputs are
+26 new tests, 28 in the suite. **17 unit tests run without a database** on a
+hand-built synthetic graph, covering parallel-road fallback, bidirectional
+expansion, severance, degradation, and the causal explanation. 9 integration
+tests hit the real corridor and skip cleanly when no database is reachable —
+CI has neither Postgres nor the corridor data, since the geo outputs are
 gitignored.
+
+Runs: 28 passed with a database; 19 passed / 9 skipped without one.
 
 ## Also fixed (pre-existing, found while wiring CI)
 
@@ -114,9 +116,26 @@ gitignored.
 - `turbo.json` used `pipeline`, renamed to `tasks` in Turbo 2.x, so the
   documented root `pnpm dev` / `pnpm build` errored out.
 
+## Scenario UI (Phase 7, added after this engine landed)
+
+`/scenarios` is now a real workbench: pick origin and destination from the
+landmark list, choose a district, and either collapse or flood its bridges.
+Both routes are drawn on the map — baseline in muted blue, scenario in amber
+dashes — so an overlap reads as "no detour" and a divergence reads as one.
+
+The screen deliberately keeps three things the API returns that a tidier UI
+would drop: the plain-language verdict (including "no change"), the causal
+count of how many closed roads were actually on the baseline route, and the
+modelled-time caveat behind a disclosure. Hiding any of them would make the
+screen look more certain than the data under it.
+
+One backend addition came out of building it: `degrade_bridges_in_district`,
+symmetric with `close_bridges_in_district`. Without it the "flooded but
+passable" case was only reachable by passing explicit road ids, which a UI
+has no way to know. A road named by both is closed, since that is the
+stronger claim.
+
 ## Next
 
-The frontend has no scenario UI yet (Phase 7) — `/simulate` already returns
-route geometry for both baseline and scenario via `include_geometry`, so
-drawing the two routes on the existing MapLibre map is the natural next
-step and needs no new backend work.
+Live hazard ingestion (the rest of Phase 2) is the blocker for everything
+above it — the accessibility model cannot be trained without it.

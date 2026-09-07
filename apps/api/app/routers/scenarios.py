@@ -49,6 +49,15 @@ class ScenarioRequest(BaseModel):
         default_factory=list,
         description="Road ids that stay passable but slower (flooded, not severed)",
     )
+    degrade_bridges_in_district: str | None = Field(
+        None,
+        description=(
+            "Slow every bridge in this district rather than closing it -- the "
+            "'under water but still passable' case. Symmetric with "
+            "close_bridges_in_district; a road named by both is closed, since "
+            "that is the stronger claim."
+        ),
+    )
     degrade_factor: float = Field(
         2.0, gt=1.0, le=20.0, description="Travel-time multiplier for degraded roads"
     )
@@ -153,6 +162,21 @@ def simulate_scenario(request: ScenarioRequest, db: Session = Depends(get_db)):
         close_ids |= set(district_bridges)
 
     degrade_ids = set(request.degrade_road_ids)
+    if request.degrade_bridges_in_district:
+        district_bridges = engine.select_bridge_ids(
+            db, request.degrade_bridges_in_district
+        )
+        if not district_bridges:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"No bridges found in district "
+                    f"{request.degrade_bridges_in_district!r}. Districts with "
+                    f"data: Cachar, Hailakandi, Karimganj, Dima Hasao."
+                ),
+            )
+        degrade_ids |= set(district_bridges)
+
     if request.bidirectional:
         close_ids = engine.expand_bidirectional(cgraph, close_ids)
         degrade_ids = engine.expand_bidirectional(cgraph, degrade_ids)

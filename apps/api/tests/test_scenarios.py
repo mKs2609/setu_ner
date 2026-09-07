@@ -322,6 +322,85 @@ def test_unknown_district_is_a_404():
 
 
 @needs_db
+def test_degrading_a_district_slows_without_severing():
+    """The 'flooded but passable' case, which the scenario UI exposes next to
+    closure. Same district that severs the corridor when closed outright --
+    so this also pins down that degrade and close are genuinely different."""
+    r = client.post(
+        "/api/v1/scenarios/simulate",
+        json={
+            "label": "Cachar bridges flooded",
+            "origin": "silchar",
+            "destination": "haflong",
+            "degrade_bridges_in_district": "Cachar",
+            "degrade_factor": 3.0,
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["delta"]["severed"] is False, "degrading must not sever"
+    assert body["delta"]["added_minutes"] > 0
+    assert body["scenario_result"]["reachable"] is True
+    assert body["explanation"]["roads_degraded"] > 0
+    assert body["explanation"]["degraded_roads_on_baseline_route"]
+
+
+@needs_db
+def test_unknown_district_is_a_404_for_degrade_too():
+    r = client.post(
+        "/api/v1/scenarios/simulate",
+        json={
+            "label": "nowhere",
+            "origin": "silchar",
+            "destination": "haflong",
+            "degrade_bridges_in_district": "Atlantis",
+        },
+    )
+    assert r.status_code == 404
+
+
+@needs_db
+def test_closing_beats_degrading_when_a_road_is_named_by_both():
+    """Closure is the stronger claim, so a road in both sets must be closed
+    rather than merely slowed -- otherwise a scenario could quietly downgrade
+    a severed road into a passable one."""
+    r = client.post(
+        "/api/v1/scenarios/simulate",
+        json={
+            "label": "same district closed and flooded",
+            "origin": "silchar",
+            "destination": "haflong",
+            "close_bridges_in_district": "Cachar",
+            "degrade_bridges_in_district": "Cachar",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["delta"]["severed"] is True
+    assert body["explanation"]["roads_degraded"] == 0
+
+
+@needs_db
+def test_simulate_returns_geometry_for_both_routes():
+    """The scenario UI draws baseline and scenario as two lines, so both keys
+    have to be present -- scenario is null only when the corridor is severed."""
+    r = client.post(
+        "/api/v1/scenarios/simulate",
+        json={
+            "label": "geometry check",
+            "origin": "silchar",
+            "destination": "haflong",
+            "close_bridges_in_district": "Karimganj",
+            "include_geometry": True,
+        },
+    )
+    assert r.status_code == 200
+    geom = r.json()["geometry"]
+    assert len(geom["baseline"]) > 100
+    assert geom["scenario"] is not None and len(geom["scenario"]) > 100
+
+
+@needs_db
 def test_geometry_is_returned_when_asked_for():
     r = client.get(
         "/api/v1/scenarios/route"

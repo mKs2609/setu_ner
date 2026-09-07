@@ -41,8 +41,8 @@ yardstick a future ML model has to beat. That model does not exist yet.
 **Not started:** live hazard ingestion, Sentinel-1 flood extent, DEM,
 field reports (rest of Phase 2); demand estimation and logistics
 optimization (Phase 4); natural-language explanation (Phase 6). The web
-app has a real map/dashboard; logistics, scenarios and field-reports pages
-are still scaffold stubs (Phase 7).
+app has a real accessibility map and a real scenario workbench; logistics
+and field-reports pages are still scaffold stubs (Phase 7).
 
 ## Repo layout
 

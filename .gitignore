@@ -49,3 +49,6 @@ apps/web/next-env.d.ts
 # Build/tooling caches
 .turbo/
 *.tsbuildinfo
+
+# Generated handbook -- rebuild from the script rather than committing a binary
+docs/*.pdf
