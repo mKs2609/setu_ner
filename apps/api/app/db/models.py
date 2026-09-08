@@ -16,7 +16,19 @@ observed/derived/historical needs to stay distinguishable).
 """
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Column, Integer, String, Float, Boolean, BigInteger
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -67,3 +79,98 @@ class District(Base):
     display_name = Column(String, nullable=True)
     district_query = Column(String, nullable=True)
     geometry = Column(Geometry(geometry_type="MULTIPOLYGON", srid=4326), nullable=False)
+
+class IngestRun(Base):
+    """
+    One attempt to pull from one source. Written before the fetch starts and
+    updated when it ends, so a crashed or hung run is still visible as
+    'running' rather than vanishing.
+
+    This table is why a failed fetch is safe: ingestion never deletes or
+    blanks existing observations, it only ever adds. A source that goes down
+    therefore shows up as stale data plus a failed run -- never as an empty
+    map that looks like "no flooding".
+    """
+
+    __tablename__ = "ingest_runs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source = Column(String, nullable=False, index=True)
+    hazard_type = Column(String, nullable=True, index=True)
+
+    started_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+    # running | success | no_data | failed
+    status = Column(String, nullable=False, index=True, default="running")
+
+    target_date = Column(Date, nullable=True)
+    source_url = Column(String, nullable=True)
+    rows_parsed = Column(Integer, nullable=False, default=0)
+    rows_written = Column(Integer, nullable=False, default=0)
+    rows_duplicate = Column(Integer, nullable=False, default=0)
+    error = Column(Text, nullable=True)
+
+
+class HazardObservation(Base):
+    """
+    One measured or reported fact about a hazard, from one source, at one time.
+
+    HAZARD-AGNOSTIC ON PURPOSE (docs/decisions/0001 section 3)
+    The original spec promised extensibility to landslides and other hazards
+    while every table was flood-specific. This one is not: `hazard_type` and
+    `metric` carry the meaning, so a landslide or rainfall row lands in the
+    same table with the same provenance columns. The DRIMS source already
+    publishes eleven hazard types behind one endpoint, so this is a real
+    capability rather than a slide claim.
+
+    TWO TIMESTAMPS, DELIBERATELY
+    `observed_at` is when the world was in this state; `fetched_at` is when we
+    pulled it. Staleness is the gap between observed_at and now, and it cannot
+    be computed honestly without both. The gap-analysis asked for staleness
+    tracking from day one rather than bolted on later.
+
+    RAW IS KEPT
+    `raw` holds the original parsed row verbatim. A parsing bug is then
+    auditable and re-derivable from stored data instead of requiring a
+    re-fetch, and nobody has to trust the parser to inspect the source.
+
+    IDEMPOTENT
+    `observation_key` is unique, so re-running an ingest for the same day
+    updates nothing and inserts nothing. Re-running is therefore always safe.
+    """
+
+    __tablename__ = "hazard_observations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # --- what ---
+    hazard_type = Column(String, nullable=False, index=True)  # flood, landslide, ...
+    metric = Column(String, nullable=False, index=True)       # villages_affected, ...
+    value_num = Column(Float, nullable=True)
+    value_text = Column(String, nullable=True)
+    unit = Column(String, nullable=True)
+
+    # --- where ---
+    # place_name is whatever the source printed; district is our normalised
+    # name. Both are kept because the source renamed Karimganj to Sribhumi in
+    # 2024 and the road graph still says Karimganj -- losing the original
+    # would make that mapping unverifiable.
+    place_name = Column(String, nullable=True, index=True)
+    district = Column(String, nullable=True, index=True)
+    geometry = Column(Geometry(geometry_type="POINT", srid=4326), nullable=True)
+
+    # --- when ---
+    observed_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    fetched_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+    # --- provenance and trust, same discipline as the roads table ---
+    source = Column(String, nullable=False, index=True)
+    source_url = Column(String, nullable=False)
+    source_document_date = Column(Date, nullable=True, index=True)
+    basis = Column(String, nullable=False)
+    confidence = Column(String, nullable=False)
+    raw = Column(JSON, nullable=True)
+
+    observation_key = Column(String, nullable=False, unique=True, index=True)
+    ingest_run_id = Column(Integer, ForeignKey("ingest_runs.id"), nullable=True, index=True)

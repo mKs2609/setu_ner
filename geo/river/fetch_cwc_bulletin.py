@@ -1,4 +1,23 @@
 """
+SUPERSEDED -- AND CURRENTLY BROKEN. Do not rely on this script.
+
+Verified 8 Sep 2026: the dated URL pattern below returns 404 for every
+date across a week of checks, and the listing page at
+cwc.gov.in/en/fmo/dfsra now renders its publication table with no rows
+at all. CWC appears to have stopped publishing these bulletins at this
+location, so this script cannot succeed as written.
+
+Live hazard ingestion moved to apps/api/app/services/ingestion/, which
+pulls the DRIMS Assam daily report instead. That source is live, covers
+nine hazard types, reports road and bridge damage per district, and
+quotes the same CWC river danger-level line this script wanted -- so
+nothing was lost in the move. See docs/decisions/0004.
+
+Kept in the tree because the URL pattern and the parsing approach are
+still the right starting point if CWC resumes publishing.
+
+Original header follows.
+
 Phase 2: real-time flood/river hazard data for the Barak Valley corridor.
 
 Fetches CWC's Daily Flood Situation Report cum Advisory -- a real, dated

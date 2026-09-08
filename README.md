@@ -21,6 +21,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 3. **`docs/decisions/0003-scenario-engine.md`** — what the what-if engine
    does, its measured results, and exactly what its numbers do and don't
    mean. Read before quoting any travel time.
+4. **`docs/decisions/0004-live-hazard-ingestion.md`** — the live data
+   pipeline, what makes it safe to run unattended, and the district rename
+   that would otherwise have broken it silently.
 
 ## Status
 
@@ -38,11 +41,20 @@ set of roads and get the routing consequence, with the causal trail
 rule-based baseline (district severity × bridge factor), built to be the
 yardstick a future ML model has to beat. That model does not exist yet.
 
-**Not started:** live hazard ingestion, Sentinel-1 flood extent, DEM,
-field reports (rest of Phase 2); demand estimation and logistics
-optimization (Phase 4); natural-language explanation (Phase 6). The web
-app has a real accessibility map and a real scenario workbench; logistics
-and field-reports pages are still scaffold stubs (Phase 7).
+**Live hazard ingestion works** (Phase 2): the DRIMS Assam daily report is
+fetched, parsed and stored with provenance and staleness tracking, covering
+nine hazard types and including per-district road/bridge damage. See
+`docs/decisions/0004-live-hazard-ingestion.md` — it also records that CWC's
+bulletin URL, which `0002` planned around, is dead.
+
+**Not started:** Sentinel-1 flood extent, DEM, field reports (rest of
+Phase 2); demand estimation and logistics optimization (Phase 4);
+natural-language explanation (Phase 6). The web app has a real accessibility
+map and a real scenario workbench; logistics and field-reports pages are
+still scaffold stubs (Phase 7). The accessibility model itself is still the
+rule-based baseline — the ingested hazard data is deliberately not wired
+into `current_accessibility` yet, because a district-level daily count is
+not a per-road live score.
 
 ## Repo layout
 
