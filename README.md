@@ -27,6 +27,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 5. **`docs/decisions/0005-field-report-fusion.md`** — the human layer: how a
    report becomes a belief, how reporter trust moves, and why none of it
    touches `current_accessibility`.
+6. **`docs/decisions/0006-corroboration.md`** — where the two live data
+   sources meet: why independent evidence may support a report but never
+   count against one.
 
 ## Status
 
@@ -53,8 +56,10 @@ bulletin URL, which `0002` planned around, is dead.
 **Field-report fusion works** (Phase 2, Tier 1): anyone can report a road as
 clear/slow/blocked, reports snap to the nearest segment, and a trust-weighted
 vote produces a live field-reported status per road. No personal data — the
-reporter id is an opaque device-scoped string. See
-`docs/decisions/0005-field-report-fusion.md`.
+reporter id is an opaque device-scoped string. Reports are also checked
+against the ingested DRIMS hazard data, so reporter trust no longer rests on
+peer agreement alone, which a colluding group could manufacture. See
+`docs/decisions/0005-field-report-fusion.md` and `0006-corroboration.md`.
 
 **Not started:** Sentinel-1 flood extent, DEM (rest of Phase 2); demand
 estimation and logistics optimization (Phase 4); natural-language explanation

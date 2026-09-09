@@ -30,12 +30,6 @@ const STATUS_STYLES: Record<string, string> = {
   blocked: "bg-red-50 text-red-800 ring-red-200",
 };
 
-const TRUST_EXPLANATION: Record<string, string> = {
-  corroborated: "Other recent reports on that road agree with you — your score went up.",
-  contradicted: "Other recent reports on that road disagree — your score went down.",
-  no_consensus: "Nobody else has reported that road recently, so your score is unchanged.",
-};
-
 export default function FieldReportsWorkbench() {
   const [reporterId, setReporterId] = useState("");
   const [reports, setReports] = useState<StoredReport[]>([]);
@@ -115,9 +109,30 @@ export default function FieldReportsWorkbench() {
               )}
             </p>
             <p className="text-xs leading-snug text-gray-600">
-              {TRUST_EXPLANATION[lastAck.trust_outcome]} Your score is now{" "}
+              {lastAck.trust_explanation} Your score is now{" "}
               <b>{lastAck.reporter_trust_score}</b>.
             </p>
+
+            {lastAck.independent_evidence.evidence.length > 0 ? (
+              <div className="rounded bg-gray-50 p-2">
+                <div className="text-[11px] font-semibold text-gray-700">
+                  Checked against official hazard data
+                </div>
+                <ul className="mt-1 space-y-0.5">
+                  {lastAck.independent_evidence.evidence.map((e) => (
+                    <li key={e.kind} className="text-[11px] leading-snug text-gray-600">
+                      • {e.detail}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-[11px] leading-snug text-gray-500">
+                No official hazard data bears on that road right now. That is not held
+                against the report — the daily bulletin is district-level and routinely
+                behind what someone on the road can see.
+              </p>
+            )}
           </div>
         )}
 

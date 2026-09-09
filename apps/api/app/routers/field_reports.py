@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import FieldReport, Road
 from app.db.session import get_db
+from app.services.fusion import corroboration as corrob
 from app.services.fusion import reports as fusion
 
 router = APIRouter()
@@ -71,7 +72,18 @@ class FieldReportOut(BaseModel):
     counted_in_fusion: bool
     reporter_trust_score: float
     trust_outcome: str
+    trust_basis: str
+    trust_explanation: str
+    independent_evidence: dict
     note: str | None = None
+
+
+def road_district(db: Session, road_id: int | None) -> str | None:
+    """The district a road sits in, for matching district-level evidence."""
+    if road_id is None:
+        return None
+    road = db.get(Road, road_id)
+    return road.district if road else None
 
 
 def _serialise(report: FieldReport) -> dict:
@@ -127,7 +139,17 @@ def submit_field_report(payload: FieldReportIn, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(report)
 
-    outcome = fusion.update_trust(db, reporter, report)
+    # Independent evidence is checked before trust moves, because it can
+    # override a peer disagreement -- see services/fusion/corroboration.py.
+    evidence = corrob.corroborate(
+        db,
+        road_id=report.road_id,
+        district=road_district(db, report.road_id),
+        status=report.status,
+    )
+    trust = fusion.update_trust(
+        db, reporter, report, independently_supported=evidence.supports
+    )
     db.commit()
 
     return FieldReportOut(
@@ -139,8 +161,11 @@ def submit_field_report(payload: FieldReportIn, db: Session = Depends(get_db)):
             round(snap.distance_m, 1) if snap.distance_m is not None else None
         ),
         counted_in_fusion=snap.within_range,
-        reporter_trust_score=reporter.trust_score,
-        trust_outcome=outcome,
+        reporter_trust_score=trust.trust_score,
+        trust_outcome=trust.outcome,
+        trust_basis=trust.basis,
+        trust_explanation=trust.explanation,
+        independent_evidence=evidence.as_dict(),
         note=report.note,
     )
 
@@ -177,6 +202,12 @@ def reports_for_road(road_id: int, db: Session = Depends(get_db)):
 
     rows = fusion.recent_reports(db, road_id)
     fused = fusion.fuse(db, road_id)
+    evidence = corrob.corroborate(
+        db,
+        road_id=road_id,
+        district=road.district,
+        status=fused.status or "blocked",
+    )
 
     return {
         "road_id": road_id,
@@ -195,6 +226,7 @@ def reports_for_road(road_id: int, db: Session = Depends(get_db)):
             "newest_report_at": fused.newest_report_at,
             "window_hours": fused.window_hours,
         },
+        "independent_evidence": evidence.as_dict(),
         "reports": [_serialise(r) for r in rows],
         "caveats": {
             "not_a_model_prediction": (
@@ -204,11 +236,12 @@ def reports_for_road(road_id: int, db: Session = Depends(get_db)):
                 "and it is deliberately not written into current_accessibility, "
                 "which stays empty until the Phase 3 model exists."
             ),
-            "gameable": (
-                "Trust rises when a report agrees with other recent reports on "
-                "the same road, so colluding reporters can corroborate each "
-                "other upward. Checking against independent evidence (satellite "
-                "extent, DRIMS damage rows) is Phase 3 work."
+            "collusion": (
+                "Peer agreement alone can be manufactured by a group reporting "
+                "together. Reports are therefore also checked against DRIMS "
+                "hazard data, which nobody submitting reports controls, and "
+                "independent support outranks peer disagreement. See "
+                "docs/decisions/0006-corroboration.md."
             ),
             "baseline_is_historical": (
                 "baseline_accessibility comes from 2025 district flood severity, "

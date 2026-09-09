@@ -160,6 +160,23 @@ export interface FieldReportIn {
   note?: string | null;
 }
 
+export interface EvidenceItem {
+  kind: string;
+  strength: number;
+  detail: string;
+  observed_at: string | null;
+  source: string;
+}
+
+export interface IndependentEvidence {
+  score: number;
+  supports: boolean;
+  window_hours: number;
+  evidence: EvidenceItem[];
+  note: string;
+  caveat: string;
+}
+
 export interface FieldReportAck {
   id: number;
   road_id: number | null;
@@ -169,6 +186,9 @@ export interface FieldReportAck {
   counted_in_fusion: boolean;
   reporter_trust_score: number;
   trust_outcome: "corroborated" | "contradicted" | "no_consensus";
+  trust_basis: "peers" | "independent_evidence" | "both" | "none";
+  trust_explanation: string;
+  independent_evidence: IndependentEvidence;
   note: string | null;
 }
 
@@ -201,6 +221,7 @@ export interface RoadReportView {
     newest_report_at: string | null;
     window_hours: number;
   };
+  independent_evidence: IndependentEvidence;
   reports: StoredReport[];
   caveats: Record<string, string>;
 }

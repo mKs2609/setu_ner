@@ -228,33 +228,112 @@ def _consensus_of(reports) -> str | None:
     return ranked[0][0]
 
 
-def update_trust(db: Session, reporter: Reporter, report: FieldReport) -> str:
-    """Adjust the reporter's score against what others said about that road.
+@dataclass
+class TrustUpdate:
+    """What happened to a reporter's score, and on what grounds."""
 
-    Returns 'corroborated', 'contradicted' or 'no_consensus' so the API can
-    tell the reporter what happened -- a trust score that moves invisibly is
-    the kind of thing people rightly distrust.
+    outcome: str  # corroborated | contradicted | no_consensus
+    basis: str  # peers | independent_evidence | both | none
+    peer_consensus: str | None
+    independently_supported: bool
+    trust_score: float
+    explanation: str
+
+
+def decide_outcome(
+    peer_consensus: str | None,
+    report_status: str,
+    independently_supported: bool,
+) -> tuple[str, str, str]:
+    """The trust rule, as a pure function of the three inputs.
+
+    Separated out so it can be tested exhaustively without a database -- this
+    is where the judgement lives, and it is what a reviewer will push on.
+
+    The rule that matters is the last branch: independent evidence outranks
+    peer disagreement. A colluding group can outvote a lone honest reporter,
+    but they cannot outvote a government damage bulletin, and that is the
+    whole reason this function exists (see corroboration.py).
     """
-    if report.road_id is None:
-        return "no_consensus"
+    peers_agree = peer_consensus is not None and peer_consensus == report_status
+    peers_disagree = peer_consensus is not None and peer_consensus != report_status
 
-    others = recent_reports(db, report.road_id, exclude_id=report.id)
-    consensus = _consensus_of(others)
+    if peers_agree and independently_supported:
+        return (
+            "corroborated",
+            "both",
+            "Other recent reports agree with you, and independent hazard data supports it.",
+        )
+    if peers_agree:
+        return (
+            "corroborated",
+            "peers",
+            "Other recent reports on that road agree with you.",
+        )
+    if independently_supported:
+        # Covers both "nobody else reported" and "others disagreed". Evidence
+        # nobody submitting reports controls carries more weight than a show
+        # of hands.
+        detail = (
+            "Other recent reports disagree, but independent hazard data supports "
+            "you, so the disagreement was set aside."
+            if peers_disagree
+            else "Nobody else has reported that road, but independent hazard data supports you."
+        )
+        return "corroborated", "independent_evidence", detail
+    if peers_disagree:
+        return (
+            "contradicted",
+            "peers",
+            "Other recent reports on that road disagree, and no independent data backs you up.",
+        )
+    return (
+        "no_consensus",
+        "none",
+        "Nobody else has reported that road recently and no independent data bears on it, so your score is unchanged.",
+    )
 
-    if consensus is None:
-        outcome = "no_consensus"
-    elif consensus == report.status:
+
+def update_trust(
+    db: Session,
+    reporter: Reporter,
+    report: FieldReport,
+    *,
+    independently_supported: bool = False,
+) -> TrustUpdate:
+    """Adjust the reporter's score, weighing peers and independent evidence.
+
+    The API surfaces the whole result: a trust score that moves invisibly is
+    the kind of thing people rightly distrust, and "why did my score drop"
+    deserves a real answer.
+    """
+    peer_consensus = None
+    if report.road_id is not None:
+        others = recent_reports(db, report.road_id, exclude_id=report.id)
+        peer_consensus = _consensus_of(others)
+
+    outcome, basis, explanation = decide_outcome(
+        peer_consensus, report.status, independently_supported
+    )
+
+    if outcome == "corroborated":
         reporter.times_corroborated += 1
-        outcome = "corroborated"
-    else:
+    elif outcome == "contradicted":
         reporter.times_contradicted += 1
-        outcome = "contradicted"
 
     agreed = reporter.times_corroborated
     disagreed = reporter.times_contradicted
     raw = NEUTRAL_TRUST + 0.5 * (agreed - disagreed) / (agreed + disagreed + PRIOR_WEIGHT)
     reporter.trust_score = round(min(TRUST_CEILING, max(TRUST_FLOOR, raw)), 4)
-    return outcome
+
+    return TrustUpdate(
+        outcome=outcome,
+        basis=basis,
+        peer_consensus=peer_consensus,
+        independently_supported=independently_supported,
+        trust_score=reporter.trust_score,
+        explanation=explanation,
+    )
 
 
 def reports_in_last_hour(db: Session, reporter_id: str) -> int:
