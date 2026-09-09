@@ -174,3 +174,72 @@ class HazardObservation(Base):
 
     observation_key = Column(String, nullable=False, unique=True, index=True)
     ingest_run_id = Column(Integer, ForeignKey("ingest_runs.id"), nullable=True, index=True)
+
+
+class Reporter(Base):
+    """
+    Whoever is sending field reports, and how much weight their reports carry.
+
+    NO PERSONAL DATA, DELIBERATELY. `id` is a device-scoped opaque string the
+    client generates and keeps -- not a name, phone number, or account. The
+    people best placed to report a washed-out road are often reporting from a
+    disaster zone, and a system that demands identity to accept that report
+    gets fewer reports and creates a record that could be misused. Trust is
+    built from behaviour over time, which needs continuity of identity but
+    not knowledge of it.
+
+    Trust starts neutral rather than at zero: a new reporter's first message
+    about a collapsed bridge should still be visible, just not decisive.
+    """
+
+    __tablename__ = "reporters"
+
+    id = Column(String, primary_key=True)
+    trust_score = Column(Float, nullable=False, default=0.5)
+    reports_submitted = Column(Integer, nullable=False, default=0)
+    times_corroborated = Column(Integer, nullable=False, default=0)
+    times_contradicted = Column(Integer, nullable=False, default=0)
+    first_seen_at = Column(DateTime(timezone=True), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class FieldReport(Base):
+    """
+    One person's report that a specific place is clear, slow, or blocked.
+
+    WHY THIS TABLE EXISTS AT ALL (docs/decisions/0001 section 4)
+    The problem statement asks for real-time field inputs alongside AI/ML and
+    GIS. Official telemetry across the NER is genuinely sparse, so human
+    reports are not a UX nicety -- they are how the data gap actually gets
+    filled. In the 2022 Bethukandi dyke breach an on-site engineer reported it
+    by radio before it appeared in any feed.
+
+    A REPORT IS AN OBSERVATION, NOT A VERDICT
+    Reports are stored exactly as submitted and never overwrite anything.
+    Whatever the fusion layer concludes from them is derived at read time and
+    kept separate, so a wrong or malicious report can be reweighted or
+    excluded later without the original record having been lost.
+
+    `trust_at_submission` freezes the reporter's trust as it stood when the
+    report arrived. Trust changes afterwards; freezing it here is what keeps
+    an old fused result reproducible instead of silently shifting under you.
+    """
+
+    __tablename__ = "field_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Nullable on purpose: a report from outside the corridor snaps to nothing.
+    # It is still stored, flagged, and excluded from fusion -- discarding it
+    # would hide the fact that someone is reporting from an area we do not cover.
+    road_id = Column(Integer, ForeignKey("roads.id"), nullable=True, index=True)
+    snapped_distance_m = Column(Float, nullable=True)
+
+    status = Column(String, nullable=False, index=True)  # clear | slow | blocked
+    note = Column(String, nullable=True)
+    geometry = Column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
+
+    reporter_id = Column(String, ForeignKey("reporters.id"), nullable=False, index=True)
+    trust_at_submission = Column(Float, nullable=False)
+
+    submitted_at = Column(DateTime(timezone=True), nullable=False, index=True)

@@ -24,6 +24,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 4. **`docs/decisions/0004-live-hazard-ingestion.md`** — the live data
    pipeline, what makes it safe to run unattended, and the district rename
    that would otherwise have broken it silently.
+5. **`docs/decisions/0005-field-report-fusion.md`** — the human layer: how a
+   report becomes a belief, how reporter trust moves, and why none of it
+   touches `current_accessibility`.
 
 ## Status
 
@@ -47,14 +50,20 @@ nine hazard types and including per-district road/bridge damage. See
 `docs/decisions/0004-live-hazard-ingestion.md` — it also records that CWC's
 bulletin URL, which `0002` planned around, is dead.
 
-**Not started:** Sentinel-1 flood extent, DEM, field reports (rest of
-Phase 2); demand estimation and logistics optimization (Phase 4);
-natural-language explanation (Phase 6). The web app has a real accessibility
-map and a real scenario workbench; logistics and field-reports pages are
-still scaffold stubs (Phase 7). The accessibility model itself is still the
-rule-based baseline — the ingested hazard data is deliberately not wired
-into `current_accessibility` yet, because a district-level daily count is
-not a per-road live score.
+**Field-report fusion works** (Phase 2, Tier 1): anyone can report a road as
+clear/slow/blocked, reports snap to the nearest segment, and a trust-weighted
+vote produces a live field-reported status per road. No personal data — the
+reporter id is an opaque device-scoped string. See
+`docs/decisions/0005-field-report-fusion.md`.
+
+**Not started:** Sentinel-1 flood extent, DEM (rest of Phase 2); demand
+estimation and logistics optimization (Phase 4); natural-language explanation
+(Phase 6). The logistics page is still a scaffold stub (Phase 7). The
+accessibility model itself is still the rule-based baseline — neither the
+ingested hazard data nor the field reports are wired into
+`current_accessibility`, because a district-level daily count and a crowd
+vote are both different things from a per-road model prediction, and the
+column stays empty until that model exists.
 
 ## Repo layout
 

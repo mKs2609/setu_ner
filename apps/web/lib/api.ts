@@ -140,3 +140,117 @@ export async function simulateScenario(body: SimulateRequest): Promise<ScenarioR
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Field reports (Phase 2, gap-analysis section 4).
+//
+// The reporter id is device-scoped and generated in the browser -- no account,
+// no name, no phone number. People best placed to report a washed-out road are
+// often standing in a disaster zone, and demanding identity to accept that
+// report gets fewer reports and creates a record that could be misused.
+// ---------------------------------------------------------------------------
+
+export type ReportStatus = "clear" | "slow" | "blocked";
+
+export interface FieldReportIn {
+  status: ReportStatus;
+  latitude: number;
+  longitude: number;
+  reporter_id: string;
+  note?: string | null;
+}
+
+export interface FieldReportAck {
+  id: number;
+  road_id: number | null;
+  status: ReportStatus;
+  submitted_at: string;
+  snapped_distance_m: number | null;
+  counted_in_fusion: boolean;
+  reporter_trust_score: number;
+  trust_outcome: "corroborated" | "contradicted" | "no_consensus";
+  note: string | null;
+}
+
+export interface StoredReport {
+  id: number;
+  road_id: number | null;
+  status: ReportStatus;
+  note: string | null;
+  submitted_at: string;
+  snapped_distance_m: number | null;
+  trust_at_submission: number;
+  longitude: number;
+  latitude: number;
+}
+
+export interface RoadReportView {
+  road_id: number;
+  road: {
+    name: string | null;
+    road_class: string | null;
+    district: string | null;
+    is_bridge: boolean;
+    baseline_accessibility: number | null;
+  };
+  field_reported: {
+    status: ReportStatus | null;
+    confidence: number;
+    report_count: number;
+    weight_by_status: Record<string, number>;
+    newest_report_at: string | null;
+    window_hours: number;
+  };
+  reports: StoredReport[];
+  caveats: Record<string, string>;
+}
+
+const REPORTER_KEY = "setuner.reporter_id";
+
+/** A stable, opaque, device-scoped id. Created once and kept in this browser. */
+export function getReporterId(): string {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.localStorage.getItem(REPORTER_KEY);
+    if (existing) return existing;
+    const fresh = `device-${crypto.randomUUID()}`;
+    window.localStorage.setItem(REPORTER_KEY, fresh);
+    return fresh;
+  } catch {
+    // Private mode, or storage blocked. A per-session id still works; it just
+    // means this reporter builds no trust history, which is the right
+    // trade-off versus refusing the report altogether.
+    return `device-ephemeral-${Math.random().toString(36).slice(2, 12)}`;
+  }
+}
+
+export async function submitFieldReport(body: FieldReportIn): Promise<FieldReportAck> {
+  const res = await fetch(`${API_BASE}/api/v1/field-reports`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const j = await res.json();
+      if (j?.detail) detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+    } catch {
+      /* not JSON; keep the status line */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export async function fetchRecentReports(limit = 100): Promise<StoredReport[]> {
+  const res = await fetch(`${API_BASE}/api/v1/field-reports/recent?limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
+  return (await res.json()).reports;
+}
+
+export async function fetchRoadReports(roadId: number): Promise<RoadReportView> {
+  const res = await fetch(`${API_BASE}/api/v1/field-reports/road/${roadId}`);
+  if (!res.ok) throw new Error(`Failed to load road ${roadId}: ${res.status}`);
+  return res.json();
+}
