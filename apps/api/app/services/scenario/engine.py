@@ -77,6 +77,8 @@ class RouteResult:
     node_ids: list[int] = field(default_factory=list)
     bridges_crossed: int = 0
     unreachable_reason: str | None = None
+    # severed | origin_isolated | destination_isolated | both_isolated
+    unreachable_kind: str | None = None
 
     def as_dict(self) -> dict:
         if not self.reachable:
@@ -97,10 +99,27 @@ class RouteResult:
         }
 
 
+def _as_factor_map(degraded, factor: float) -> dict[int, float]:
+    """Accept either a set of road ids at one uniform factor, or a mapping of
+    road id to its own factor.
+
+    Both are needed. A hand-built what-if slows everything it names by the
+    same amount, while conditions derived from live reports grade the penalty
+    by how strong the evidence is -- a road somebody says is blocked deserves
+    a heavier slowdown than one merely near reported damage. Flattening those
+    to a single number would throw the distinction away.
+    """
+    if degraded is None:
+        return {}
+    if isinstance(degraded, dict):
+        return {int(k): float(v) for k, v in degraded.items()}
+    return {int(r): factor for r in degraded}
+
+
 def _resolve_edge(
     alternatives: list[Alternative],
     closed: set[int],
-    degraded: set[int],
+    degraded: dict[int, float],
     factor: float,
 ) -> tuple[Alternative | None, float | None]:
     """Cheapest still-usable road between one node pair, and its cost.
@@ -113,15 +132,13 @@ def _resolve_edge(
     for alt in alternatives:
         if alt.road_id in closed:
             continue
-        w = alt.travel_time_min
-        if alt.road_id in degraded:
-            w *= factor
+        w = alt.travel_time_min * degraded.get(alt.road_id, 1.0)
         if best_w is None or w < best_w:
             best_alt, best_w = alt, w
     return best_alt, best_w
 
 
-def _make_weight(closed: set[int], degraded: set[int], factor: float):
+def _make_weight(closed: set[int], degraded: dict[int, float], factor: float):
     def weight(u: int, v: int, data: dict) -> float | None:
         # networkx reads a None weight as "edge not traversable", which is
         # exactly the semantics we want -- and it means a scenario never
@@ -131,18 +148,90 @@ def _make_weight(closed: set[int], degraded: set[int], factor: float):
     return weight
 
 
+def _has_usable_edge(g, node: int, closed, degraded, factor, *, outbound: bool) -> bool:
+    edges = g.out_edges(node, data=True) if outbound else g.in_edges(node, data=True)
+    for *_ends, data in edges:
+        if _resolve_edge(data["alternatives"], closed, degraded, factor)[1] is not None:
+            return True
+    return False
+
+
+def _diagnose_no_path(g, source, target, closed, degraded, factor) -> dict:
+    """Say *why* there is no route, not just that there isn't one.
+
+    An operator needs to tell these apart. "The corridor is severed somewhere
+    between you and your destination" is a different problem from "the road
+    you are standing on is reported blocked" -- the second is often solved by
+    walking to the next street, and reporting both as a bare "cut off" would
+    overstate the first and hide the second.
+
+    This matters most for conditions derived from live reports: a report
+    lands at somebody's location, which snaps to the road right next to them,
+    so the origin's own access road is exactly the one most likely to be
+    reported blocked.
+    """
+    origin_stuck = not _has_usable_edge(
+        g, source, closed, degraded, factor, outbound=True
+    )
+    destination_stuck = not _has_usable_edge(
+        g, target, closed, degraded, factor, outbound=False
+    )
+
+    if origin_stuck and destination_stuck:
+        return dict(
+            unreachable_kind="both_isolated",
+            unreachable_reason=(
+            "Every road leaving the origin and every road reaching the "
+            "destination is closed under this scenario. Both ends are isolated "
+            "at their own junctions, which is a narrower problem than the "
+            "corridor being severed between them."
+            ),
+        )
+    if origin_stuck:
+        return dict(
+            unreachable_kind="origin_isolated",
+            unreachable_reason=(
+            "Every road leaving the origin's own junction is closed under this "
+            "scenario, so nothing can set out at all. This is a local blockage "
+            "at the starting point, not the corridor being severed -- in "
+            "practice a vehicle would start from an adjacent street."
+            ),
+        )
+    if destination_stuck:
+        return dict(
+            unreachable_kind="destination_isolated",
+            unreachable_reason=(
+            "Every road reaching the destination's own junction is closed "
+            "under this scenario. The corridor itself may still be intact; the "
+            "final approach is not."
+            ),
+        )
+    return dict(
+        unreachable_kind="severed",
+        unreachable_reason=(
+            "No route exists between these points with the requested closures "
+            "applied. The corridor is severed somewhere between origin and "
+            "destination -- not merely blocked at either end."
+        ),
+    )
+
+
 def route(
     cgraph: CorridorGraph,
     source: int,
     target: int,
     *,
     closed: set[int] | None = None,
-    degraded: set[int] | None = None,
+    degraded=None,
     degrade_factor: float = 2.0,
 ) -> RouteResult:
-    """Fastest path between two graph junctions under a set of closures."""
+    """Fastest path between two graph junctions under a set of closures.
+
+    `degraded` may be a set of road ids (all slowed by `degrade_factor`) or a
+    mapping of road id to its own factor.
+    """
     closed = closed or set()
-    degraded = degraded or set()
+    degraded = _as_factor_map(degraded, degrade_factor)
     g = cgraph.graph
 
     if source == target:
@@ -162,11 +251,7 @@ def route(
     except nx.NetworkXNoPath:
         return RouteResult(
             reachable=False,
-            unreachable_reason=(
-                "No route exists between these points with the requested "
-                "closures applied. In corridor terms, the origin and "
-                "destination are severed from each other."
-            ),
+            **_diagnose_no_path(g, source, target, closed, degraded, degrade_factor),
         )
     except nx.NodeNotFound:
         return RouteResult(
@@ -269,10 +354,11 @@ def simulate(
     origin: tuple[float, float, str],
     destination: tuple[float, float, str],
     close_road_ids: set[int],
-    degrade_road_ids: set[int],
+    degrade_road_ids,
     degrade_factor: float,
 ) -> dict:
     """Baseline vs scenario, plus the delta and its causal audit trail."""
+    degrade_map = _as_factor_map(degrade_road_ids, degrade_factor)
     o_lon, o_lat, o_label = origin
     d_lon, d_lat, d_label = destination
     src, src_km = cgraph.snap(o_lon, o_lat)
@@ -284,13 +370,13 @@ def simulate(
         src,
         dst,
         closed=close_road_ids,
-        degraded=degrade_road_ids,
+        degraded=degrade_map,
         degrade_factor=degrade_factor,
     )
 
     baseline_set = set(baseline.road_ids)
     on_route = sorted(baseline_set & close_road_ids)
-    degraded_on_route = sorted(baseline_set & degrade_road_ids)
+    degraded_on_route = sorted(baseline_set & set(degrade_map))
 
     delta: dict = {"severed": not scenario.reachable}
     if baseline.reachable and scenario.reachable:
@@ -311,10 +397,30 @@ def simulate(
     if not baseline.reachable:
         verdict = "No baseline route exists -- check the origin and destination."
     elif not scenario.reachable:
-        verdict = (
-            f"{o_label} is CUT OFF from {d_label} under this scenario. "
-            f"No alternative route exists on the modelled network."
-        )
+        # The headline has to match the diagnosis. Calling a blocked access
+        # road at the origin "the corridor is cut off" would overstate it in
+        # exactly the direction that costs trust.
+        if scenario.unreachable_kind == "origin_isolated":
+            verdict = (
+                f"Nothing can set out from {o_label}: every road leaving its "
+                f"junction is closed under this scenario. This is a local "
+                f"blockage, not the corridor being severed."
+            )
+        elif scenario.unreachable_kind == "destination_isolated":
+            verdict = (
+                f"{d_label} cannot be reached: every road into it is closed "
+                f"under this scenario. The corridor between may still be intact."
+            )
+        elif scenario.unreachable_kind == "both_isolated":
+            verdict = (
+                f"Both {o_label} and {d_label} are isolated at their own "
+                f"junctions under this scenario."
+            )
+        else:
+            verdict = (
+                f"{o_label} is CUT OFF from {d_label} under this scenario. "
+                f"No alternative route exists on the modelled network."
+            )
     elif not on_route and not degraded_on_route:
         verdict = (
             f"No change. None of the {len(close_road_ids)} affected roads lie "
@@ -343,7 +449,7 @@ def simulate(
         "delta": delta,
         "explanation": {
             "roads_closed": len(close_road_ids),
-            "roads_degraded": len(degrade_road_ids),
+            "roads_degraded": len(degrade_map),
             "closed_roads_on_baseline_route": on_route,
             "degraded_roads_on_baseline_route": degraded_on_route,
             "note": (
@@ -366,3 +472,27 @@ def simulate(
             ),
         },
     }
+
+
+def expand_bidirectional_map(
+    cgraph: CorridorGraph, factors: dict[int, float]
+) -> dict[int, float]:
+    """Bidirectional expansion that preserves each road's own factor.
+
+    The set-based version above is fine for closures, where every road gets
+    the same treatment. Degradation is graded, so the reverse carriageway has
+    to inherit the same multiplier rather than a default -- otherwise a road
+    slowed sixfold in one direction is slowed twofold coming back, for no
+    reason anybody could defend.
+    """
+    index = cgraph.road_id_index
+    expanded = dict(factors)
+    for road_id, factor in factors.items():
+        endpoints = index.get(road_id)
+        if endpoints is None:
+            continue
+        u, v = endpoints
+        if cgraph.graph.has_edge(v, u):
+            for alt in cgraph.graph[v][u]["alternatives"]:
+                expanded.setdefault(alt.road_id, factor)
+    return expanded

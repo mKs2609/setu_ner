@@ -112,10 +112,35 @@ def test_closing_the_bridge_forces_the_detour(toy):
 
 
 def test_severance_is_reported_not_raised(toy):
+    """Unreachability is a result, not an exception."""
     r = engine.route(toy, A, D, closed={3, 4})
     assert not r.reachable
     assert r.travel_time_min is None
-    assert "severed" in r.unreachable_reason
+    assert r.unreachable_reason
+
+
+def test_isolated_destination_is_named_as_such(toy):
+    """Closing both roads into D isolates the destination's own junction.
+    Reporting that as "the corridor is severed" would overstate it."""
+    r = engine.route(toy, A, D, closed={3, 4})
+    assert "destination" in r.unreachable_reason
+    assert "final approach" in r.unreachable_reason
+
+
+def test_isolated_origin_is_named_as_such(toy):
+    """Closing every road out of A. This is the case live conditions hit most
+    often: a report lands at somebody's location, so the road it snaps to is
+    the origin's own access road."""
+    r = engine.route(toy, A, D, closed={1, 5, 2})
+    assert "origin" in r.unreachable_reason
+    assert "adjacent street" in r.unreachable_reason
+
+
+def test_a_genuine_mid_corridor_severance_says_so(toy):
+    """Both ends fine, no path between them -- the real severance case."""
+    r = engine.route(toy, A, D, closed={3, 4, 6})
+    assert not r.reachable
+    assert "destination" in r.unreachable_reason or "severed" in r.unreachable_reason
 
 
 def test_degradation_slows_without_severing(toy):
@@ -194,7 +219,11 @@ def test_simulate_reports_severance(toy):
         degrade_factor=2.0,
     )
     assert result["delta"]["severed"] is True
-    assert "CUT OFF" in result["verdict"]
+    # Closing both roads into D isolates the destination's own junction, which
+    # is a narrower claim than the corridor being cut. The verdict has to say
+    # which one it is -- overstating it here is what costs an operator's trust.
+    assert "cannot be reached" in result["verdict"]
+    assert "may still be intact" in result["verdict"]
 
 
 def test_every_response_carries_the_modelled_time_caveat(toy):

@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.routing.graph import get_corridor_graph
 from app.services.routing.landmarks import LANDMARKS, resolve_place
+from app.services.scenario import conditions as live_conditions
 from app.services.scenario import engine
 
 router = APIRouter()
@@ -67,6 +68,15 @@ class ScenarioRequest(BaseModel):
             "Also close the reverse direction of each road. True is right "
             "for a collapsed bridge; set False only for a genuine one-way "
             "closure."
+        ),
+    )
+    start_from: str = Field(
+        "clean",
+        description=(
+            "'clean' routes on an undamaged network -- a pure hypothetical. "
+            "'current_conditions' starts from what is actually reported right "
+            "now (field reports and hazard damage points) and applies your "
+            "closures on top of that."
         ),
     )
     include_geometry: bool = Field(
@@ -161,7 +171,23 @@ def simulate_scenario(request: ScenarioRequest, db: Session = Depends(get_db)):
             )
         close_ids |= set(district_bridges)
 
-    degrade_ids = set(request.degrade_road_ids)
+    # Reported conditions are applied first, so a hand-specified closure lands
+    # on top of the network as it actually stands rather than an imaginary
+    # undamaged one.
+    conditions = None
+    if request.start_from == "current_conditions":
+        conditions = live_conditions.derive(db)
+        close_ids |= conditions.closed_road_ids
+
+    # A factor map, not a set: conditions derived from live reports grade the
+    # slowdown by how strong the evidence is, and collapsing that to one number
+    # would discard the distinction.
+    degrade_ids: dict[int, float] = {
+        rid: request.degrade_factor for rid in request.degrade_road_ids
+    }
+    if conditions is not None:
+        degrade_ids.update(conditions.degraded)
+
     if request.degrade_bridges_in_district:
         district_bridges = engine.select_bridge_ids(
             db, request.degrade_bridges_in_district
@@ -175,15 +201,16 @@ def simulate_scenario(request: ScenarioRequest, db: Session = Depends(get_db)):
                     f"data: Cachar, Hailakandi, Karimganj, Dima Hasao."
                 ),
             )
-        degrade_ids |= set(district_bridges)
+        for rid in district_bridges:
+            degrade_ids.setdefault(rid, request.degrade_factor)
 
     if request.bidirectional:
         close_ids = engine.expand_bidirectional(cgraph, close_ids)
-        degrade_ids = engine.expand_bidirectional(cgraph, degrade_ids)
+        degrade_ids = engine.expand_bidirectional_map(cgraph, degrade_ids)
 
     # A road cannot be both severed and merely slowed; closure is the
     # stronger claim, so it wins.
-    degrade_ids -= close_ids
+    degrade_ids = {k: v for k, v in degrade_ids.items() if k not in close_ids}
 
     result = engine.simulate(
         db,
@@ -195,6 +222,15 @@ def simulate_scenario(request: ScenarioRequest, db: Session = Depends(get_db)):
         degrade_road_ids=degrade_ids,
         degrade_factor=request.degrade_factor,
     )
+    result["start_from"] = request.start_from
+    if conditions is not None:
+        result["starting_conditions"] = conditions.as_dict()
+        result["caveats"]["baseline_is_still_clean"] = (
+            "The baseline route is the undamaged network, so the delta shown "
+            "includes the effect of current reported conditions as well as any "
+            "closures you specified. starting_conditions lists what was already "
+            "applied before your scenario."
+        )
 
     if request.include_geometry:
         baseline = engine.route(cgraph, *_endpoints(cgraph, origin, destination))
@@ -221,3 +257,15 @@ def _endpoints(cgraph, origin, destination) -> tuple[int, int]:
     src, _ = cgraph.snap(origin[0], origin[1])
     dst, _ = cgraph.snap(destination[0], destination[1])
     return src, dst
+
+
+@router.get("/current-conditions")
+def current_conditions(db: Session = Depends(get_db)):
+    """What the live layers currently say about the network.
+
+    Exposed on its own, not just inside a simulation, because "which roads are
+    reported bad right now, and who says so" is a question worth asking
+    directly -- and because it makes the basis of a current-conditions
+    scenario inspectable rather than something the engine does invisibly.
+    """
+    return live_conditions.derive(db).as_dict()

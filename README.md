@@ -30,6 +30,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 6. **`docs/decisions/0006-corroboration.md`** — where the two live data
    sources meet: why independent evidence may support a report but never
    count against one.
+7. **`docs/decisions/0007-current-conditions-routing.md`** — routing from what
+   is actually reported now, why Phase 3 is still blocked, and the difference
+   between a severed corridor and a blocked driveway.
 
 ## Status
 
@@ -60,6 +63,11 @@ reporter id is an opaque device-scoped string. Reports are also checked
 against the ingested DRIMS hazard data, so reporter trust no longer rests on
 peer agreement alone, which a colluding group could manufacture. See
 `docs/decisions/0005-field-report-fusion.md` and `0006-corroboration.md`.
+
+**The live layers now reach the router** (`0007`): a scenario can start from
+`current_conditions` instead of a clean graph, deriving closures and
+slowdowns from field reports and hazard damage points, graded by how strong
+the evidence is. District-level data never closes a road.
 
 **Not started:** Sentinel-1 flood extent, DEM (rest of Phase 2); demand
 estimation and logistics optimization (Phase 4); natural-language explanation
