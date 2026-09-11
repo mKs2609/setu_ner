@@ -208,3 +208,17 @@ def test_clean_and_current_conditions_are_different_modes():
     assert live_run["start_from"] == "current_conditions"
     assert "starting_conditions" in live_run
     assert "baseline_is_still_clean" in live_run["caveats"]
+
+
+def test_unreachable_kind_is_exposed_to_clients(toy):
+    """A UI cannot label the outcome honestly if the API only tells it that
+    there was no route. The chip and the prose have to agree."""
+    r = engine.route(toy, A, D, closed={1, 2})
+    payload = r.as_dict()
+    assert payload["reachable"] is False
+    assert payload["kind"] == "origin_isolated"
+    assert "origin" in payload["reason"]
+
+
+def test_a_reachable_route_has_no_unreachable_kind(toy):
+    assert "kind" not in engine.route(toy, A, D).as_dict()

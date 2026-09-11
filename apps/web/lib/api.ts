@@ -63,6 +63,7 @@ export interface Landmark {
 
 export interface RouteStats {
   reachable: boolean;
+  kind?: "severed" | "origin_isolated" | "destination_isolated" | "both_isolated" | null;
   travel_time_min: number | null;
   distance_km: number | null;
   segment_count: number;
@@ -78,8 +79,28 @@ export interface ScenarioDelta {
   detour_taken?: boolean;
 }
 
+export interface AffectedRoad {
+  road_id: number;
+  effect: "closed" | "degraded";
+  travel_time_multiplier: number | null;
+  reason: string;
+  source: string;
+  confidence: number | null;
+}
+
+export interface StartingConditions {
+  closed_count: number;
+  degraded_count: number;
+  roads_with_recent_reports: number;
+  report_window_hours: number;
+  affected_roads: AffectedRoad[];
+  caveats: Record<string, string>;
+}
+
 export interface ScenarioResult {
   scenario: string;
+  start_from?: "clean" | "current_conditions";
+  starting_conditions?: StartingConditions;
   origin: { place: string; snapped_km_away: number };
   destination: { place: string; snapped_km_away: number };
   verdict: string;
@@ -108,6 +129,7 @@ export interface SimulateRequest {
   label: string;
   origin: string;
   destination: string;
+  start_from?: "clean" | "current_conditions";
   close_bridges_in_district?: string | null;
   degrade_bridges_in_district?: string | null;
   degrade_factor?: number;
@@ -273,5 +295,12 @@ export async function fetchRecentReports(limit = 100): Promise<StoredReport[]> {
 export async function fetchRoadReports(roadId: number): Promise<RoadReportView> {
   const res = await fetch(`${API_BASE}/api/v1/field-reports/road/${roadId}`);
   if (!res.ok) throw new Error(`Failed to load road ${roadId}: ${res.status}`);
+  return res.json();
+}
+
+/** What the live layers currently say about the network, on its own. */
+export async function fetchCurrentConditions(): Promise<StartingConditions> {
+  const res = await fetch(`${API_BASE}/api/v1/scenarios/current-conditions`);
+  if (!res.ok) throw new Error(`Failed to load current conditions: ${res.status}`);
   return res.json();
 }

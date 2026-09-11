@@ -85,6 +85,11 @@ class RouteResult:
             return {
                 "reachable": False,
                 "reason": self.unreachable_reason,
+                # Exposed so a UI can label the outcome as precisely as the
+                # prose does. A chip reading "CUT OFF" above a sentence saying
+                # "this is a local blockage" is the same overstatement the
+                # diagnosis exists to prevent, just moved up the screen.
+                "kind": self.unreachable_kind,
                 "travel_time_min": None,
                 "distance_km": None,
                 "segment_count": 0,

@@ -33,6 +33,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 7. **`docs/decisions/0007-current-conditions-routing.md`** — routing from what
    is actually reported now, why Phase 3 is still blocked, and the difference
    between a severed corridor and a blocked driveway.
+8. **`docs/decisions/0008-scheduled-ingestion.md`** — keeping the data
+   actually live, why catch-up beats "fetch yesterday", and how to register
+   the schedule.
 
 ## Status
 
@@ -63,6 +66,11 @@ reporter id is an opaque device-scoped string. Reports are also checked
 against the ingested DRIMS hazard data, so reporter trust no longer rests on
 peer agreement alone, which a colluding group could manufacture. See
 `docs/decisions/0005-field-report-fusion.md` and `0006-corroboration.md`.
+
+**Ingestion is scheduled** (`0008`): a daily catch-up run asks what days are
+missing rather than blindly fetching yesterday, so a machine that was off for
+a week recovers that week. Setup for Windows, cron and Docker is in
+`scripts/scheduling/`. History now spans 34 days with no recent gaps.
 
 **The live layers now reach the router** (`0007`): a scenario can start from
 `current_conditions` instead of a clean graph, deriving closures and

@@ -6,6 +6,7 @@ The ingestion entry point.
     python -m app.services.ingestion.run --date 2026-09-07
     python -m app.services.ingestion.run --hazard landslide
     python -m app.services.ingestion.run --backfill 7    # last 7 days, politely
+    python -m app.services.ingestion.run --catch-up      # whatever days we still owe
 
 WHY YESTERDAY BY DEFAULT
 The report is compiled from what districts submit during the day, so today's
@@ -22,6 +23,11 @@ every alerting rule cry wolf for half the year.
 SAFE TO SCHEDULE
 Runs are idempotent (see store.py), so overlapping or repeated runs cannot
 double-count, and a failure never removes previously ingested data.
+
+--catch-up is the mode a scheduler should use. It asks what days are missing
+rather than blindly fetching yesterday, so a missed week is recovered instead
+of becoming a permanent hole in the history. See schedule.py for which days
+get retried and which are left settled.
 """
 
 from __future__ import annotations
@@ -30,8 +36,12 @@ import argparse
 import sys
 from datetime import date, timedelta
 
+from sqlalchemy import select
+
+from app.db.models import IngestRun
 from app.db.session import SessionLocal
 from app.services.ingestion.http_client import FetchError, PoliteClient
+from app.services.ingestion.schedule import plan_catch_up, summarise_plan
 from app.services.ingestion.sources import drims
 from app.services.ingestion.store import finish_run, start_run, store_observations
 
@@ -134,6 +144,29 @@ def ingest_one_day(
     }
 
 
+# Ranked worst to best. When a day has several runs, the best outcome wins:
+# a success after two failures means we have that day.
+_STATUS_RANK = {"failed": 0, "running": 1, "no_data": 2, "success": 3}
+
+
+def existing_run_status(db, source: str, hazard: str) -> dict[date, str]:
+    """Best outcome recorded per target date, for one source and hazard."""
+    rows = db.execute(
+        select(IngestRun.target_date, IngestRun.status).where(
+            IngestRun.source == source,
+            IngestRun.hazard_type == hazard,
+            IngestRun.target_date.isnot(None),
+        )
+    ).all()
+
+    best: dict[date, str] = {}
+    for target_date, status in rows:
+        current = best.get(target_date)
+        if current is None or _STATUS_RANK.get(status, -1) > _STATUS_RANK.get(current, -1):
+            best[target_date] = status
+    return best
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Ingest DRIMS Assam hazard reports.")
     parser.add_argument("--hazard", default="flood", choices=sorted(drims.HAZARD_TYPES))
@@ -144,18 +177,31 @@ def main(argv: list[str] | None = None) -> int:
         default=1,
         help="How many consecutive days to fetch, walking backwards.",
     )
+    parser.add_argument(
+        "--catch-up",
+        action="store_true",
+        help=(
+            "Fetch whatever days are still missing rather than a fixed range. "
+            "This is the mode a scheduler should use."
+        ),
+    )
     args = parser.parse_args(argv)
-
-    if args.date:
-        start = date.fromisoformat(args.date)
-    else:
-        start = date.today() - timedelta(days=1)
 
     client = PoliteClient()
     results = []
     with SessionLocal() as db:
-        for offset in range(args.backfill):
-            day = start - timedelta(days=offset)
+        if args.catch_up:
+            existing = existing_run_status(db, drims.SOURCE_NAME, args.hazard)
+            days, truncated = plan_catch_up(existing, today=date.today())
+            print(summarise_plan(days, truncated, existing))
+        elif args.date:
+            start = date.fromisoformat(args.date)
+            days = [start - timedelta(days=o) for o in range(args.backfill)]
+        else:
+            start = date.today() - timedelta(days=1)
+            days = [start - timedelta(days=o) for o in range(args.backfill)]
+
+        for day in days:
             result = ingest_one_day(db, client, hazard=args.hazard, report_date=day)
             results.append(result)
             print(
@@ -169,6 +215,10 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     failed = [r for r in results if r["status"] == "failed"]
+    if not results:
+        print("Nothing to do.")
+    # A non-zero exit is what a scheduler notices, so it is reserved for real
+    # failures. A day with no report published is a normal outcome and exits 0.
     return 1 if failed else 0
 
 

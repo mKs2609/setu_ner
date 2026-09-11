@@ -26,6 +26,7 @@ import type { Landmark, RouteStats, ScenarioResult } from "@/lib/api";
 const DISTRICTS = ["Cachar", "Hailakandi", "Karimganj", "Dima Hasao"] as const;
 
 export type Effect = "close" | "degrade";
+export type StartFrom = "clean" | "current_conditions";
 
 export interface ScenarioForm {
   origin: string;
@@ -33,6 +34,7 @@ export interface ScenarioForm {
   district: string;
   effect: Effect;
   degradeFactor: number;
+  startFrom: StartFrom;
 }
 
 interface Preset {
@@ -45,27 +47,46 @@ export const PRESETS: Preset[] = [
   {
     name: "Cachar bridges down",
     blurb: "Severs the corridor — the headline finding",
-    form: { origin: "silchar", destination: "haflong", district: "Cachar", effect: "close", degradeFactor: 3 },
+    form: { origin: "silchar", destination: "haflong", district: "Cachar", effect: "close", degradeFactor: 3, startFrom: "clean" },
   },
   {
     name: "Karimganj bridges down",
     blurb: "Big closure, zero impact on this route",
-    form: { origin: "silchar", destination: "haflong", district: "Karimganj", effect: "close", degradeFactor: 3 },
+    form: { origin: "silchar", destination: "haflong", district: "Karimganj", effect: "close", degradeFactor: 3, startFrom: "clean" },
   },
   {
     name: "Cachar bridges flooded",
     blurb: "Passable but 3x slower, not severed",
-    form: { origin: "silchar", destination: "haflong", district: "Cachar", effect: "degrade", degradeFactor: 3 },
+    form: { origin: "silchar", destination: "haflong", district: "Cachar", effect: "degrade", degradeFactor: 3, startFrom: "clean" },
   },
   {
     name: "Silchar to Kalain, 2025 route",
     blurb: "The corridor's real 2025 failure point",
-    form: { origin: "silchar", destination: "kalain", district: "Cachar", effect: "close", degradeFactor: 3 },
+    form: { origin: "silchar", destination: "kalain", district: "Cachar", effect: "close", degradeFactor: 3, startFrom: "clean" },
   },
 ];
 
+// Labels for the four ways a route can fail. "Cut off" is reserved for a
+// genuine severance -- using it for a blocked road at the origin would
+// overstate the situation in exactly the direction that costs trust, which is
+// the whole reason the engine distinguishes them.
+const UNREACHABLE_LABELS: Record<string, string> = {
+  severed: "Cut off",
+  origin_isolated: "Cannot set out",
+  destination_isolated: "Cannot arrive",
+  both_isolated: "Both ends isolated",
+};
+
 function verdictTone(result: ScenarioResult) {
-  if (result.delta.severed) return { ring: "ring-red-200", bg: "bg-red-50", text: "text-red-800", label: "Cut off" };
+  if (result.delta.severed) {
+    const kind = result.scenario_result.kind ?? "severed";
+    return {
+      ring: "ring-red-200",
+      bg: "bg-red-50",
+      text: "text-red-800",
+      label: UNREACHABLE_LABELS[kind] ?? "No route",
+    };
+  }
   if (!result.delta.added_minutes) return { ring: "ring-gray-200", bg: "bg-gray-50", text: "text-gray-700", label: "No change" };
   return { ring: "ring-amber-200", bg: "bg-amber-50", text: "text-amber-900", label: "Delayed" };
 }
@@ -149,6 +170,42 @@ export default function ScenarioPanel({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ---------------- starting network ---------------- */}
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-gray-700">
+          Start from
+        </label>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => set("startFrom", "clean")}
+            className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
+              form.startFrom === "clean"
+                ? "border-teal-300 bg-teal-50 font-medium text-teal-900"
+                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Clean network
+          </button>
+          <button
+            type="button"
+            onClick={() => set("startFrom", "current_conditions")}
+            className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
+              form.startFrom === "current_conditions"
+                ? "border-teal-300 bg-teal-50 font-medium text-teal-900"
+                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Conditions now
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-gray-500">
+          {form.startFrom === "clean"
+            ? "A pure hypothetical on an undamaged network."
+            : "Applies what is actually reported right now — field reports and hazard damage points — before your closures."}
+        </p>
       </div>
 
       {/* ---------------- route ---------------- */}
@@ -286,6 +343,44 @@ export default function ScenarioPanel({
             <RouteColumn title="Baseline" stats={result.baseline} accent="#1d4ed8" />
             <RouteColumn title="Scenario" stats={result.scenario_result} accent="#d97706" />
           </div>
+
+          {result.starting_conditions && (
+            <div className="rounded-md border border-teal-200 bg-teal-50/60 p-3 text-xs">
+              <div className="mb-1 font-semibold text-teal-900">
+                Already applied before your scenario
+              </div>
+              {result.starting_conditions.affected_roads.length === 0 ? (
+                <p className="leading-snug text-teal-900">
+                  Nothing is currently reported on the network, so this ran on a clean
+                  graph anyway.
+                </p>
+              ) : (
+                <>
+                  <p className="leading-snug text-teal-900">
+                    <b>{result.starting_conditions.closed_count}</b> road
+                    {result.starting_conditions.closed_count === 1 ? "" : "s"} closed and{" "}
+                    <b>{result.starting_conditions.degraded_count}</b> slowed, from{" "}
+                    {result.starting_conditions.roads_with_recent_reports} road
+                    {result.starting_conditions.roads_with_recent_reports === 1 ? "" : "s"}{" "}
+                    reported in the last {result.starting_conditions.report_window_hours} h.
+                  </p>
+                  <ul className="mt-1.5 space-y-1">
+                    {result.starting_conditions.affected_roads.slice(0, 5).map((r) => (
+                      <li key={`${r.road_id}-${r.effect}`} className="leading-snug text-teal-900">
+                        • Road {r.road_id} —{" "}
+                        {r.effect === "closed" ? "closed" : `slowed ${r.travel_time_multiplier}x`}:{" "}
+                        {r.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <p className="mt-1.5 text-[11px] leading-snug text-teal-800/80">
+                Reported conditions, not a forecast. Silence about a road means nobody
+                has reported it, not that it is known to be open.
+              </p>
+            </div>
+          )}
 
           <div className="rounded-md border border-gray-200 bg-white p-3 text-xs">
             <div className="mb-1 font-semibold text-gray-700">Why</div>

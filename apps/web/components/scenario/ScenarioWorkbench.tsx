@@ -50,12 +50,15 @@ export default function ScenarioWorkbench() {
     const closing = form.effect === "close";
     try {
       const res = await simulateScenario({
-        label: `${closing ? "Bridges down" : "Bridges flooded"} in ${form.district}`,
+        label:
+          `${closing ? "Bridges down" : "Bridges flooded"} in ${form.district}` +
+          (form.startFrom === "current_conditions" ? ", on top of conditions now" : ""),
         origin: form.origin,
         destination: form.destination,
         close_bridges_in_district: closing ? form.district : null,
         degrade_bridges_in_district: closing ? null : form.district,
         degrade_factor: form.degradeFactor,
+        start_from: form.startFrom,
         include_geometry: true,
       });
       setResult(res);
