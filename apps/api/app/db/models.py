@@ -57,6 +57,17 @@ class Road(Base):
     hist_population_affected_2025 = Column(Integer, nullable=True)
     hist_flood_deaths_2025 = Column(Integer, nullable=True)
 
+    # from geo/dem/sample_road_elevation.py
+    #
+    # Terrain is the missing half of why a road floods. Two roads with the
+    # same district flood severity are not equally at risk if one sits on a
+    # ridge and the other in the floodplain -- and the corridor spans both,
+    # from the Barak valley floor around 20 m to the Dima Hasao hills above
+    # 700 m. These columns are what lets a model say so.
+    elevation_m = Column(Float, nullable=True, index=True)
+    slope_pct = Column(Float, nullable=True)
+    elevation_source = Column(String, nullable=True)
+
     # from compute_baseline_accessibility.py
     baseline_accessibility = Column(Float, nullable=True, index=True)
     baseline_accessibility_basis = Column(String, nullable=True)
@@ -243,3 +254,55 @@ class FieldReport(Base):
     trust_at_submission = Column(Float, nullable=False)
 
     submitted_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class SatelliteAcquisition(Base):
+    """
+    A radar pass that actually covered the corridor.
+
+    WHY THIS EXISTS AND FLOOD EXTENT DOES NOT
+    Phase 2 wanted Sentinel-1 flood-extent polygons. Two things stand in the
+    way, and neither is solved by writing more code here:
+
+      Download needs credentials. The Copernicus catalogue answers search
+      queries anonymously -- that is how these rows get written -- but asking
+      for the scene itself returns 401 without a registered account.
+
+      Turning a 1.7 GB GRD scene into flood polygons needs calibration,
+      speckle filtering, terrain correction and water thresholding. That is a
+      SAR processing pipeline, and `0001` section 1 already concluded the
+      bottleneck there is expertise rather than access, and said to keep it
+      optional rather than let it block the vertical slice.
+
+    Producing polygons anyway, from a rushed threshold on an unprocessed
+    scene, would put flood boundaries on a map that nobody could defend. So
+    this table records what it can honestly record: when radar looked, what
+    it captured, and therefore how stale the *potential* evidence is.
+
+    That is genuinely useful on its own. An operator asking "could anything
+    have confirmed this report?" gets a real answer, and the observed cadence
+    says when the next chance arrives. It is also the discovery half of the
+    pipeline, so adding download and processing later is an extension rather
+    than a rewrite.
+    """
+
+    __tablename__ = "satellite_acquisitions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Copernicus product id -- stable, and what makes re-fetching idempotent.
+    product_id = Column(String, nullable=False, unique=True, index=True)
+    name = Column(String, nullable=False)
+
+    mission = Column(String, nullable=False, index=True)  # SENTINEL-1
+    product_type = Column(String, nullable=True, index=True)  # IW_GRDH_1S, SLC, RAW
+    acquired_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+    size_bytes = Column(BigInteger, nullable=True)
+    online = Column(Boolean, nullable=True)
+
+    footprint = Column(Geometry(geometry_type="POLYGON", srid=4326), nullable=True)
+
+    source = Column(String, nullable=False)
+    source_url = Column(String, nullable=False)
+    fetched_at = Column(DateTime(timezone=True), nullable=False, index=True)

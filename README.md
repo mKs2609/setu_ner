@@ -36,6 +36,8 @@ scenarios — starting with floods, architected to extend to other hazards.
 8. **`docs/decisions/0008-scheduled-ingestion.md`** — keeping the data
    actually live, why catch-up beats "fetch yesterday", and how to register
    the schedule.
+9. **`docs/decisions/0009-terrain-and-satellite-coverage.md`** — terrain per
+   road, and an honest account of why Sentinel-1 flood extent is not built.
 
 ## Status
 
@@ -77,7 +79,14 @@ a week recovers that week. Setup for Windows, cron and Docker is in
 slowdowns from field reports and hazard damage points, graded by how strong
 the evidence is. District-level data never closes a road.
 
-**Not started:** Sentinel-1 flood extent, DEM (rest of Phase 2); demand
+**Terrain is in** (`0009`): elevation and gradient sampled from the Copernicus
+DEM for 110,260 of 110,266 roads — the first genuinely per-road feature the
+project has. Sentinel-1 **coverage** is tracked too, but **flood extent is
+not built**: download needs Copernicus credentials and deriving polygons
+needs a real SAR pipeline, so Phase 2 is not complete and is not claimed as
+complete.
+
+**Not started:** Sentinel-1 flood extent (rest of Phase 2); demand
 estimation and logistics optimization (Phase 4); natural-language explanation
 (Phase 6). The logistics page is still a scaffold stub (Phase 7). The
 accessibility model itself is still the rule-based baseline — neither the

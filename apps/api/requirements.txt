@@ -11,7 +11,10 @@ psycopg2-binary==2.9.12
 numpy==2.5.3
 geopandas==1.0.1
 shapely==2.1.2
-# rasterio==1.3.11
+# Terrain sampling reads Copernicus DEM cloud-optimised GeoTIFFs over
+# HTTP range requests, so no 288 MB of tiles has to be downloaded.
+# See geo/dem/sample_road_elevation.py.
+rasterio==1.5.1
 networkx==3.3
 ortools==9.15.6755
 scikit-learn==1.7.2

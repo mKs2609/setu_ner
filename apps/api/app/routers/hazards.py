@@ -25,7 +25,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import HazardObservation, IngestRun
+from app.db.models import HazardObservation, IngestRun, SatelliteAcquisition
 from app.db.session import get_db
 
 router = APIRouter()
@@ -176,4 +176,88 @@ def list_hazards(
             "source printed. They differ where Assam has renamed a district -- "
             "the source says Sribhumi, the road graph still says Karimganj."
         ),
+    }
+
+
+@router.get("/satellite-coverage")
+def satellite_coverage(db: Session = Depends(get_db)):
+    """When radar last looked at the corridor, and how often it does.
+
+    WHY THIS IS COVERAGE AND NOT FLOOD EXTENT
+    Phase 2 wanted Sentinel-1 flood polygons. Download needs a Copernicus
+    account, and turning a 1.7 GB scene into flood boundaries needs a real
+    SAR processing pipeline -- see services/ingestion/sources/copernicus.py.
+    Producing polygons from a rushed threshold would put flood boundaries on
+    a map that nobody could defend, so this reports what can be reported
+    honestly.
+
+    It still answers a real question. "Could anything independent have
+    confirmed this report?" has a genuine answer, and if the last pass was
+    nine days ago that answer is no, whatever a flood pipeline might
+    eventually add.
+
+    The cadence is measured from passes we actually recorded, not predicted
+    from orbital elements -- we cannot do the latter, and saying so is better
+    than implying a forecast.
+    """
+    rows = db.execute(
+        select(SatelliteAcquisition)
+        .order_by(SatelliteAcquisition.acquired_at.desc())
+        .limit(60)
+    ).scalars().all()
+
+    if not rows:
+        return {
+            "passes_recorded": 0,
+            "note": (
+                "No coverage recorded yet. Run "
+                "`python -m app.services.ingestion.satellite` to populate it."
+            ),
+        }
+
+    # Several products share one pass (different processing baselines), so
+    # distinct acquisition times are what "how often does radar look" means.
+    times = sorted({r.acquired_at for r in rows}, reverse=True)
+    newest = times[0]
+    age_h, status = _age_status(newest)
+
+    gaps = [
+        (times[i] - times[i + 1]).total_seconds() / 86400 for i in range(len(times) - 1)
+    ]
+    gaps = [round(g, 1) for g in gaps if g > 0.1]
+
+    return {
+        "passes_recorded": len(times),
+        "products_recorded": len(rows),
+        "latest_pass_at": newest,
+        "hours_since_last_pass": age_h,
+        "freshness": status,
+        "observed_revisit_days": gaps[:10],
+        "typical_revisit_days": round(sum(gaps) / len(gaps), 1) if gaps else None,
+        "recent_passes": [
+            {
+                "name": r.name,
+                "product_type": r.product_type,
+                "acquired_at": r.acquired_at,
+                "size_gb": round(r.size_bytes / 1e9, 2) if r.size_bytes else None,
+            }
+            for r in rows[:10]
+        ],
+        "caveats": {
+            "coverage_not_flood_extent": (
+                "These are radar acquisitions that covered the corridor, not "
+                "flood maps. Nothing here says where water is -- only that a "
+                "satellite was overhead and a scene exists."
+            ),
+            "cadence_is_observed": (
+                "Revisit days are measured from the passes actually recorded, "
+                "not predicted from orbital elements. A gap in our records "
+                "looks the same as a gap in coverage."
+            ),
+            "why_not_flood_extent": (
+                "Scene download needs a Copernicus account, and deriving flood "
+                "extent needs calibration, speckle filtering, terrain "
+                "correction and thresholding. See docs/decisions/0009."
+            ),
+        },
     }
