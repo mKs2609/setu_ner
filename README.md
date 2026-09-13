@@ -38,6 +38,9 @@ scenarios — starting with floods, architected to extend to other hazards.
    the schedule.
 9. **`docs/decisions/0009-terrain-and-satellite-coverage.md`** — terrain per
    road, and an honest account of why Sentinel-1 flood extent is not built.
+10. **`docs/decisions/0010-accessibility-model.md`** — the Phase 3 model: what
+    it predicts and why, its results against persistence, and why the
+    baseline is what is served.
 
 ## Status
 
@@ -51,9 +54,17 @@ interactive MapLibre map, and the **scenario engine** — close or flood a
 set of roads and get the routing consequence, with the causal trail
 (see `docs/decisions/0003-scenario-engine.md`).
 
-**Deliberately minimal:** the accessibility score is a transparent
-rule-based baseline (district severity × bridge factor), built to be the
-yardstick a future ML model has to beat. That model does not exist yet.
+**The accessibility model exists** (Phase 3, `0010`): trained on 312 daily
+DRIMS reports across 35 Assam districts and two monsoons, it forecasts
+whether a district is flood-affected 1 and 3 days ahead, and
+`current_accessibility` is now populated for 71,520 corridor roads — each
+value with its model version and as-of date. It is judged against
+persistence ("tomorrow looks like today"), and **persistence won validation,
+so persistence is what is served**; logistic regression ranks new flood
+onsets better (AUC 0.72 vs 0.50) and gets a fair re-selection after this
+season. The per-road spread comes from a stated terrain prior, not a fitted
+one. The model has no rainfall input: every free source tried disallows
+automated access.
 
 **Live hazard ingestion works** (Phase 2): the DRIMS Assam daily report is
 fetched, parsed and stored with provenance and staleness tracking, covering
@@ -72,7 +83,7 @@ peer agreement alone, which a colluding group could manufacture. See
 **Ingestion is scheduled** (`0008`): a daily catch-up run asks what days are
 missing rather than blindly fetching yesterday, so a machine that was off for
 a week recovers that week. Setup for Windows, cron and Docker is in
-`scripts/scheduling/`. History now spans 34 days with no recent gaps.
+`scripts/scheduling/`. History now spans 312 report days from 1 May 2025.
 
 **The live layers now reach the router** (`0007`): a scenario can start from
 `current_conditions` instead of a clean graph, deriving closures and
@@ -88,12 +99,9 @@ complete.
 
 **Not started:** Sentinel-1 flood extent (rest of Phase 2); demand
 estimation and logistics optimization (Phase 4); natural-language explanation
-(Phase 6). The logistics page is still a scaffold stub (Phase 7). The
-accessibility model itself is still the rule-based baseline — neither the
-ingested hazard data nor the field reports are wired into
-`current_accessibility`, because a district-level daily count and a crowd
-vote are both different things from a per-road model prediction, and the
-column stays empty until that model exists.
+(Phase 6). The logistics page is still a scaffold stub (Phase 7). Field
+reports still never write `current_accessibility` — a crowd vote is not a
+model prediction, and they stay published separately.
 
 ## Repo layout
 

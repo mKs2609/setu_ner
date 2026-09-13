@@ -14,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      {/* Explicit light ground: every screen is designed on white, and a
+          browser in dark mode otherwise paints dark behind grey text. */}
+      <body className="bg-white text-gray-900">{children}</body>
     </html>
   );
 }

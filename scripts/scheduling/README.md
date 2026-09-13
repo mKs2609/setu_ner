@@ -9,6 +9,12 @@ rather than blindly fetching yesterday. A machine that was off for a week
 recovers that week on its next run instead of leaving a permanent hole. See
 `app/services/ingestion/schedule.py` for which days get retried.
 
+After ingesting, the same run matches new damage reports to roads and
+re-scores `current_accessibility` from the newest report (`docs/decisions/0010`).
+The scorer refuses a report more than three days old and exits non-zero, so
+a portal outage shows up as a failed run instead of a map quietly showing
+last week's forecast as today's.
+
 ## Windows (this machine)
 
 Register the task once, as the user who owns the database:

@@ -71,6 +71,14 @@ def roads_geojson(
                 "is_bridge": road.is_bridge,
                 "district": road.district,
                 "baseline_accessibility": road.baseline_accessibility,
+                # Phase 3. Null when unscored; the as-of date travels with it so
+                # a map can refuse to colour a stale value as current.
+                "current_accessibility": road.current_accessibility,
+                "hazard_exposure": road.hazard_exposure,
+                "current_accessibility_as_of": (
+                    road.current_accessibility_as_of.isoformat()
+                    if road.current_accessibility_as_of else None
+                ),
             },
         })
 

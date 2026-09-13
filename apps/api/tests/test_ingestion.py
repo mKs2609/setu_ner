@@ -201,6 +201,21 @@ def test_north_cachar_hills_maps_to_dima_hasao():
     assert normalise_district("North Cachar Hills") == "Dima Hasao"
 
 
+def test_district_names_broken_mid_word_by_the_pdf_still_map():
+    """Every one of these was found stored with district NULL, which made
+    those corridor rows invisible to routing, corroboration and the model."""
+    assert normalise_district("Cacha r") == "Cachar"
+    assert normalise_district("Hailakand i") == "Hailakandi"
+    assert normalise_district("Hailakan di") == "Hailakandi"
+    assert normalise_district("Sribhu mi") == "Karimganj"
+    assert normalise_district("Dima- Hasao") == "Dima Hasao"
+
+
+def test_letter_squashing_does_not_invent_a_match():
+    assert normalise_district("Cachar West") is None
+    assert normalise_district("hemaji") is None
+
+
 def test_unknown_district_is_none_not_a_guess():
     assert normalise_district("Nagaon") is None
     assert normalise_district("") is None

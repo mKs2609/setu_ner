@@ -7,8 +7,9 @@ exactly what build_road_graph.py, assign_district_hazard_context.py, and
 compute_baseline_accessibility.py actually output today.
 
 current_accessibility, predicted_accessibility, hazard_exposure, and
-confidence stay nullable and unpopulated -- those are for live/forecast
-data (Phase 3+), genuinely different from the historical baseline columns
+confidence are for live/forecast data, written only by the Phase 3 scoring
+job (docs/decisions/0010) and always with a model version and as-of date --
+genuinely different from the historical baseline columns
 here. Keeping them separate columns, not overloading baseline_accessibility
 to mean two different things, is deliberate (see
 docs/decisions/0001-gap-analysis-and-enhancements.md section 2.3 on why
@@ -28,6 +29,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import declarative_base
 
@@ -73,11 +75,18 @@ class Road(Base):
     baseline_accessibility_basis = Column(String, nullable=True)
     baseline_accessibility_confidence = Column(String, nullable=True)
 
-    # reserved for Phase 3+ (live/forecast) -- intentionally empty for now
+    # from app/services/model/score.py (Phase 3 -- see docs/decisions/0010)
+    #
+    # Written ONLY by the scoring job, and never without the two provenance
+    # columns below. A value with no model version and no as-of date is
+    # indistinguishable from a guess, so the pair travels with it or nothing
+    # is written.
     current_accessibility = Column(Float, nullable=True)
-    predicted_accessibility = Column(String, nullable=True)  # will hold a forecast vector, not a scalar -- see gap-analysis 2.2
-    hazard_exposure = Column(Float, nullable=True)
+    predicted_accessibility = Column(String, nullable=True)  # JSON forecast vector by horizon -- see gap-analysis 2.2
+    hazard_exposure = Column(Float, nullable=True)            # terrain exposure prior, 0.1-1.0
     confidence = Column(String, nullable=True)
+    accessibility_model_version = Column(String, nullable=True)
+    current_accessibility_as_of = Column(Date, nullable=True)
     scenario_state = Column(String, nullable=True, default="baseline")
 
     geometry = Column(Geometry(geometry_type="LINESTRING", srid=4326), nullable=False)
@@ -306,3 +315,65 @@ class SatelliteAcquisition(Base):
     source = Column(String, nullable=False)
     source_url = Column(String, nullable=False)
     fetched_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class DistrictFloodForecast(Base):
+    """
+    One stored forecast: the probability a district is flood-affected on a
+    target day, made from the report of an earlier day.
+
+    WHY FORECASTS ARE STORED AT ALL
+    The test-season numbers in the model artifact describe the past. Storing
+    every live forecast is what lets the system grade itself going forward:
+    once the target day's report arrives, the forecast has an outcome, and
+    `/api/v1/model/status` scores it against persistence. A model that only
+    ever reports its training-time accuracy is asking to be trusted.
+    """
+
+    __tablename__ = "district_flood_forecasts"
+    __table_args__ = (
+        UniqueConstraint(
+            "district_key", "as_of_date", "horizon_days", "model_version",
+            name="uq_forecast_identity",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    district_key = Column(String, nullable=False, index=True)
+    display_name = Column(String, nullable=True)
+    in_corridor = Column(Boolean, nullable=False, default=False, index=True)
+
+    as_of_date = Column(Date, nullable=False, index=True)
+    target_date = Column(Date, nullable=False, index=True)
+    horizon_days = Column(Integer, nullable=False)
+
+    probability = Column(Float, nullable=False)
+    persistence_probability = Column(Float, nullable=False)
+    affected_on_as_of = Column(Boolean, nullable=False)
+
+    model_version = Column(String, nullable=False, index=True)
+    model_kind = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class RoadDamageMatch(Base):
+    """
+    A geolocated DRIMS damage report matched to a road segment -- or
+    explicitly not matched.
+
+    `0004` stored damage coordinates and said matching them to edges "needs a
+    distance threshold and a way to say no confident match". This is that.
+    A report 2 km from the nearest mapped road is recorded with road_id NULL
+    and quality 'none', not snapped to whatever happens to be closest.
+    """
+
+    __tablename__ = "road_damage_matches"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    observation_id = Column(
+        Integer, ForeignKey("hazard_observations.id"), nullable=False, unique=True, index=True
+    )
+    road_id = Column(Integer, ForeignKey("roads.id"), nullable=True, index=True)
+    distance_m = Column(Float, nullable=True)
+    quality = Column(String, nullable=False, index=True)  # confident | approximate | none
+    matched_at = Column(DateTime(timezone=True), nullable=False)

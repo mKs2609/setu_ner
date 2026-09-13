@@ -24,6 +24,8 @@ place.
 
 from __future__ import annotations
 
+import re
+
 # Canonical names, exactly as they appear in the roads/districts tables.
 CORRIDOR_DISTRICTS = {"Cachar", "Karimganj", "Hailakandi", "Dima Hasao"}
 
@@ -54,7 +56,19 @@ def normalise_district(raw: str | None) -> str | None:
     key = " ".join(raw.strip().lower().split())
     if not key:
         return None
-    return ALIASES.get(key)
+    if key in ALIASES:
+        return ALIASES[key]
+    # The PDF wraps long cells mid-word ("Cacha r", "Hailakand i", "Sribhu mi")
+    # and sometimes hyphenates ("Dima-Hasao"). Comparing letters only repairs
+    # exactly that and nothing else: an unknown district still maps to None.
+    return _SQUASHED_ALIASES.get(_squash(key))
+
+
+def _squash(name: str) -> str:
+    return re.sub(r"[^a-z]", "", name.lower())
+
+
+_SQUASHED_ALIASES: dict[str, str] = {_squash(k): v for k, v in ALIASES.items()}
 
 
 def is_corridor_district(name: str | None) -> bool:

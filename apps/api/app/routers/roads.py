@@ -23,7 +23,13 @@ def road_to_dict(road: Road) -> dict:
         "district": road.district,
         "baseline_accessibility": road.baseline_accessibility,
         "hist_flood_severity_2025": road.hist_flood_severity_2025,
-        "current_accessibility": road.current_accessibility,  # still None until Phase 3 live model
+        # Phase 3 forecast -- see /api/v1/accessibility/{id} for its components
+        "current_accessibility": road.current_accessibility,
+        "current_accessibility_as_of": (
+            road.current_accessibility_as_of.isoformat()
+            if road.current_accessibility_as_of else None
+        ),
+        "elevation_m": road.elevation_m,
         "geometry": {
             "type": "LineString",
             "coordinates": list(geom.coords),

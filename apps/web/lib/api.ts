@@ -5,6 +5,11 @@ export interface RoadFeatureProperties {
   is_bridge: boolean;
   district: string | null;
   baseline_accessibility: number | null;
+  // Phase 3. Null when unscored; the as-of date travels with the value so a
+  // stale forecast is never drawn as though it were current.
+  current_accessibility?: number | null;
+  hazard_exposure?: number | null;
+  current_accessibility_as_of?: string | null;
 }
 
 export interface RoadsGeoJSON {
@@ -302,5 +307,126 @@ export async function fetchRoadReports(roadId: number): Promise<RoadReportView> 
 export async function fetchCurrentConditions(): Promise<StartingConditions> {
   const res = await fetch(`${API_BASE}/api/v1/scenarios/current-conditions`);
   if (!res.ok) throw new Error(`Failed to load current conditions: ${res.status}`);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 accessibility model. See docs/decisions/0010-accessibility-model.md.
+//
+// Every metric arrives next to the persistence baseline it has to beat, and
+// the UI is expected to show both: a probability with no reference point
+// invites more trust than it has earned.
+// ---------------------------------------------------------------------------
+
+export interface MetricScore {
+  n: number;
+  positives?: number;
+  brier?: number;
+  log_loss?: number;
+  roc_auc?: number | null;
+  average_precision?: number | null;
+}
+
+export interface SplitMetrics {
+  all: MetricScore;
+  onset: MetricScore;
+  recession: MetricScore;
+}
+
+export interface Period {
+  from: string;
+  to: string;
+  examples: number;
+  districts: number;
+  positive_rate: number;
+}
+
+export interface ModelArtifact {
+  version: string;
+  horizon_days: number;
+  served_kind: "logistic" | "persistence" | "climatology";
+  trained_at: string;
+  train_period: Period | null;
+  test_period: Period | null;
+  test_metrics: {
+    served: SplitMetrics | null;
+    logistic?: SplitMetrics | null;
+    persistence: SplitMetrics | null;
+    climatology: SplitMetrics | null;
+  };
+  verdict: {
+    skill_vs_persistence: number | null;
+    onset_skill_vs_persistence?: number | null;
+    logistic_test_skill_vs_persistence?: number | null;
+    logistic_test_onset_auc?: number | null;
+    summary: string;
+  };
+}
+
+export interface ModelStatus {
+  artifacts: Record<string, ModelArtifact | null>;
+  data: {
+    published_report_days: number;
+    districts_seen: number;
+    first_report: string | null;
+    latest_report: string | null;
+  };
+  scoring: {
+    as_of: string;
+    age_days: number;
+    stale: boolean;
+    model_version: string;
+    roads_scored: number;
+  } | null;
+  live_track_record: Record<
+    string,
+    { n: number; note?: string; skill_vs_persistence?: number | null }
+  >;
+  exposure_prior: {
+    formula: string;
+    fitted: boolean;
+    check: {
+      matched_damage_reports: number;
+      mean_exposure_of_damaged_roads: number | null;
+      mean_exposure_all_scored_roads: number | null;
+      enough_to_validate: boolean;
+      note: string;
+    };
+  };
+  caveats: Record<string, string>;
+}
+
+export interface DistrictForecast {
+  district: string;
+  in_corridor: boolean;
+  affected_on_as_of: boolean;
+  forecasts: {
+    horizon_days: number;
+    target_date: string;
+    probability: number;
+    persistence_probability: number;
+    model_kind: string;
+    model_version: string;
+  }[];
+}
+
+export interface DistrictForecasts {
+  as_of: string | null;
+  age_days?: number;
+  stale?: boolean;
+  districts: DistrictForecast[];
+  caveat?: string;
+  note?: string;
+}
+
+export async function fetchModelStatus(): Promise<ModelStatus> {
+  const res = await fetch(`${API_BASE}/api/v1/model/status`);
+  if (!res.ok) throw new Error(`Failed to load model status: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchDistrictForecasts(): Promise<DistrictForecasts> {
+  const res = await fetch(`${API_BASE}/api/v1/model/districts`);
+  if (!res.ok) throw new Error(`Failed to load forecasts: ${res.status}`);
   return res.json();
 }

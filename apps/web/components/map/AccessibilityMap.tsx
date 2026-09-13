@@ -11,10 +11,39 @@ const INITIAL_ZOOM = 9;
 const SOURCE_ID = "roads";
 const LAYER_ID = "roads-line";
 
-export default function AccessibilityMap() {
+// Two different things, never blended on one layer: a 2025 historical proxy,
+// and the Phase 3 forecast. The toggle switches which one colours the roads;
+// the popup always shows both so neither is mistaken for the other.
+export type AccessibilityMetric = "baseline_accessibility" | "current_accessibility";
+
+const METRIC_LABELS: Record<AccessibilityMetric, string> = {
+  baseline_accessibility: "Baseline (2025 history)",
+  current_accessibility: "Model (next-day forecast)",
+};
+
+function colorExpression(metric: AccessibilityMetric): maplibregl.ExpressionSpecification {
+  return [
+    "case",
+    ["==", ["get", metric], null as unknown as maplibregl.ExpressionInputType],
+    "#999999",
+    ["interpolate", ["linear"], ["get", metric], 0, "#c62828", 0.5, "#f9d423", 1, "#2e7d32"],
+  ];
+}
+
+function fmt(value: unknown): string {
+  return value != null && value !== "null" ? Number(value).toFixed(2) : "not scored";
+}
+
+export default function AccessibilityMap({
+  initialMetric = "baseline_accessibility",
+}: {
+  initialMetric?: AccessibilityMetric;
+}) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [district, setDistrict] = useState<string>("Cachar");
+  const [metric, setMetric] = useState<AccessibilityMetric>(initialMetric);
+  const metricRef = useRef(metric);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<RoadsGeoJSON["meta"] | null>(null);
@@ -29,7 +58,7 @@ export default function AccessibilityMap() {
       zoom: INITIAL_ZOOM,
     });
 
-        map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
     map.once("load", () => map.jumpTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM }));
     mapRef.current = map;
 
@@ -38,6 +67,14 @@ export default function AccessibilityMap() {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    metricRef.current = metric;
+    const map = mapRef.current;
+    if (map?.getLayer(LAYER_ID)) {
+      map.setPaintProperty(LAYER_ID, "line-color", colorExpression(metric));
+    }
+  }, [metric]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -64,20 +101,8 @@ export default function AccessibilityMap() {
               type: "line",
               source: SOURCE_ID,
               paint: {
-                "line-color": [
-                  "case",
-                  ["==", ["get", "baseline_accessibility"], null as unknown as maplibregl.ExpressionInputType],
-                  "#999999",
-                  [
-                    "interpolate", ["linear"], ["get", "baseline_accessibility"],
-                    0, "#c62828",
-                    0.5, "#f9d423",
-                    1, "#2e7d32",
-                  ],
-                ],
-                "line-width": [
-                  "case", ["get", "is_bridge"], 4, 2,
-                ],
+                "line-color": colorExpression(metricRef.current),
+                "line-width": ["case", ["get", "is_bridge"], 4, 2],
               },
             });
 
@@ -85,22 +110,28 @@ export default function AccessibilityMap() {
               const feature = e.features?.[0];
               if (!feature) return;
               const props = feature.properties as Record<string, unknown>;
+              const asOf =
+                props.current_accessibility_as_of && props.current_accessibility_as_of !== "null"
+                  ? ` (as of ${props.current_accessibility_as_of})`
+                  : "";
               new maplibregl.Popup()
                 .setLngLat(e.lngLat)
                 .setHTML(
                   `<strong>${props.road_class ?? "unknown road"}</strong><br/>` +
-                  `District: ${props.district ?? "unmatched"}<br/>` +
-                  `Bridge: ${props.is_bridge ? "yes" : "no"}<br/>` +
-                  `Baseline accessibility: ${
-                    props.baseline_accessibility != null
-                      ? Number(props.baseline_accessibility).toFixed(2)
-                      : "not scored"
-                  }`
+                    `District: ${props.district ?? "unmatched"}<br/>` +
+                    `Bridge: ${props.is_bridge ? "yes" : "no"}<br/>` +
+                    `Baseline (2025): ${fmt(props.baseline_accessibility)}<br/>` +
+                    `Model forecast: ${fmt(props.current_accessibility)}${asOf}<br/>` +
+                    `Terrain exposure prior: ${fmt(props.hazard_exposure)}`
                 )
                 .addTo(map);
             });
-            map.on("mouseenter", LAYER_ID, () => { map.getCanvas().style.cursor = "pointer"; });
-            map.on("mouseleave", LAYER_ID, () => { map.getCanvas().style.cursor = ""; });
+            map.on("mouseenter", LAYER_ID, () => {
+              map.getCanvas().style.cursor = "pointer";
+            });
+            map.on("mouseleave", LAYER_ID, () => {
+              map.getCanvas().style.cursor = "";
+            });
           }
 
           setLoading(false);
@@ -133,7 +164,22 @@ export default function AccessibilityMap() {
           className="border border-gray-300 rounded px-2 py-1 w-full"
         >
           {KNOWN_DISTRICTS.map((d) => (
-            <option key={d} value={d}>{d}</option>
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+
+        <label className="block font-medium text-gray-700">Colour roads by</label>
+        <select
+          value={metric}
+          onChange={(e) => setMetric(e.target.value as AccessibilityMetric)}
+          className="border border-gray-300 rounded px-2 py-1 w-full"
+        >
+          {(Object.keys(METRIC_LABELS) as AccessibilityMetric[]).map((m) => (
+            <option key={m} value={m}>
+              {METRIC_LABELS[m]}
+            </option>
           ))}
         </select>
 
@@ -150,6 +196,7 @@ export default function AccessibilityMap() {
           </p>
         )}
         {meta?.note && <p className="text-amber-700 text-xs">{meta.note}</p>}
+        <p className="text-xs text-gray-500">Red = worst, green = best, gray = not scored.</p>
       </div>
 
       <div ref={mapContainerRef} className="w-full h-full" />

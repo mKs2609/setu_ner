@@ -1,0 +1,170 @@
+{
+  "horizon_days": 3,
+  "kind": "persistence",
+  "features": [
+    "affected",
+    "log_population",
+    "affected_frac_7d",
+    "run_length",
+    "population_trend",
+    "relief_camps_open",
+    "infra_damage_7d",
+    "affected_frac_60d",
+    "state_log_affected",
+    "state_trend"
+  ],
+  "params": {
+    "p_given_affected": 0.4823529411764706,
+    "p_given_not_affected": 0.04018574745490266
+  },
+  "baselines": {
+    "persistence": {
+      "p_given_affected": 0.4823529411764706,
+      "p_given_not_affected": 0.04018574745490266
+    },
+    "climatology": {
+      "base_rate": 0.07109634551495017
+    }
+  },
+  "selection": {
+    "validation_folds": 3,
+    "mean_brier": {
+      "persistence": 0.04062,
+      "climatology": 0.05108,
+      "logistic_C0.01": 0.04116,
+      "logistic_C0.1": 0.04125,
+      "logistic_C1.0": 0.04221,
+      "logistic_C10.0": 0.04244
+    },
+    "selected": "persistence"
+  },
+  "train_period": {
+    "from": "2025-05-02",
+    "to": "2025-10-28",
+    "examples": 6020,
+    "districts": 35,
+    "positive_rate": 0.0711
+  },
+  "test_period": {
+    "from": "2026-05-01",
+    "to": "2026-09-09",
+    "examples": 4480,
+    "districts": 35,
+    "positive_rate": 0.119
+  },
+  "test_metrics": {
+    "served": {
+      "all": {
+        "n": 4480,
+        "positives": 533,
+        "brier": 0.06822,
+        "log_loss": 0.24574,
+        "roc_auc": 0.8104,
+        "average_precision": 0.471
+      },
+      "onset": {
+        "n": 3955,
+        "positives": 179,
+        "brier": 0.04324,
+        "log_loss": 0.18463,
+        "roc_auc": 0.5,
+        "average_precision": 0.0321
+      },
+      "recession": {
+        "n": 525,
+        "positives": 354,
+        "brier": 0.25646,
+        "log_loss": 0.70608,
+        "roc_auc": 0.5,
+        "average_precision": 0.6312
+      }
+    },
+    "persistence": {
+      "all": {
+        "n": 4480,
+        "positives": 533,
+        "brier": 0.06822,
+        "log_loss": 0.24574,
+        "roc_auc": 0.8104,
+        "average_precision": 0.471
+      },
+      "onset": {
+        "n": 3955,
+        "positives": 179,
+        "brier": 0.04324,
+        "log_loss": 0.18463,
+        "roc_auc": 0.5,
+        "average_precision": 0.0321
+      },
+      "recession": {
+        "n": 525,
+        "positives": 354,
+        "brier": 0.25646,
+        "log_loss": 0.70608,
+        "roc_auc": 0.5,
+        "average_precision": 0.6312
+      }
+    },
+    "climatology": {
+      "all": {
+        "n": 4480,
+        "positives": 533,
+        "brier": 0.10711,
+        "log_loss": 0.37951,
+        "roc_auc": 0.5,
+        "average_precision": 0.081
+      },
+      "onset": {
+        "n": 3955,
+        "positives": 179,
+        "brier": 0.04388,
+        "log_loss": 0.19006,
+        "roc_auc": 0.5,
+        "average_precision": 0.0321
+      },
+      "recession": {
+        "n": 525,
+        "positives": 354,
+        "brier": 0.58346,
+        "log_loss": 1.80664,
+        "roc_auc": 0.5,
+        "average_precision": 0.6312
+      }
+    },
+    "logistic": {
+      "all": {
+        "n": 4480,
+        "positives": 533,
+        "brier": 0.06622,
+        "log_loss": 0.23588,
+        "roc_auc": 0.8722,
+        "average_precision": 0.6037
+      },
+      "onset": {
+        "n": 3955,
+        "positives": 179,
+        "brier": 0.04255,
+        "log_loss": 0.17652,
+        "roc_auc": 0.6792,
+        "average_precision": 0.0891
+      },
+      "recession": {
+        "n": 525,
+        "positives": 354,
+        "brier": 0.24457,
+        "log_loss": 0.68304,
+        "roc_auc": 0.6489,
+        "average_precision": 0.7479
+      }
+    }
+  },
+  "trained_at": "2026-09-12T20:56:00+00:00",
+  "version": "dfs-h3-2026-09-13-45463be1",
+  "verdict": {
+    "skill_vs_persistence": 0.0,
+    "onset_skill_vs_persistence": 0.0,
+    "logistic_test_skill_vs_persistence": 0.0293,
+    "logistic_test_onset_auc": 0.6792,
+    "summary": "The logistic model did not beat persistence on validation, so persistence is served. That is the honest outcome, not a failure to hide."
+  }
+}

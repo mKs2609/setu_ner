@@ -29,6 +29,7 @@ from app.routers import (
     field_reports,
     public,
     roads_geojson,
+    model,
 )
 
 settings = get_settings()
@@ -60,6 +61,7 @@ app.include_router(logistics.router, prefix="/api/v1/logistics", tags=["logistic
 app.include_router(scenarios.router, prefix="/api/v1/scenarios", tags=["scenarios"])
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
 app.include_router(field_reports.router, prefix="/api/v1/field-reports", tags=["field-reports"])
+app.include_router(model.router, prefix="/api/v1/model", tags=["model"])
 app.include_router(public.router, prefix="/api/v1/public", tags=["public"])
 
 

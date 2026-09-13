@@ -264,18 +264,32 @@ def test_fused_status_is_published_separately_from_the_baseline():
 
 @needs_db
 def test_field_reports_never_write_current_accessibility():
-    """current_accessibility is reserved for the Phase 3 model. A crowd vote
-    must not be smuggled into it."""
-    from sqlalchemy import func, select
-
+    """current_accessibility belongs to the Phase 3 model. A crowd vote must
+    not be smuggled into it: submitting a report leaves the road's value,
+    model version and as-of date exactly as they were."""
     from app.db.models import Road
     from app.db.session import SessionLocal
 
-    with SessionLocal() as db:
-        populated = db.execute(
-            select(func.count(Road.id)).where(Road.current_accessibility.isnot(None))
-        ).scalar_one()
-    assert populated == 0
+    def snapshot(road_id):
+        with SessionLocal() as db:
+            road = db.get(Road, road_id)
+            return (
+                road.current_accessibility,
+                road.accessibility_model_version,
+                road.current_accessibility_as_of,
+            )
+
+    report = {
+        "status": "clear",
+        "latitude": 24.8333,
+        "longitude": 92.7789,
+        "reporter_id": "pytest-reporter-accessibility",
+    }
+    # First submission finds the road; the second is the one under test.
+    road_id = client.post("/api/v1/field-reports", json=report).json()["road_id"]
+    before = snapshot(road_id)
+    assert client.post("/api/v1/field-reports", json=report).status_code in (200, 201)
+    assert snapshot(road_id) == before
 
 
 @needs_db

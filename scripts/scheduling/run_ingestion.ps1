@@ -12,6 +12,8 @@
 # is fetched. See app/services/ingestion/schedule.py for which days are
 # retried and which are left settled.
 #
+# Then matches new damage reports to roads and re-scores accessibility.
+#
 # EXIT CODES
 # 0 for success and for "no report published" -- the latter is a normal
 # outcome most of the year. Non-zero only for real failures, which is what
@@ -53,6 +55,21 @@ try {
         foreach ($line in $output) { Write-Log "  $line" }
         if ($code -ne 0) {
             Write-Log "  $hazard exited $code"
+            $failed = $true
+        }
+    }
+
+    # Re-score roads from whatever was just ingested (docs/decisions/0010).
+    # Without this, current_accessibility would quietly age while the
+    # reports underneath it moved on. The scorer refuses a stale report and
+    # exits non-zero, which is a failure worth seeing in the log.
+    foreach ($step in @("app.services.model.damage_matching", "app.services.model.score")) {
+        Write-Log "running $step"
+        $output = & python -m $step 2>&1
+        $code = $LASTEXITCODE
+        foreach ($line in $output) { Write-Log "  $line" }
+        if ($code -ne 0) {
+            Write-Log "  $step exited $code"
             $failed = $true
         }
     }

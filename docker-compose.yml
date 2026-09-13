@@ -26,8 +26,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # The Phase 3 model artifacts live at the repo root, outside the API's
+      # build context. See app/services/model/district_model.py.
+      SETUNER_MODEL_DIR: /models
     volumes:
       - ./apps/api:/app
+      - ./ml/models:/models:ro
 
   web:
     build: ./apps/web
@@ -52,6 +56,9 @@ services:
     profiles: ["scheduling"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-sih26002}:${POSTGRES_PASSWORD:-sih26002}@postgres:5432/${POSTGRES_DB:-sih26002}
+      SETUNER_MODEL_DIR: /models
+    volumes:
+      - ./ml/models:/models:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +68,8 @@ services:
         echo "[$(date -Iseconds)] ingestion starting";
         python -m app.services.ingestion.run --hazard flood --catch-up || true;
         python -m app.services.ingestion.run --hazard landslide --catch-up || true;
+        python -m app.services.model.damage_matching || true;
+        python -m app.services.model.score || true;
         echo "[$(date -Iseconds)] sleeping 24h";
         sleep 86400;
       done'
