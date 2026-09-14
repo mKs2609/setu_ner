@@ -26,6 +26,7 @@ from app.db.models import DistrictFloodForecast, Road
 from app.db.session import get_db
 from app.services.model.score import MAX_STALE_DAYS
 from app.routers.model import CAVEATS
+from app.services.explain import road as road_explain
 
 router = APIRouter()
 
@@ -87,3 +88,11 @@ def get_accessibility(road_id: int, db: Session = Depends(get_db)):
             "per_road_is_a_prior": CAVEATS["per_road_is_a_prior"],
         },
     }
+
+
+@router.get("/{road_id}/explanation")
+def explain_accessibility(road_id: int, db: Session = Depends(get_db)):
+    road = db.get(Road, road_id)
+    if road is None:
+        raise HTTPException(status_code=404, detail=f"Road {road_id} not found")
+    return road_explain.explain(db, road)

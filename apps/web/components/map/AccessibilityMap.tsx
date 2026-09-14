@@ -36,14 +36,20 @@ function fmt(value: unknown): string {
 
 export default function AccessibilityMap({
   initialMetric = "baseline_accessibility",
+  onSelectRoad,
 }: {
   initialMetric?: AccessibilityMetric;
+  onSelectRoad?: (roadId: number) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [district, setDistrict] = useState<string>("Cachar");
   const [metric, setMetric] = useState<AccessibilityMetric>(initialMetric);
   const metricRef = useRef(metric);
+  // The click handler is registered once, so it reads the latest callback
+  // through a ref rather than capturing the first render's.
+  const onSelectRef = useRef(onSelectRoad);
+  onSelectRef.current = onSelectRoad;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<RoadsGeoJSON["meta"] | null>(null);
@@ -110,6 +116,9 @@ export default function AccessibilityMap({
               const feature = e.features?.[0];
               if (!feature) return;
               const props = feature.properties as Record<string, unknown>;
+              if (onSelectRef.current && typeof feature.id === "number") {
+                onSelectRef.current(feature.id);
+              }
               const asOf =
                 props.current_accessibility_as_of && props.current_accessibility_as_of !== "null"
                   ? ` (as of ${props.current_accessibility_as_of})`

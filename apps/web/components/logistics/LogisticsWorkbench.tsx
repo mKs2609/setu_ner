@@ -13,8 +13,10 @@
  *     rather than a marker at a guessed position.
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import PlanWhy from "@/components/explain/PlanWhy";
 import {
   fetchExampleInputs,
   fetchSupplyDays,
@@ -43,6 +45,8 @@ export default function LogisticsWorkbench() {
   const [horizon, setHorizon] = useState(1);
   const [penalty, setPenalty] = useState(30);
   const [fairnessFirst, setFairnessFirst] = useState(false);
+  const [save, setSave] = useState(false);
+  const [label, setLabel] = useState("");
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +84,8 @@ export default function LogisticsWorkbench() {
           risk_minutes_per_exposure_km: penalty,
           fairness_first: fairnessFirst,
           example_inputs: !edited,
+          save,
+          label: save && label.trim() ? label.trim() : undefined,
         })
       );
     } catch (e) {
@@ -87,7 +93,7 @@ export default function LogisticsWorkbench() {
     } finally {
       setLoading(false);
     }
-  }, [asOf, horizon, depots, example, penalty, fairnessFirst, edited]);
+  }, [asOf, horizon, depots, example, penalty, fairnessFirst, edited, save, label]);
 
   const coverage = useMemo(() => {
     if (!plan) return null;
@@ -206,6 +212,29 @@ export default function LogisticsWorkbench() {
           </label>
         </section>
 
+        <section className="space-y-1">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} className="mt-0.5" />
+            <span>
+              <span className="text-gray-700">Save this plan as a record</span>
+              <span className="block text-xs text-gray-500">
+                Freezes the inputs, result, explanation and model versions so the plan can be reviewed and
+                overridden later. Records cannot be edited.
+              </span>
+            </span>
+          </label>
+          {save && (
+            <input
+              type="text"
+              maxLength={120}
+              placeholder="Label (optional)"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+            />
+          )}
+        </section>
+
         <button
           onClick={run}
           disabled={loading || !asOf}
@@ -244,6 +273,23 @@ export default function LogisticsWorkbench() {
                   </span>
                 )}
               </p>
+            </section>
+
+            {plan.recommendation_id && (
+              <p className="rounded bg-teal-50 p-2 text-xs text-teal-900">
+                Saved as a record.{" "}
+                <Link href={`/recommendations/${plan.recommendation_id}`} className="underline underline-offset-2">
+                  Open it to review or record an override
+                </Link>
+                .
+              </p>
+            )}
+
+            <section>
+              <h3 className="font-semibold">Why this plan</h3>
+              <div className="mt-1">
+                <PlanWhy explanation={plan.explanation} />
+              </div>
             </section>
 
             {plan.plan.limits.length > 0 && (

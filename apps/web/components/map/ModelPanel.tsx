@@ -24,6 +24,7 @@ import {
   type ModelArtifact,
   type ModelStatus,
 } from "@/lib/api";
+import ForecastWhy from "@/components/explain/ForecastWhy";
 
 function pct(p: number | null | undefined): string {
   return p == null ? "—" : `${Math.round(p * 100)}%`;
@@ -102,6 +103,7 @@ export default function ModelPanel() {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   const [forecasts, setForecasts] = useState<DistrictForecasts | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [why, setWhy] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchModelStatus(), fetchDistrictForecasts()])
@@ -139,7 +141,7 @@ export default function ModelPanel() {
         ) : (
           <p className="text-xs text-amber-700">No forecasts stored yet. Run the scoring job.</p>
         )}
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-2">
           {forecasts.districts.map((d) => {
             const h1 = d.forecasts.find((f) => f.horizon_days === 1);
             const h3 = d.forecasts.find((f) => f.horizon_days === 3);
@@ -159,6 +161,13 @@ export default function ModelPanel() {
                   In 3 days <strong>{pct(h3?.probability)}</strong>
                   <span className="text-xs text-gray-500"> (persistence {pct(h3?.persistence_probability)})</span>
                 </p>
+                <button
+                  onClick={() => setWhy(why === d.district ? null : d.district)}
+                  className="mt-1 text-xs text-teal-700 underline underline-offset-2"
+                >
+                  {why === d.district ? "Hide why" : "Why?"}
+                </button>
+                {why === d.district && <ForecastWhy district={d.district} />}
               </div>
             );
           })}
@@ -200,6 +209,7 @@ export default function ModelPanel() {
         <p className="mt-1 text-xs text-gray-600">
           Exposure prior (not fitted): {status.exposure_prior.formula}.
         </p>
+        <p className="mt-1 text-xs text-gray-600">Click any road on the map to see why it has its value.</p>
         <p className="mt-1 text-xs text-gray-500">
           {status.exposure_prior.check.matched_damage_reports} DRIMS damage reports matched to corridor
           roads. {status.exposure_prior.check.note}

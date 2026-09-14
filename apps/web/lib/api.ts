@@ -504,6 +504,8 @@ export interface PlanRequest {
   risk_minutes_per_exposure_km: number;
   fairness_first: boolean;
   example_inputs: boolean;
+  save?: boolean;
+  label?: string;
 }
 
 export interface RouteSummary {
@@ -593,6 +595,8 @@ export interface PlanResponse {
   };
   problems: string[];
   caveats: Record<string, string>;
+  explanation: PlanExplanation;
+  recommendation_id: string | null;
 }
 
 export async function fetchSupplyDays(): Promise<SupplyDay[]> {
@@ -618,6 +622,183 @@ export async function requestPlan(body: PlanRequest): Promise<PlanResponse> {
     throw new Error(
       typeof detail?.detail === "string" ? detail.detail : `Planning failed: ${res.status}`
     );
+  }
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6: explanations and the audit trail. See docs/decisions/0012.
+//
+// Every explanation is filled in from the figures it explains; statements
+// carry their evidence so the UI can show the numbers behind a sentence.
+// ---------------------------------------------------------------------------
+
+export interface Statement {
+  text: string;
+  evidence: Record<string, unknown>;
+}
+
+export interface PlanExplanation {
+  summary: string;
+  sections: { title: string; statements: Statement[] }[];
+  method: string;
+}
+
+export interface Contribution {
+  feature: string;
+  value: number;
+  log_odds: number;
+  direction: "raises" | "lowers" | "none";
+  sentence: string;
+}
+
+export interface ForecastExplanation {
+  district: string;
+  horizon_days: number;
+  model_kind: string;
+  model_version: string;
+  probability: number;
+  method: "exact_linear_attribution" | "rule" | "none";
+  headline: string;
+  contributions: Contribution[];
+  average_district_probability?: number;
+  check?: { reconstructed_probability: number; matches_prediction: boolean };
+  how_to_read?: string;
+  why_this_model?: string;
+}
+
+export interface RoadExplanation {
+  road_id: number;
+  scored: boolean;
+  as_of?: string | null;
+  headline: string;
+  district_forecast?: ForecastExplanation | null;
+  terrain?: {
+    elevation_m: number | null;
+    district_floor_m: number | null;
+    height_above_floor_m: number | null;
+    exposure: number | null;
+    is_a_prior: boolean;
+    formula: string;
+  };
+  baseline_comparison?: string | null;
+  explains_stored_value?: boolean;
+  model_mismatch_note?: string | null;
+  trust?: string;
+}
+
+export interface RecommendationSummary {
+  id: string;
+  kind: string;
+  label: string | null;
+  created_at: string;
+  data_as_of: string;
+  is_replay: boolean;
+  example_inputs: boolean;
+  people_to_supply: number | null;
+  coverage: number | null;
+  worst_shortfall_fraction: number | null;
+  override_count: number | null;
+}
+
+export interface RecommendationRecord extends RecommendationSummary {
+  model_versions: Record<string, string | null>;
+  inputs: Record<string, unknown>;
+  outputs: Omit<PlanResponse, "explanation" | "recommendation_id">;
+  note: string;
+}
+
+export type OverrideAction = "accepted" | "modified" | "rejected";
+
+export const REASON_CATEGORIES = [
+  ["road_condition_differs", "Road was not as forecast"],
+  ["stock_figure_wrong", "Depot stock figure was wrong"],
+  ["fleet_unavailable", "Trucks or drivers unavailable"],
+  ["demand_differs", "People on the ground differ from the report"],
+  ["priority_judgement", "Chose a different priority"],
+  ["other", "Other"],
+] as const;
+
+export interface OverrideRecord {
+  id: number;
+  created_at: string;
+  operator_id: string;
+  action: OverrideAction;
+  target: string | null;
+  reason_category: string;
+  reason: string;
+}
+
+async function getJson<T>(path: string, what: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(typeof detail?.detail === "string" ? detail.detail : `Failed to load ${what}: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function fetchDistrictExplanation(district: string): Promise<{
+  district: string;
+  as_of: string;
+  explanations: ForecastExplanation[];
+  caveat: string;
+}> {
+  return getJson(`/api/v1/model/explain/${encodeURIComponent(district)}`, "explanation");
+}
+
+export function fetchRoadExplanation(roadId: number): Promise<RoadExplanation> {
+  return getJson(`/api/v1/accessibility/${roadId}/explanation`, "road explanation");
+}
+
+export async function fetchRecommendations(): Promise<RecommendationSummary[]> {
+  return (await getJson<{ recommendations: RecommendationSummary[] }>(
+    "/api/v1/recommendations", "recommendations"
+  )).recommendations;
+}
+
+export function fetchRecommendation(id: string): Promise<RecommendationRecord> {
+  return getJson(`/api/v1/recommendations/${encodeURIComponent(id)}`, "recommendation");
+}
+
+export function fetchRecommendationExplanation(id: string): Promise<PlanExplanation & { id: string }> {
+  return getJson(`/api/v1/recommendations/${encodeURIComponent(id)}/explanation`, "explanation");
+}
+
+export async function fetchOverrides(id: string): Promise<OverrideRecord[]> {
+  return (await getJson<{ overrides: OverrideRecord[] }>(
+    `/api/v1/recommendations/${encodeURIComponent(id)}/overrides`, "overrides"
+  )).overrides;
+}
+
+const OPERATOR_KEY = "setuner.operator_id";
+
+/** Opaque, device-scoped operator id, same approach as the reporter id. */
+export function getOperatorId(): string {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.localStorage.getItem(OPERATOR_KEY);
+    if (existing) return existing;
+    const fresh = `operator-${crypto.randomUUID()}`;
+    window.localStorage.setItem(OPERATOR_KEY, fresh);
+    return fresh;
+  } catch {
+    return `operator-session-${Math.random().toString(36).slice(2, 12)}`;
+  }
+}
+
+export async function postOverride(
+  id: string,
+  body: { action: OverrideAction; reason_category: string; reason: string; target?: string }
+): Promise<OverrideRecord> {
+  const res = await fetch(`${API_BASE}/api/v1/recommendations/${encodeURIComponent(id)}/overrides`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, operator_id: getOperatorId() }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(typeof detail?.detail === "string" ? detail.detail : `Could not record override: ${res.status}`);
   }
   return res.json();
 }

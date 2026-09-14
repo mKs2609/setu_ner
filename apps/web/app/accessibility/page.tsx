@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import AccessibilityMap from "@/components/map/AccessibilityMap";
-import ModelPanel from "@/components/map/ModelPanel";
+import AccessibilityWorkbench from "@/components/map/AccessibilityWorkbench";
 
 export const metadata = {
   title: "Accessibility model — SetuNER",
@@ -28,19 +27,12 @@ export default function AccessibilityPage() {
           <Link href="/scenarios" className="text-teal-700 underline underline-offset-2">
             Scenarios
           </Link>
-          <Link href="/field-reports" className="text-teal-700 underline underline-offset-2">
-            Field reports
+          <Link href="/logistics" className="text-teal-700 underline underline-offset-2">
+            Supply planning
           </Link>
         </nav>
       </header>
-      <div className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
-        <aside className="w-full border-gray-200 md:w-[28rem] md:overflow-y-auto md:border-r">
-          <ModelPanel />
-        </aside>
-        <div className="h-[60vh] flex-1 md:h-auto">
-          <AccessibilityMap initialMetric="current_accessibility" />
-        </div>
-      </div>
+      <AccessibilityWorkbench />
     </main>
   );
 }

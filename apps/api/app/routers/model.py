@@ -16,11 +16,14 @@ from __future__ import annotations
 from datetime import date
 
 import numpy as np
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import DistrictFloodForecast, Road, RoadDamageMatch
+from app.services.explain import forecast as forecast_explain
+from app.services.ingestion.districts import normalise_district
+from app.services.model.dataset import district_key, features_for
 from app.db.session import get_db
 from app.services.model import district_model as dm
 from app.services.model import score as scoring
@@ -244,5 +247,40 @@ def latest_district_forecasts(
         "age_days": age,
         "stale": age > scoring.MAX_STALE_DAYS,
         "districts": sorted(grouped.values(), key=lambda d: d["district"]),
+        "caveat": CAVEATS["what_is_predicted"],
+    }
+
+
+@router.get("/explain/{district}")
+def explain_district_forecast(
+    district: str,
+    as_of: date | None = Query(None, description="Report day; defaults to the latest."),
+    db: Session = Depends(get_db),
+):
+    """Why the model gives a district its probability, feature by feature."""
+    history = load_history(db)
+    if not history.published:
+        raise HTTPException(status_code=404, detail="no published reports ingested")
+    as_of = as_of or max(history.published)
+    key = district_key(district)
+    if key is None or (key not in history.districts and normalise_district(district) is None):
+        raise HTTPException(status_code=404, detail=f"unknown district {district!r}")
+    features = features_for(history, key, as_of)
+    if features is None:
+        raise HTTPException(status_code=404, detail=f"no published report on {as_of}")
+
+    explanations = []
+    for h in dm.HORIZONS:
+        payload = dm.load(h)
+        if payload is not None:
+            explanations.append(
+                forecast_explain.explain(payload, features, history.display_names.get(key, key))
+            )
+    if not explanations:
+        raise HTTPException(status_code=404, detail="no trained model")
+    return {
+        "district": history.display_names.get(key, key),
+        "as_of": as_of.isoformat(),
+        "explanations": explanations,
         "caveat": CAVEATS["what_is_predicted"],
     }

@@ -44,6 +44,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 11. **`docs/decisions/0011-demand-and-supply-planning.md`** — Phase 4: demand
     from people actually in relief camps, OSM-located revenue circles,
     exposure-aware routes, and an optimiser that says what is limiting it.
+12. **`docs/decisions/0012-explanations-and-audit-trail.md`** — Phase 6: exact
+    per-feature explanations, plain-language plan narratives with evidence,
+    immutable saved plans and an override log.
 
 ## Status
 
@@ -114,10 +117,19 @@ had no population figures because that year's report labels the section
 differently. Both are fixed and the archive re-ingested. Depot stock and fleet
 are operator inputs; the example figures are labelled as such everywhere.
 
-**Not started:** Sentinel-1 flood extent (rest of Phase 2); natural-language
-explanation beyond the optimiser's plain-language limits (Phase 6). Field
-reports still never write `current_accessibility` — a crowd vote is not a
-model prediction, and they stay published separately.
+**Everything explains itself** (Phase 6, `0012`): a district forecast breaks
+down into exact per-feature contributions that add up to the prediction; a
+road's accessibility splits into its evaluated district half and its stated
+terrain prior; a supply plan comes with a narrative in which every sentence
+carries the figures it came from. Sentences are templates filled with real
+values — no language model — so an explanation cannot contradict its number.
+Plans can be saved as immutable records with model versions, and operators
+log overrides with a required, categorised reason.
+
+**Not started:** Sentinel-1 flood extent (rest of Phase 2), which needs a
+Copernicus account and a SAR pipeline. Write endpoints (field reports, saved
+plans, overrides) are unauthenticated and need auth before real operational
+use. Field reports still never write `current_accessibility`.
 
 ## Repo layout
 

@@ -20,6 +20,8 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.services.explain import audit
+from app.services.explain import plan as plan_explain
 from app.services.logistics import demand as demand_mod
 from app.services.logistics import optimize
 from app.services.logistics import plan as plan_mod
@@ -65,6 +67,10 @@ class PlanRequest(BaseModel):
     example_inputs: bool = Field(
         False, description="Set when the depots are the example figures, so the response says so."
     )
+    save: bool = Field(
+        False, description="Store this plan as an immutable recommendation record (0012)."
+    )
+    label: str | None = Field(None, max_length=120)
 
 
 @router.get("/supply-days")
@@ -97,7 +103,7 @@ def example_inputs():
 @router.post("/plan")
 def make_plan(body: PlanRequest, db: Session = Depends(get_db)):
     try:
-        return plan_mod.build_plan(
+        result = plan_mod.build_plan(
             db,
             depots=[
                 plan_mod.DepotSpec(
@@ -117,3 +123,19 @@ def make_plan(body: PlanRequest, db: Session = Depends(get_db)):
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    result["explanation"] = plan_explain.narrate(result)
+    result["recommendation_id"] = None
+    if body.save:
+        try:
+            rec = audit.save(
+                db,
+                inputs=body.model_dump(mode="json", exclude={"save", "label"}),
+                plan={k: v for k, v in result.items() if k not in ("explanation", "recommendation_id")},
+                explanation=result["explanation"],
+                label=body.label,
+            )
+        except audit.RateLimited as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        result["recommendation_id"] = rec.id
+    return result

@@ -377,3 +377,60 @@ class RoadDamageMatch(Base):
     distance_m = Column(Float, nullable=True)
     quality = Column(String, nullable=False, index=True)  # confident | approximate | none
     matched_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class Recommendation(Base):
+    """
+    A saved supply plan: exactly what was asked, what came back, and why.
+
+    THE AUDIT TRAIL (docs/decisions/0012)
+    A plan that shaped a real dispatch has to be reconstructible later, after
+    the reports, the model and the stock have all moved on. So a record
+    freezes the request, the result, the explanation, the report day the
+    demand came from and the model versions the routes used. Records are
+    never updated; anything that happens afterwards is an override row.
+
+    Saving is opt-in per request. The planning endpoint is public, and
+    storing every exploratory click would fill the table with plans nobody
+    acted on.
+    """
+
+    __tablename__ = "recommendations"
+
+    id = Column(String, primary_key=True)             # uuid4 hex
+    kind = Column(String, nullable=False, index=True)  # supply_plan
+    created_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    data_as_of = Column(Date, nullable=False, index=True)
+    is_replay = Column(Boolean, nullable=False)
+    example_inputs = Column(Boolean, nullable=False)
+    model_versions = Column(JSON, nullable=False)
+    inputs = Column(JSON, nullable=False)
+    outputs = Column(JSON, nullable=False)
+    explanation = Column(JSON, nullable=False)
+    label = Column(String, nullable=True)
+
+
+class RecommendationOverride(Base):
+    """
+    An operator departing from a saved recommendation, and their reason.
+
+    `0001` section 5: "log every override with reason". When an operator
+    skips a run, sends more than planned, or rejects a plan outright, that is
+    the best signal the system will ever get about where its assumptions are
+    wrong -- a road the forecast called passable that the driver knew was
+    not, a depot figure that was stale. Append-only, like field reports, and
+    with the same opaque operator id and no personal data.
+    """
+
+    __tablename__ = "recommendation_overrides"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recommendation_id = Column(
+        String, ForeignKey("recommendations.id"), nullable=False, index=True
+    )
+    created_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    operator_id = Column(String, nullable=False, index=True)
+    action = Column(String, nullable=False, index=True)  # accepted | modified | rejected
+    target = Column(String, nullable=True)               # e.g. "run:Silchar->Sonai"
+    reason_category = Column(String, nullable=False, index=True)
+    reason = Column(Text, nullable=False)

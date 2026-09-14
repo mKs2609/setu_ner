@@ -25,8 +25,8 @@ export default function LogisticsPage() {
           <Link href="/scenarios" className="text-teal-700 underline underline-offset-2">
             Scenarios
           </Link>
-          <Link href="/field-reports" className="text-teal-700 underline underline-offset-2">
-            Field reports
+          <Link href="/recommendations" className="text-teal-700 underline underline-offset-2">
+            Saved plans
           </Link>
         </nav>
       </header>
