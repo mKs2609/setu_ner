@@ -186,10 +186,6 @@ def _as_number(text: str | None) -> float | None:
 SECTION_METRICS: dict[str, dict[str, tuple[int, str]]] = {
     "nameofrevenuecircleaffected": {"revenue_circles_affected": (2, "count")},
     "villagesaffected": {"villages_affected": (2, "count")},
-    "populationandcropareasubmerged": {
-        "population_affected": (5, "people"),
-        "crop_area_submerged": (7, "hectares"),
-    },
     "reliefcamps/centresopened": {"relief_camps_opened": (2, "count")},
     "humanliveslost-confirmed": {"lives_lost_confirmed": (2, "people")},
     # The three that matter most to an accessibility model: live per-district
@@ -200,6 +196,41 @@ SECTION_METRICS: dict[str, dict[str, tuple[int, str]]] = {
 }
 
 AFFECTED_LIST_SECTION = "districtaffected"
+
+# The population section is NOT read by column index, although it is listed
+# above with indices for its metrics' units. pdfplumber inserts empty cells
+# that shift the columns on some rows, and reading index 5 then returned one
+# of the component counts instead of the total -- 31 of 613 stored rows were
+# wrong that way (Nagaon read as 2,534 people instead of 13,463). See
+# `_population_and_crop`, which identifies the total arithmetically instead.
+POPULATION_SECTION = "populationandcropareasubmerged"
+# The 2025 template labels the same section "...Area Affected". Missing this
+# alias meant the whole 2025 season stored no population figures at all.
+POPULATION_SECTIONS = {POPULATION_SECTION, "populationandcropareaaffected"}
+
+# People actually being supplied, which is what Phase 4 demand is built on
+# (docs/decisions/0011). "Affected" is an upper bound on need; camp inmates
+# and people drawing from relief distribution centres are the population a
+# supply plan has to reach.
+#
+# Both templates print: Total, a revenue-circle breakdown, then Male, Female,
+# Children (2025 adds Pregnant/Lactating and Persons with Disability). The
+# total is the first number in the row and children the fourth; the
+# breakdown cell is text and is skipped when numbers are collected.
+INMATE_SECTIONS = {
+    "inmatesinreliefcamps": "relief_camp_inmates",
+    "noncampinmatesinreliefdistributioncenters": "relief_centre_inmates",
+}
+
+# "(Silchar | 4146)" -- a revenue circle and its count, as the inmate
+# sections print them.
+_CIRCLE_COUNT = re.compile(r"\(\s*([^|()]+?)\s*\|\s*([\d,]+)\s*\)")
+
+# "(Sonai | Population Affected: 100 | Crop Area Submerged: 0)" -- the
+# per-revenue-circle breakdown the report prints beside each district total.
+_CIRCLE_POPULATION = re.compile(
+    r"\(\s*([^|()]+?)\s*\|\s*Population\s*Affected:\s*([\d,]+)", re.IGNORECASE
+)
 
 # Sections that identify the standard DRIMS disaster-report template.
 # Seeing any of them means we are looking at a document this parser
@@ -341,7 +372,10 @@ def _parse_table(table: list[list[str | None]], hazard: str) -> list[Observation
         if label:
             section = (
                 label
-                if label in SECTION_METRICS or label == AFFECTED_LIST_SECTION
+                if label in SECTION_METRICS
+                or label == AFFECTED_LIST_SECTION
+                or label in POPULATION_SECTIONS
+                or label in INMATE_SECTIONS
                 else None
             )
             last_district = None
@@ -378,6 +412,16 @@ def _parse_table(table: list[list[str | None]], hazard: str) -> list[Observation
             else None
         )
 
+        if section in POPULATION_SECTIONS:
+            out.extend(_parse_population_row(row, name, district, hazard, raw_row))
+            continue
+
+        if section in INMATE_SECTIONS:
+            out.extend(
+                _parse_inmate_row(row, name, district, hazard, raw_row, section)
+            )
+            continue
+
         for metric, (col, unit) in SECTION_METRICS[section].items():
             if col >= len(row):
                 continue
@@ -397,6 +441,109 @@ def _parse_table(table: list[list[str | None]], hazard: str) -> list[Observation
                     lat=coords[1] if coords else None,
                 )
             )
+    return out
+
+
+def _population_and_crop(row: list[str | None]) -> tuple[float | None, float | None]:
+    """The district's total affected population and crop area, found by
+    arithmetic rather than position.
+
+    The section prints three population counts, their total, then crop area.
+    The three counts always sum to the total, so the total is the first
+    number that equals the sum of the three before it. That check is
+    self-validating: a row whose numbers do not add up yields (None, None)
+    and nothing is stored, rather than a confident wrong figure.
+    """
+    numbers = [n for n in (_as_number(c) for c in row[2:]) if n is not None]
+    for i in range(len(numbers) - 3):
+        a, b, c, total = numbers[i : i + 4]
+        if abs((a + b + c) - total) < 0.5:
+            crop = numbers[i + 4] if i + 4 < len(numbers) else None
+            return total, crop
+    return None, None
+
+
+def _parse_population_row(
+    row: list[str | None],
+    name: str,
+    district: str | None,
+    hazard: str,
+    raw_row: list[str | None],
+) -> list[Observation]:
+    out: list[Observation] = []
+    raw = {"section": POPULATION_SECTION, "row": raw_row, "hazard": hazard}
+    total, crop = _population_and_crop(row)
+    if total is not None:
+        out.append(Observation("population_affected", total, None, "people", name, district, raw))
+    if crop is not None:
+        out.append(Observation("crop_area_submerged", crop, None, "hectares", name, district, raw))
+
+    # Per revenue circle. Each entry is self-labelled, so a breakdown the PDF
+    # truncated still yields correct individual circles -- it just does not
+    # sum to the district total, and consumers must not assume it does.
+    text = " ".join(_clean(c) for c in row if c)
+    for circle, value in _CIRCLE_POPULATION.findall(text):
+        out.append(
+            Observation(
+                "population_affected_circle",
+                float(value.replace(",", "")),
+                None,
+                "people",
+                _clean(circle),
+                district,
+                {**raw, "district_as_printed": name},
+            )
+        )
+    return out
+
+
+def _parse_inmate_row(
+    row: list[str | None],
+    name: str,
+    district: str | None,
+    hazard: str,
+    raw_row: list[str | None],
+    section: str,
+) -> list[Observation]:
+    """Total people supplied, children among them, and the per-circle split.
+
+    The component check is recorded rather than enforced: in the 2025
+    template Male + Female + Children does not always equal Total (1 Jun 2025,
+    Cachar: 2055 + 2299 + 710 = 5064 against 5066), because the extra
+    vulnerability columns overlap. So the printed total is stored as printed,
+    and `components_match` says whether it reconciles.
+    """
+    metric = INMATE_SECTIONS[section]
+    numbers = [n for n in (_as_number(c) for c in row[2:]) if n is not None]
+    if not numbers:
+        return []
+    total = numbers[0]
+    components = numbers[1:4]
+    raw = {
+        "section": section,
+        "row": raw_row,
+        "hazard": hazard,
+        "components_match": len(components) == 3 and abs(sum(components) - total) < 0.5,
+    }
+    out = [Observation(metric, total, None, "people", name, district, raw)]
+    if len(components) == 3:
+        out.append(
+            Observation(f"{metric}_children", components[2], None, "people", name, district, raw)
+        )
+
+    text = " ".join(_clean(c) for c in row if c)
+    for circle, value in _CIRCLE_COUNT.findall(text):
+        out.append(
+            Observation(
+                f"{metric}_circle",
+                float(value.replace(",", "")),
+                None,
+                "people",
+                _clean(circle),
+                district,
+                {**raw, "district_as_printed": name},
+            )
+        )
     return out
 
 

@@ -41,6 +41,9 @@ scenarios — starting with floods, architected to extend to other hazards.
 10. **`docs/decisions/0010-accessibility-model.md`** — the Phase 3 model: what
     it predicts and why, its results against persistence, and why the
     baseline is what is served.
+11. **`docs/decisions/0011-demand-and-supply-planning.md`** — Phase 4: demand
+    from people actually in relief camps, OSM-located revenue circles,
+    exposure-aware routes, and an optimiser that says what is limiting it.
 
 ## Status
 
@@ -59,10 +62,11 @@ DRIMS reports across 35 Assam districts and two monsoons, it forecasts
 whether a district is flood-affected 1 and 3 days ahead, and
 `current_accessibility` is now populated for 71,520 corridor roads — each
 value with its model version and as-of date. It is judged against
-persistence ("tomorrow looks like today"), and **persistence won validation,
-so persistence is what is served**; logistic regression ranks new flood
-onsets better (AUC 0.72 vs 0.50) and gets a fair re-selection after this
-season. The per-road spread comes from a stated terrain prior, not a fitted
+persistence ("tomorrow looks like today"). After the 2025 population data was
+repaired in Phase 4, validation selects **logistic regression for the 1-day
+forecast** — a tie with persistence on Brier score, but far better at ranking
+new flood onsets (AUC 0.71 vs 0.50) — while **persistence is still served for
+3 days ahead**. The per-road spread comes from a stated terrain prior, not a fitted
 one. The model has no rainfall input: every free source tried disallows
 automated access.
 
@@ -97,9 +101,21 @@ not built**: download needs Copernicus credentials and deriving polygons
 needs a real SAR pipeline, so Phase 2 is not complete and is not claimed as
 complete.
 
-**Not started:** Sentinel-1 flood extent (rest of Phase 2); demand
-estimation and logistics optimization (Phase 4); natural-language explanation
-(Phase 6). The logistics page is still a scaffold stub (Phase 7). Field
+**Supply planning works** (Phase 4, `0011`): demand comes from the people
+DRIMS reports in relief camps and at relief distribution centres, per
+revenue circle — not from "population affected", which overstates need about
+twentyfold. Circles are located from committed OpenStreetMap data with strict,
+reasoned matching. Every depot-to-circle pair gets a fastest and a
+lower-exposure route, and an OR-Tools linear programme allocates stock under a
+fleet-hours limit, lets the operator choose coverage-first or fairness-first,
+and states which resource is binding. Building it found two parser bugs: 5% of
+population totals were read from the wrong column, and the entire 2025 season
+had no population figures because that year's report labels the section
+differently. Both are fixed and the archive re-ingested. Depot stock and fleet
+are operator inputs; the example figures are labelled as such everywhere.
+
+**Not started:** Sentinel-1 flood extent (rest of Phase 2); natural-language
+explanation beyond the optimiser's plain-language limits (Phase 6). Field
 reports still never write `current_accessibility` — a crowd vote is not a
 model prediction, and they stay published separately.
 

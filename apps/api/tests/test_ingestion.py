@@ -264,11 +264,40 @@ def test_unregistered_section_clears_state_and_emits_nothing():
     table = [
         ["Villages Affected", "District", "Total"],
         [None, "Cachar", "5"],
-        ["Inmates In Relief Camps", "District", "Total"],
+        ["Animals Affected", "District", "Total"],
         [None, "Cachar", "999"],
     ]
     out = drims._parse_table(table, "flood")
     assert [o.value_num for o in out] == [5.0], "only the registered section parses"
+
+
+def test_camp_inmates_are_their_own_metric_not_camps_opened():
+    """The original reason sections are registered exactly: an earlier parser
+    read inmate counts as relief camps opened."""
+    table = [
+        ["Relief Camps / Centres Opened", "District", "Total"],
+        [None, "Cachar", "27"],
+        ["Inmates In Relief Camps", "District", "Total", "Revenue Circlewise", "Male", "Female", "Children"],
+        [None, "Cachar", "5066", "(Silchar | 4146), (Udharbond | 626), (Lakhi", "2055", "2299", "710"],
+    ]
+    out = {(o.metric, o.place_name): o.value_num for o in drims._parse_table(table, "flood")}
+    assert out[("relief_camps_opened", "Cachar")] == 27.0
+    assert out[("relief_camp_inmates", "Cachar")] == 5066.0
+    assert out[("relief_camp_inmates_children", "Cachar")] == 710.0
+    assert out[("relief_camp_inmates_circle", "Silchar")] == 4146.0
+    assert ("relief_camp_inmates_circle", "Lakhi") not in out, "a truncated entry is not a circle"
+
+
+def test_2025_population_label_is_recognised():
+    """The 2025 template says 'Affected' where 2026 says 'Submerged'; missing
+    the alias silently dropped a whole season's population figures."""
+    table = [
+        ["Population And Crop Area Affected", "District", "Male", "Female", "Children", "Total"],
+        [None, "Cachar", "40000", "40000", "23790", "103790", "460", "(Silchar | Population Affected: 57000 | Crop"],
+    ]
+    out = {(o.metric, o.place_name): o.value_num for o in drims._parse_table(table, "flood")}
+    assert out[("population_affected", "Cachar")] == 103790.0
+    assert out[("population_affected_circle", "Silchar")] == 57000.0
 
 
 def test_infrastructure_damage_point_carries_coordinates():
@@ -434,3 +463,46 @@ def test_supported_hazards_is_narrower_than_what_the_endpoint_offers():
 
     assert SUPPORTED_HAZARDS < set(drims.HAZARD_TYPES)
     assert "rainfall" not in SUPPORTED_HAZARDS
+
+
+# ---------------------------------------------------------------------------
+# Population section -- read by arithmetic, not column position
+# ---------------------------------------------------------------------------
+
+
+def test_population_total_survives_a_shifted_column():
+    """A real Cachar row from 6 Sep 2026. Reading column 5 returned 20, a
+    component count; the total is 100."""
+    from app.services.ingestion.sources.drims import _population_and_crop
+
+    row = [None, "Cachar", "45", None, "35", "20", "100", None, "0"]
+    assert _population_and_crop(row) == (100.0, 0.0)
+
+
+def test_population_total_found_when_columns_are_not_shifted():
+    from app.services.ingestion.sources.drims import _population_and_crop
+
+    row = [None, "Nagaon", "4604", "3986", "1385", "9975", None, "4191.61", None, "(Rupahi | ...)"]
+    assert _population_and_crop(row) == (9975.0, 4191.61)
+
+
+def test_population_row_that_does_not_add_up_stores_nothing():
+    """No consistent total means no number, never a guessed one."""
+    from app.services.ingestion.sources.drims import _population_and_crop
+
+    assert _population_and_crop([None, "X", "1", "2", "3", "7", "9"]) == (None, None)
+
+
+def test_revenue_circle_breakdown_is_extracted_and_survives_truncation():
+    from app.services.ingestion.sources.drims import _parse_population_row
+
+    row = [
+        None, "Nagaon", "4604", "3986", "1385", "9975", None, "4191.61", None,
+        "(Rupahi | Population Affected: 2,721 | Crop Area Submerged: 428), "
+        "(Samaguri | Population Affected: 7254 | Crop Area Submerged: 3673.61), (Nagaon | Popul",
+    ]
+    obs = _parse_population_row(row, "Nagaon", None, "flood", row)
+    circles = {o.place_name: o.value_num for o in obs if o.metric == "population_affected_circle"}
+    assert circles == {"Rupahi": 2721.0, "Samaguri": 7254.0}
+    total = [o.value_num for o in obs if o.metric == "population_affected"]
+    assert total == [9975.0]

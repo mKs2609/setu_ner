@@ -4,6 +4,21 @@
 populated for the first time: 71,520 corridor roads, every value carrying a
 model version and an as-of date. 13 Sep 2026.
 
+> **Update, 14 Sep 2026 — the 1-day model is now logistic regression.**
+> Phase 4 (`0011`) found that the 2025 reports label the population section
+> differently, so the whole 2025 season had been stored with no population
+> figures, and 5% of 2026 totals had been read from the wrong column. With
+> both fixed and the archive re-ingested, the same selection rule — best mean
+> Brier on 2025 validation folds, test season never consulted — now picks
+> **logistic regression at h=1** (validation 0.02124 vs persistence 0.02161).
+> On the held-out 2026 season it ties persistence on Brier (0.03934 vs
+> 0.03939, skill +0.1%) and ranks new floods far better (onset AUC 0.71 vs
+> 0.50). **h=3 still serves persistence** (validation 0.04062 vs 0.04107),
+> although logistic is 4.9% better on the test season. The two population
+> features that had near-zero weight now carry real weight (+0.21 each,
+> standardised). The tables below are the original 13 Sep results, kept as
+> the record of what was decided on the data as it then stood.
+
 ## What unblocked it
 
 `0007` stopped Phase 3 at **3 labelled road-days**. Two findings changed that.

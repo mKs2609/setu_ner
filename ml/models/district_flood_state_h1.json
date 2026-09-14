@@ -1,6 +1,6 @@
 {
   "horizon_days": 1,
-  "kind": "persistence",
+  "kind": "logistic",
   "features": [
     "affected",
     "log_population",
@@ -14,8 +14,44 @@
     "state_trend"
   ],
   "params": {
-    "p_given_affected": 0.7430555555555556,
-    "p_given_not_affected": 0.019251148004238786
+    "C": 0.1,
+    "scaler_mean": [
+      0.070608,
+      0.320015,
+      0.069302,
+      0.018051,
+      0.006187,
+      0.029228,
+      0.076683,
+      0.072029,
+      0.848344,
+      0.014281
+    ],
+    "scaler_scale": [
+      0.256168,
+      1.560498,
+      0.193205,
+      0.083237,
+      1.153218,
+      0.168446,
+      0.266088,
+      0.101038,
+      0.825192,
+      0.451685
+    ],
+    "coef": [
+      0.858147,
+      0.208241,
+      0.1876,
+      -0.137868,
+      0.208946,
+      0.054843,
+      -0.01675,
+      0.265389,
+      0.615473,
+      -0.013091
+    ],
+    "intercept": -3.774374
   },
   "baselines": {
     "persistence": {
@@ -31,12 +67,12 @@
     "mean_brier": {
       "persistence": 0.02161,
       "climatology": 0.05024,
-      "logistic_C0.01": 0.02356,
-      "logistic_C0.1": 0.02224,
-      "logistic_C1.0": 0.02238,
-      "logistic_C10.0": 0.02241
+      "logistic_C0.01": 0.02194,
+      "logistic_C0.1": 0.02124,
+      "logistic_C1.0": 0.02139,
+      "logistic_C10.0": 0.02142
     },
-    "selected": "persistence"
+    "selected": "logistic_C0.1"
   },
   "train_period": {
     "from": "2025-05-01",
@@ -47,124 +83,124 @@
   },
   "test_period": {
     "from": "2026-05-01",
-    "to": "2026-09-11",
-    "examples": 4550,
+    "to": "2026-09-12",
+    "examples": 4585,
     "districts": 35,
-    "positive_rate": 0.1171
+    "positive_rate": 0.1165
   },
   "test_metrics": {
     "served": {
       "all": {
-        "n": 4550,
-        "positives": 533,
-        "brier": 0.03968,
-        "log_loss": 0.16088,
-        "roc_auc": 0.8947,
-        "average_precision": 0.6639
+        "n": 4585,
+        "positives": 534,
+        "brier": 0.03934,
+        "log_loss": 0.15427,
+        "roc_auc": 0.9357,
+        "average_precision": 0.7834
       },
       "onset": {
-        "n": 4016,
+        "n": 4050,
         "positives": 99,
-        "brier": 0.02407,
-        "log_loss": 0.11634,
-        "roc_auc": 0.5,
-        "average_precision": 0.0178
+        "brier": 0.02358,
+        "log_loss": 0.10834,
+        "roc_auc": 0.7082,
+        "average_precision": 0.0692
       },
       "recession": {
-        "n": 534,
-        "positives": 434,
-        "brier": 0.15705,
-        "log_loss": 0.49584,
-        "roc_auc": 0.5,
-        "average_precision": 0.7765
+        "n": 535,
+        "positives": 435,
+        "brier": 0.15866,
+        "log_loss": 0.50191,
+        "roc_auc": 0.6622,
+        "average_precision": 0.8717
       }
     },
     "persistence": {
       "all": {
-        "n": 4550,
-        "positives": 533,
-        "brier": 0.03968,
-        "log_loss": 0.16088,
-        "roc_auc": 0.8947,
-        "average_precision": 0.6639
+        "n": 4585,
+        "positives": 534,
+        "brier": 0.03939,
+        "log_loss": 0.15986,
+        "roc_auc": 0.895,
+        "average_precision": 0.6642
       },
       "onset": {
-        "n": 4016,
+        "n": 4050,
         "positives": 99,
-        "brier": 0.02407,
-        "log_loss": 0.11634,
+        "brier": 0.02387,
+        "log_loss": 0.11552,
         "roc_auc": 0.5,
         "average_precision": 0.0178
       },
       "recession": {
-        "n": 534,
-        "positives": 434,
-        "brier": 0.15705,
-        "log_loss": 0.49584,
+        "n": 535,
+        "positives": 435,
+        "brier": 0.15688,
+        "log_loss": 0.49547,
         "roc_auc": 0.5,
-        "average_precision": 0.7765
+        "average_precision": 0.7766
       }
     },
     "climatology": {
       "all": {
-        "n": 4550,
-        "positives": 533,
-        "brier": 0.10562,
-        "log_loss": 0.37538,
+        "n": 4585,
+        "positives": 534,
+        "brier": 0.10504,
+        "log_loss": 0.37364,
         "roc_auc": 0.5,
-        "average_precision": 0.0794
+        "average_precision": 0.0795
       },
       "onset": {
-        "n": 4016,
+        "n": 4050,
         "positives": 99,
-        "brier": 0.02613,
-        "log_loss": 0.13653,
+        "brier": 0.02595,
+        "log_loss": 0.136,
         "roc_auc": 0.5,
         "average_precision": 0.0178
       },
       "recession": {
-        "n": 534,
-        "positives": 434,
-        "brier": 0.70344,
-        "log_loss": 2.17168,
+        "n": 535,
+        "positives": 435,
+        "brier": 0.70374,
+        "log_loss": 2.17259,
         "roc_auc": 0.5,
-        "average_precision": 0.7765
+        "average_precision": 0.7766
       }
     },
     "logistic": {
       "all": {
-        "n": 4550,
-        "positives": 533,
-        "brier": 0.04013,
-        "log_loss": 0.1564,
-        "roc_auc": 0.9354,
-        "average_precision": 0.7489
+        "n": 4585,
+        "positives": 534,
+        "brier": 0.03934,
+        "log_loss": 0.15427,
+        "roc_auc": 0.9357,
+        "average_precision": 0.7834
       },
       "onset": {
-        "n": 4016,
+        "n": 4050,
         "positives": 99,
-        "brier": 0.02375,
-        "log_loss": 0.10852,
-        "roc_auc": 0.7167,
-        "average_precision": 0.0737
+        "brier": 0.02358,
+        "log_loss": 0.10834,
+        "roc_auc": 0.7082,
+        "average_precision": 0.0692
       },
       "recession": {
-        "n": 534,
-        "positives": 434,
-        "brier": 0.16329,
-        "log_loss": 0.51649,
-        "roc_auc": 0.5717,
-        "average_precision": 0.8277
+        "n": 535,
+        "positives": 435,
+        "brier": 0.15866,
+        "log_loss": 0.50191,
+        "roc_auc": 0.6622,
+        "average_precision": 0.8717
       }
     }
   },
-  "trained_at": "2026-09-12T20:55:58+00:00",
-  "version": "dfs-h1-2026-09-13-aeaace66",
+  "trained_at": "2026-09-13T19:28:32+00:00",
+  "version": "dfs-h1-2026-09-14-ed743f0c",
   "verdict": {
-    "skill_vs_persistence": 0.0,
-    "onset_skill_vs_persistence": 0.0,
-    "logistic_test_skill_vs_persistence": -0.0113,
-    "logistic_test_onset_auc": 0.7167,
-    "summary": "The logistic model did not beat persistence on validation, so persistence is served. That is the honest outcome, not a failure to hide."
+    "skill_vs_persistence": 0.0013,
+    "onset_skill_vs_persistence": 0.0121,
+    "logistic_test_skill_vs_persistence": 0.0013,
+    "logistic_test_onset_auc": 0.7082,
+    "summary": "Beats persistence on the held-out season (Brier skill +0.1%)."
   }
 }

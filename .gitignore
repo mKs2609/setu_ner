@@ -45,6 +45,10 @@ geo/**/*.graphml
 geo/**/cache/
 geo/**/*.json
 geo/**/*.png
+# ...except the gazetteer, which planning reads at runtime and is small,
+# reviewable and not cheaply regenerable (docs/decisions/0011).
+!geo/gazetteer/
+!geo/gazetteer/corridor_places.json
 apps/web/next-env.d.ts
 # Build/tooling caches
 .turbo/

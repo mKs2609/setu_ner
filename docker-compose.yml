@@ -29,9 +29,11 @@ services:
       # The Phase 3 model artifacts live at the repo root, outside the API's
       # build context. See app/services/model/district_model.py.
       SETUNER_MODEL_DIR: /models
+      SETUNER_GAZETTEER: /gazetteer/corridor_places.json
     volumes:
       - ./apps/api:/app
       - ./ml/models:/models:ro
+      - ./geo/gazetteer:/gazetteer:ro
 
   web:
     build: ./apps/web

@@ -430,3 +430,194 @@ export async function fetchDistrictForecasts(): Promise<DistrictForecasts> {
   if (!res.ok) throw new Error(`Failed to load forecasts: ${res.status}`);
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Phase 4: demand and supply planning. See docs/decisions/0011.
+//
+// Stock and fleet are operator inputs the system cannot know. The API echoes
+// `example_inputs` so a plan built on the example figures says so on screen.
+// ---------------------------------------------------------------------------
+
+export type Commodity = "water" | "food";
+
+export interface SupplyDay {
+  date: string;
+  people: number;
+}
+
+export interface CircleNeed {
+  district: string;
+  circle: string;
+  people_to_supply: number;
+  camp_inmates: number;
+  centre_inmates: number;
+  population_affected: number | null;
+  needs: Record<Commodity, number>;
+  location: { lon: number; lat: number; resolved_by: string; note: string | null } | null;
+  location_problem: string | null;
+  conflicts: string[];
+}
+
+export interface NormInfo {
+  label: string;
+  unit: string;
+  per_person_per_day: number;
+  kg_per_unit: number;
+  urgency: number;
+  source: string;
+  basis: string;
+}
+
+export interface DemandResponse {
+  as_of: string;
+  horizon_days: number;
+  totals: {
+    people_to_supply: number;
+    people_located: number;
+    people_unlocated: number;
+    needs: Record<Commodity, number>;
+  };
+  circles: CircleNeed[];
+  unattributed_by_district: Record<string, Record<string, number>>;
+  norms: Record<Commodity, NormInfo>;
+  caveats: Record<string, string>;
+}
+
+export interface DepotForm {
+  name: string;
+  place?: string;
+  stock: Record<Commodity, number>;
+  trucks: number;
+}
+
+export interface ExampleInputs {
+  depots: DepotForm[];
+  fleet: { truck_capacity_kg: number; hours_per_day: number; loading_hours_per_trip: number };
+  note: string;
+}
+
+export interface PlanRequest {
+  as_of?: string;
+  horizon_days: number;
+  depots: DepotForm[];
+  fleet: { truck_capacity_kg: number; hours_per_day: number; loading_hours_per_trip: number };
+  risk_minutes_per_exposure_km: number;
+  fairness_first: boolean;
+  example_inputs: boolean;
+}
+
+export interface RouteSummary {
+  reachable: boolean;
+  travel_min?: number;
+  distance_km?: number;
+  exposure_km?: number;
+  unscored_km?: number;
+  weakest_accessibility?: number | null;
+  bridges?: number;
+}
+
+export interface PlanRoute {
+  depot: string;
+  circle: string;
+  used_in_plan: boolean;
+  fastest: RouteSummary;
+  lower_exposure: RouteSummary | null;
+  routes_diverge: boolean;
+  chosen: "fastest" | "lower_exposure";
+  local_delivery: boolean;
+  geometry?: [number, number][];
+  alternative_geometry?: [number, number][];
+}
+
+export interface PlanRun {
+  depot: string;
+  circle: string;
+  kg: number;
+  items: Partial<Record<Commodity, number>>;
+  one_way_min: number;
+  truckloads: number;
+  truck_hours: number;
+}
+
+export interface PlanResponse {
+  as_of: string;
+  latest_report: string;
+  is_replay: boolean;
+  example_inputs: boolean;
+  example_note: string | null;
+  demand: DemandResponse;
+  depots: {
+    key: string;
+    name: string;
+    located_by: string;
+    snap_km: number;
+    lon: number;
+    lat: number;
+    stock: Record<Commodity, number>;
+    trucks: number;
+  }[];
+  plan: {
+    status: string;
+    policy: "coverage_first" | "fairness_first";
+    runs: PlanRun[];
+    shortfalls: {
+      circle: string;
+      commodity: Commodity;
+      short: number;
+      unit: string;
+      fraction: number | null;
+      reason: string;
+    }[];
+    worst_shortfall_fraction: number | null;
+    person_days_needed_all_commodities: number;
+    person_days_covered_all_commodities: number;
+    truck_hours: number;
+    people_outside_plan: number;
+    limits: { kind: string; depot: string; plain: string }[];
+    depot_use: {
+      depot: string;
+      name: string;
+      sent: Record<Commodity, number>;
+      truck_hours_used: number;
+      truck_hours_available: number;
+    }[];
+  };
+  routes: PlanRoute[];
+  risk: {
+    accessibility_source: string;
+    district_p_affected_next_day: Record<string, number>;
+    risk_minutes_per_exposure_km: number;
+    live_conditions_applied: boolean;
+    closed_roads: number;
+    degraded_roads: number;
+  };
+  problems: string[];
+  caveats: Record<string, string>;
+}
+
+export async function fetchSupplyDays(): Promise<SupplyDay[]> {
+  const res = await fetch(`${API_BASE}/api/v1/logistics/supply-days`);
+  if (!res.ok) throw new Error(`Failed to load supply days: ${res.status}`);
+  return (await res.json()).days;
+}
+
+export async function fetchExampleInputs(): Promise<ExampleInputs> {
+  const res = await fetch(`${API_BASE}/api/v1/logistics/example-inputs`);
+  if (!res.ok) throw new Error(`Failed to load example inputs: ${res.status}`);
+  return res.json();
+}
+
+export async function requestPlan(body: PlanRequest): Promise<PlanResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/logistics/plan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(
+      typeof detail?.detail === "string" ? detail.detail : `Planning failed: ${res.status}`
+    );
+  }
+  return res.json();
+}

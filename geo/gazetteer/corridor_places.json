@@ -1,0 +1,2375 @@
+{
+ "attribution": "Data (c) OpenStreetMap contributors, ODbL 1.0 -- https://www.openstreetmap.org/copyright",
+ "source": "https://overpass.kumi.systems/api/interpreter",
+ "query": "[out:json][timeout:90];node[\"place\"~\"^(city|town|village)$\"][\"name\"](24.3,92.0,25.8,93.5);out;",
+ "osm_data_timestamp": "2026-06-01T08:52:28Z",
+ "fetched_at": "2026-09-13T18:50:30+00:00",
+ "places": [
+  {
+   "name": "4 Kilo",
+   "place": "village",
+   "lon": 92.727684,
+   "lat": 25.4807,
+   "osm_id": 8717784813
+  },
+  {
+   "name": "Aglapur",
+   "place": "village",
+   "lon": 93.133544,
+   "lat": 24.780728,
+   "osm_id": 12396081542
+  },
+  {
+   "name": "Ahamadabad",
+   "place": "village",
+   "lon": 93.138146,
+   "lat": 24.731823,
+   "osm_id": 12329641076
+  },
+  {
+   "name": "Aina",
+   "place": "village",
+   "lon": 93.459436,
+   "lat": 24.396922,
+   "osm_id": 13275554878
+  },
+  {
+   "name": "Akhui",
+   "place": "village",
+   "lon": 93.473343,
+   "lat": 24.915699,
+   "osm_id": 6248935883
+  },
+  {
+   "name": "Alambag",
+   "place": "village",
+   "lon": 92.684126,
+   "lat": 24.791268,
+   "osm_id": 12373756571
+  },
+  {
+   "name": "Algapur",
+   "place": "village",
+   "lon": 92.594812,
+   "lat": 24.762439,
+   "osm_id": 7160175378
+  },
+  {
+   "name": "Algāpur",
+   "place": "village",
+   "lon": 92.591486,
+   "lat": 24.752005,
+   "osm_id": 12279681719
+  },
+  {
+   "name": "Alni",
+   "place": "village",
+   "lon": 93.044008,
+   "lat": 24.732959,
+   "osm_id": 13270195093
+  },
+  {
+   "name": "Amlarem",
+   "place": "village",
+   "lon": 92.106692,
+   "lat": 25.285761,
+   "osm_id": 1262014982
+  },
+  {
+   "name": "Amreng",
+   "place": "village",
+   "lon": 92.814796,
+   "lat": 25.743718,
+   "osm_id": 6244036969
+  },
+  {
+   "name": "Ankhasuo",
+   "place": "village",
+   "lon": 93.082024,
+   "lat": 24.569132,
+   "osm_id": 2084597260
+  },
+  {
+   "name": "Arunāchal",
+   "place": "village",
+   "lon": 92.766795,
+   "lat": 24.866573,
+   "osm_id": 12279694584
+  },
+  {
+   "name": "Aulicherra",
+   "place": "village",
+   "lon": 92.674762,
+   "lat": 24.583098,
+   "osm_id": 12373756575
+  },
+  {
+   "name": "B. Huonveng",
+   "place": "village",
+   "lon": 93.105672,
+   "lat": 24.673643,
+   "osm_id": 12382044767
+  },
+  {
+   "name": "BHANJANG BASTI, HAFLONG",
+   "place": "village",
+   "lon": 93.022067,
+   "lat": 25.158655,
+   "osm_id": 11038715217
+  },
+  {
+   "name": "Babukhal",
+   "place": "village",
+   "lon": 93.181406,
+   "lat": 24.798324,
+   "osm_id": 12363196035
+  },
+  {
+   "name": "Badarpur",
+   "place": "town",
+   "lon": 92.558515,
+   "lat": 24.871132,
+   "osm_id": 3158957159
+  },
+  {
+   "name": "Bairagibazar",
+   "place": "village",
+   "lon": 92.157204,
+   "lat": 24.85467,
+   "osm_id": 4885600855
+  },
+  {
+   "name": "Bakhal",
+   "place": "village",
+   "lon": 93.101819,
+   "lat": 24.776386,
+   "osm_id": 12349615444
+  },
+  {
+   "name": "Bamgaijang",
+   "place": "village",
+   "lon": 93.39823,
+   "lat": 24.935868,
+   "osm_id": 6377960586
+  },
+  {
+   "name": "Bangrām",
+   "place": "village",
+   "lon": 92.823658,
+   "lat": 24.547006,
+   "osm_id": 12229339852
+  },
+  {
+   "name": "Bapung",
+   "place": "village",
+   "lon": 92.309275,
+   "lat": 25.404739,
+   "osm_id": 1262015226
+  },
+  {
+   "name": "Baraigram",
+   "place": "village",
+   "lon": 92.343178,
+   "lat": 24.680655,
+   "osm_id": 6336366881
+  },
+  {
+   "name": "Barato",
+   "place": "village",
+   "lon": 92.452471,
+   "lat": 25.605255,
+   "osm_id": 245734988
+  },
+  {
+   "name": "Barokut",
+   "place": "village",
+   "lon": 92.028971,
+   "lat": 24.832731,
+   "osm_id": 4638381075
+  },
+  {
+   "name": "Bataw",
+   "place": "village",
+   "lon": 92.243893,
+   "lat": 25.23042,
+   "osm_id": 6253408770
+  },
+  {
+   "name": "Berabak",
+   "place": "village",
+   "lon": 93.104882,
+   "lat": 24.733167,
+   "osm_id": 12170898600
+  },
+  {
+   "name": "Berabak",
+   "place": "village",
+   "lon": 93.100472,
+   "lat": 24.74725,
+   "osm_id": 12349615459
+  },
+  {
+   "name": "Bhaga Bāzār",
+   "place": "village",
+   "lon": 92.822542,
+   "lat": 24.540448,
+   "osm_id": 12218662746
+  },
+  {
+   "name": "Bhomikpara",
+   "place": "village",
+   "lon": 93.082364,
+   "lat": 24.624549,
+   "osm_id": 12333966840
+  },
+  {
+   "name": "Bhuban Hills",
+   "place": "village",
+   "lon": 92.918542,
+   "lat": 24.699044,
+   "osm_id": 12375838501
+  },
+  {
+   "name": "Bhutangkhal",
+   "place": "village",
+   "lon": 93.111633,
+   "lat": 24.660984,
+   "osm_id": 11522102651
+  },
+  {
+   "name": "Bhānga",
+   "place": "village",
+   "lon": 92.485839,
+   "lat": 24.85524,
+   "osm_id": 12288807061
+  },
+  {
+   "name": "Bilaipur",
+   "place": "village",
+   "lon": 92.727925,
+   "lat": 24.520458,
+   "osm_id": 5232412908
+  },
+  {
+   "name": "Bilbari",
+   "place": "village",
+   "lon": 92.29875,
+   "lat": 24.591134,
+   "osm_id": 8925188026
+  },
+  {
+   "name": "Bilkhawthlir",
+   "place": "village",
+   "lon": 92.719245,
+   "lat": 24.336755,
+   "osm_id": 7162182740
+  },
+  {
+   "name": "Binnakandi",
+   "place": "village",
+   "lon": 92.978985,
+   "lat": 24.725074,
+   "osm_id": 6247259728
+  },
+  {
+   "name": "Binselu",
+   "place": "village",
+   "lon": 93.099499,
+   "lat": 24.754135,
+   "osm_id": 12349615458
+  },
+  {
+   "name": "Bolongdai",
+   "place": "village",
+   "lon": 93.45144,
+   "lat": 24.777924,
+   "osm_id": 6237090329
+  },
+  {
+   "name": "Borobekra",
+   "place": "village",
+   "lon": 93.096265,
+   "lat": 24.632902,
+   "osm_id": 11967520020
+  },
+  {
+   "name": "Borokhal",
+   "place": "village",
+   "lon": 93.189292,
+   "lat": 24.80208,
+   "osm_id": 12363196034
+  },
+  {
+   "name": "Buangmun",
+   "place": "village",
+   "lon": 93.122156,
+   "lat": 24.61546,
+   "osm_id": 12003265040
+  },
+  {
+   "name": "Bungjang",
+   "place": "village",
+   "lon": 93.328981,
+   "lat": 24.345969,
+   "osm_id": 2455675390
+  },
+  {
+   "name": "Champanagar",
+   "place": "village",
+   "lon": 93.117514,
+   "lat": 24.768142,
+   "osm_id": 12054051003
+  },
+  {
+   "name": "Chandkhira",
+   "place": "village",
+   "lon": 92.294211,
+   "lat": 24.565508,
+   "osm_id": 4885601111
+  },
+  {
+   "name": "Chandrapur",
+   "place": "village",
+   "lon": 92.925299,
+   "lat": 24.811009,
+   "osm_id": 13322541951
+  },
+  {
+   "name": "Cherāgi",
+   "place": "village",
+   "lon": 92.39297,
+   "lat": 24.353499,
+   "osm_id": 12434535898
+  },
+  {
+   "name": "Chhimluang",
+   "place": "village",
+   "lon": 92.717559,
+   "lat": 24.3876,
+   "osm_id": 245722057
+  },
+  {
+   "name": "Chingdong Leikai",
+   "place": "village",
+   "lon": 93.116018,
+   "lat": 24.783077,
+   "osm_id": 12334098362
+  },
+  {
+   "name": "Chingmei Kabui",
+   "place": "village",
+   "lon": 93.45162,
+   "lat": 24.638898,
+   "osm_id": 13281236118
+  },
+  {
+   "name": "Chingmei Kuki",
+   "place": "village",
+   "lon": 93.433145,
+   "lat": 24.60773,
+   "osm_id": 13317712614
+  },
+  {
+   "name": "Chingmun",
+   "place": "village",
+   "lon": 93.172558,
+   "lat": 24.701993,
+   "osm_id": 11592309345
+  },
+  {
+   "name": "Chotobekra",
+   "place": "village",
+   "lon": 93.104474,
+   "lat": 24.680723,
+   "osm_id": 2084597302
+  },
+  {
+   "name": "Choudhurikhal",
+   "place": "village",
+   "lon": 93.105222,
+   "lat": 24.588624,
+   "osm_id": 11980981784
+  },
+  {
+   "name": "Churaibari",
+   "place": "village",
+   "lon": 92.245674,
+   "lat": 24.436406,
+   "osm_id": 4885601065
+  },
+  {
+   "name": "Dalu",
+   "place": "village",
+   "lon": 92.782899,
+   "lat": 24.923232,
+   "osm_id": 12218273466
+  },
+  {
+   "name": "Damdiei",
+   "place": "village",
+   "lon": 93.175123,
+   "lat": 24.320529,
+   "osm_id": 10114946399
+  },
+  {
+   "name": "Dargākona",
+   "place": "village",
+   "lon": 92.753116,
+   "lat": 24.694332,
+   "osm_id": 12264408438
+  },
+  {
+   "name": "Dawki",
+   "place": "village",
+   "lon": 92.021572,
+   "lat": 25.185634,
+   "osm_id": 830103865
+  },
+  {
+   "name": "Dawltang",
+   "place": "village",
+   "lon": 93.149339,
+   "lat": 24.709767,
+   "osm_id": 12391620974
+  },
+  {
+   "name": "Dengarband",
+   "place": "village",
+   "lon": 92.3017,
+   "lat": 24.401,
+   "osm_id": 245722358
+  },
+  {
+   "name": "Dhalāi",
+   "place": "village",
+   "lon": 92.838163,
+   "lat": 24.589042,
+   "osm_id": 12229339851
+  },
+  {
+   "name": "Dharmanagar",
+   "place": "town",
+   "lon": 92.165526,
+   "lat": 24.373408,
+   "osm_id": 830186210
+  },
+  {
+   "name": "Dholai",
+   "place": "village",
+   "lon": 92.846366,
+   "lat": 24.5959,
+   "osm_id": 6231262187
+  },
+  {
+   "name": "Dholaikhal",
+   "place": "village",
+   "lon": 92.811565,
+   "lat": 24.424911,
+   "osm_id": 12373756578
+  },
+  {
+   "name": "Dholakhal",
+   "place": "village",
+   "lon": 93.110875,
+   "lat": 24.621382,
+   "osm_id": 12391178165
+  },
+  {
+   "name": "Digli",
+   "place": "village",
+   "lon": 93.124098,
+   "lat": 24.865849,
+   "osm_id": 12375834700
+  },
+  {
+   "name": "Dishru Village",
+   "place": "village",
+   "lon": 93.016837,
+   "lat": 25.206444,
+   "osm_id": 11027601106
+  },
+  {
+   "name": "Dudbokshi",
+   "place": "village",
+   "lon": 92.116908,
+   "lat": 24.833409,
+   "osm_id": 4977318074
+  },
+  {
+   "name": "Duha Kha",
+   "place": "village",
+   "lon": 92.116512,
+   "lat": 24.819326,
+   "osm_id": 5012704584
+  },
+  {
+   "name": "Dullabhcherra",
+   "place": "town",
+   "lon": 92.435585,
+   "lat": 24.48627,
+   "osm_id": 830103551
+  },
+  {
+   "name": "Durgapur",
+   "place": "village",
+   "lon": 93.096944,
+   "lat": 24.596681,
+   "osm_id": 11981270364
+  },
+  {
+   "name": "Dwarband",
+   "place": "village",
+   "lon": 92.710318,
+   "lat": 24.632974,
+   "osm_id": 6241314331
+  },
+  {
+   "name": "Dīwāngaon",
+   "place": "village",
+   "lon": 93.023075,
+   "lat": 24.847111,
+   "osm_id": 12222987256
+  },
+  {
+   "name": "Fakuagram",
+   "place": "village",
+   "lon": 92.413806,
+   "lat": 24.660707,
+   "osm_id": 11428391449
+  },
+  {
+   "name": "Fulertal",
+   "place": "village",
+   "lon": 93.028037,
+   "lat": 24.789637,
+   "osm_id": 6263361653
+  },
+  {
+   "name": "Galkapkot",
+   "place": "village",
+   "lon": 93.280984,
+   "lat": 24.349239,
+   "osm_id": 13062001083
+  },
+  {
+   "name": "Gamhui",
+   "place": "village",
+   "lon": 93.259247,
+   "lat": 24.35465,
+   "osm_id": 13062000961
+  },
+  {
+   "name": "Gamphazol",
+   "place": "village",
+   "lon": 93.171898,
+   "lat": 24.795585,
+   "osm_id": 12363196038
+  },
+  {
+   "name": "Gidingpur",
+   "place": "village",
+   "lon": 93.147551,
+   "lat": 25.300036,
+   "osm_id": 6246654288
+  },
+  {
+   "name": "Gilgal",
+   "place": "village",
+   "lon": 93.085275,
+   "lat": 24.699559,
+   "osm_id": 12346230220
+  },
+  {
+   "name": "Gobindanagar",
+   "place": "village",
+   "lon": 92.722822,
+   "lat": 25.489929,
+   "osm_id": 8717754896
+  },
+  {
+   "name": "Guakhal",
+   "place": "village",
+   "lon": 93.102674,
+   "lat": 24.629506,
+   "osm_id": 12377376284
+  },
+  {
+   "name": "Gularthol",
+   "place": "village",
+   "lon": 93.149869,
+   "lat": 24.785644,
+   "osm_id": 11994951575
+  },
+  {
+   "name": "Gunjong",
+   "place": "village",
+   "lon": 93.010147,
+   "lat": 25.317591,
+   "osm_id": 6240693696
+  },
+  {
+   "name": "Hadama",
+   "place": "village",
+   "lon": 92.806156,
+   "lat": 24.488741,
+   "osm_id": 12375838502
+  },
+  {
+   "name": "Haflong",
+   "place": "town",
+   "lon": 93.017599,
+   "lat": 25.164505,
+   "osm_id": 245729854
+  },
+  {
+   "name": "Hailakandi",
+   "place": "town",
+   "lon": 92.564584,
+   "lat": 24.684692,
+   "osm_id": 245725264
+  },
+  {
+   "name": "Harangajao",
+   "place": "village",
+   "lon": 92.857153,
+   "lat": 25.116699,
+   "osm_id": 6244305246
+  },
+  {
+   "name": "Harinagar",
+   "place": "village",
+   "lon": 93.093678,
+   "lat": 24.626737,
+   "osm_id": 12334028340
+  },
+  {
+   "name": "Harinagar",
+   "place": "village",
+   "lon": 93.125413,
+   "lat": 24.920971,
+   "osm_id": 12375834699
+  },
+  {
+   "name": "Hatikhali",
+   "place": "village",
+   "lon": 93.102802,
+   "lat": 25.641867,
+   "osm_id": 245736203
+  },
+  {
+   "name": "Hilghat",
+   "place": "village",
+   "lon": 93.146286,
+   "lat": 24.792105,
+   "osm_id": 11978641740
+  },
+  {
+   "name": "Hojāl",
+   "place": "village",
+   "lon": 93.017638,
+   "lat": 25.222127,
+   "osm_id": 11027601107
+  },
+  {
+   "name": "Hājādīsa",
+   "place": "village",
+   "lon": 93.295019,
+   "lat": 25.381254,
+   "osm_id": 12832452746
+  },
+  {
+   "name": "Hāngrum",
+   "place": "village",
+   "lon": 93.302137,
+   "lat": 25.138651,
+   "osm_id": 6247910684
+  },
+  {
+   "name": "Indranagar",
+   "place": "village",
+   "lon": 92.864269,
+   "lat": 24.986656,
+   "osm_id": 12375834697
+  },
+  {
+   "name": "Inem",
+   "place": "village",
+   "lon": 93.484983,
+   "lat": 25.186457,
+   "osm_id": 6376614014
+  },
+  {
+   "name": "Irang Khun",
+   "place": "village",
+   "lon": 93.497383,
+   "lat": 24.85176,
+   "osm_id": 11715764688
+  },
+  {
+   "name": "Irongmara",
+   "place": "village",
+   "lon": 92.741899,
+   "lat": 24.689048,
+   "osm_id": 6241309610
+  },
+  {
+   "name": "Jakuradhor Part-1",
+   "place": "village",
+   "lon": 93.095607,
+   "lat": 24.609745,
+   "osm_id": 12330873919
+  },
+  {
+   "name": "Jakuradhor Part-2",
+   "place": "village",
+   "lon": 93.080299,
+   "lat": 24.603389,
+   "osm_id": 12330873920
+  },
+  {
+   "name": "Jalalpur",
+   "place": "village",
+   "lon": 92.458041,
+   "lat": 24.991878,
+   "osm_id": 8432198293
+  },
+  {
+   "name": "Jarolpokpi",
+   "place": "village",
+   "lon": 93.140962,
+   "lat": 24.755787,
+   "osm_id": 12055365295
+  },
+  {
+   "name": "Jhāpirband",
+   "place": "village",
+   "lon": 92.865844,
+   "lat": 24.912284,
+   "osm_id": 12290596562
+  },
+  {
+   "name": "Jiribam",
+   "place": "town",
+   "lon": 93.113727,
+   "lat": 24.809825,
+   "osm_id": 1420699824
+  },
+  {
+   "name": "Jirighāt",
+   "place": "village",
+   "lon": 93.109868,
+   "lat": 24.807212,
+   "osm_id": 6234572370
+  },
+  {
+   "name": "Jowai",
+   "place": "town",
+   "lon": 92.197318,
+   "lat": 25.44347,
+   "osm_id": 245733742
+  },
+  {
+   "name": "Jātinga",
+   "place": "village",
+   "lon": 93.02173,
+   "lat": 25.130977,
+   "osm_id": 2081915203
+  },
+  {
+   "name": "K. Tuiliphai",
+   "place": "village",
+   "lon": 93.475352,
+   "lat": 24.401026,
+   "osm_id": 13275554893
+  },
+  {
+   "name": "Kadamtala",
+   "place": "village",
+   "lon": 92.211878,
+   "lat": 24.454963,
+   "osm_id": 7161894058
+  },
+  {
+   "name": "Kaimai",
+   "place": "village",
+   "lon": 93.259249,
+   "lat": 24.720034,
+   "osm_id": 6237090100
+  },
+  {
+   "name": "Kaiphundai",
+   "place": "village",
+   "lon": 93.223745,
+   "lat": 24.789686,
+   "osm_id": 11978769478
+  },
+  {
+   "name": "Kakordia",
+   "place": "village",
+   "lon": 92.18193,
+   "lat": 24.855731,
+   "osm_id": 4980043269
+  },
+  {
+   "name": "Kalachand",
+   "place": "village",
+   "lon": 93.131597,
+   "lat": 25.341563,
+   "osm_id": 6336198471
+  },
+  {
+   "name": "Kalain",
+   "place": "village",
+   "lon": 92.569116,
+   "lat": 24.968766,
+   "osm_id": 9851359676
+  },
+  {
+   "name": "Kamaranga",
+   "place": "village",
+   "lon": 93.14005,
+   "lat": 24.800231,
+   "osm_id": 12396926967
+  },
+  {
+   "name": "Kamarangkha Khasiya",
+   "place": "village",
+   "lon": 93.152116,
+   "lat": 24.779061,
+   "osm_id": 12394878686
+  },
+  {
+   "name": "Kamkeilon",
+   "place": "village",
+   "lon": 93.461352,
+   "lat": 24.465955,
+   "osm_id": 13275554671
+  },
+  {
+   "name": "Kangreng",
+   "place": "village",
+   "lon": 93.047808,
+   "lat": 24.474601,
+   "osm_id": 9728731317
+  },
+  {
+   "name": "Kangreng",
+   "place": "village",
+   "lon": 93.104262,
+   "lat": 24.455205,
+   "osm_id": 12389187262
+  },
+  {
+   "name": "Karimganj",
+   "place": "town",
+   "lon": 92.368111,
+   "lat": 24.864721,
+   "osm_id": 245726854
+  },
+  {
+   "name": "Kashimpur",
+   "place": "village",
+   "lon": 93.133898,
+   "lat": 24.737885,
+   "osm_id": 12054051107
+  },
+  {
+   "name": "Kasurbali",
+   "place": "village",
+   "lon": 93.065605,
+   "lat": 24.570563,
+   "osm_id": 12388332860
+  },
+  {
+   "name": "Katakhal",
+   "place": "village",
+   "lon": 92.63182,
+   "lat": 24.832364,
+   "osm_id": 567779839
+  },
+  {
+   "name": "Katigora",
+   "place": "village",
+   "lon": 92.573075,
+   "lat": 24.878689,
+   "osm_id": 7160175379
+  },
+  {
+   "name": "Katlicherra",
+   "place": "town",
+   "lon": 92.558198,
+   "lat": 24.469067,
+   "osm_id": 245722452
+  },
+  {
+   "name": "Kerhlām",
+   "place": "village",
+   "lon": 93.18096,
+   "lat": 25.024659,
+   "osm_id": 6247909755
+  },
+  {
+   "name": "Kh. Jaikhan",
+   "place": "village",
+   "lon": 93.114367,
+   "lat": 24.493549,
+   "osm_id": 12389199234
+  },
+  {
+   "name": "Khandi Gram",
+   "place": "village",
+   "lon": 92.113381,
+   "lat": 24.80818,
+   "osm_id": 5012706891
+  },
+  {
+   "name": "Khanduli",
+   "place": "village",
+   "lon": 92.442062,
+   "lat": 25.725321,
+   "osm_id": 1262015292
+  },
+  {
+   "name": "Khangbor",
+   "place": "village",
+   "lon": 93.073819,
+   "lat": 24.557398,
+   "osm_id": 11969432790
+  },
+  {
+   "name": "Khanpi",
+   "place": "village",
+   "lon": 93.484647,
+   "lat": 24.537464,
+   "osm_id": 11620146700
+  },
+  {
+   "name": "Khedagar",
+   "place": "village",
+   "lon": 93.123827,
+   "lat": 24.720745,
+   "osm_id": 12399027058
+  },
+  {
+   "name": "Khedarga Khasi",
+   "place": "village",
+   "lon": 93.128266,
+   "lat": 24.721578,
+   "osm_id": 12399035388
+  },
+  {
+   "name": "Khedraga Mikir",
+   "place": "village",
+   "lon": 93.122318,
+   "lat": 24.717972,
+   "osm_id": 12399035389
+  },
+  {
+   "name": "Khelma",
+   "place": "village",
+   "lon": 93.421469,
+   "lat": 25.459879,
+   "osm_id": 6823699595
+  },
+  {
+   "name": "Khliehriat",
+   "place": "town",
+   "lon": 92.36697,
+   "lat": 25.358712,
+   "osm_id": 245732875
+  },
+  {
+   "name": "Khodugonj",
+   "place": "village",
+   "lon": 92.148884,
+   "lat": 24.821687,
+   "osm_id": 4977329872
+  },
+  {
+   "name": "Khongjrong",
+   "place": "village",
+   "lon": 93.481116,
+   "lat": 24.966087,
+   "osm_id": 6248936585
+  },
+  {
+   "name": "Khongsang",
+   "place": "village",
+   "lon": 93.475418,
+   "lat": 24.822987,
+   "osm_id": 13264959827
+  },
+  {
+   "name": "Khoupum",
+   "place": "village",
+   "lon": 93.47793,
+   "lat": 24.68235,
+   "osm_id": 2084662993
+  },
+  {
+   "name": "Khuangjang",
+   "place": "village",
+   "lon": 93.271642,
+   "lat": 24.351836,
+   "osm_id": 11172427901
+  },
+  {
+   "name": "Kliehtryshi",
+   "place": "village",
+   "lon": 92.186795,
+   "lat": 25.483294,
+   "osm_id": 10570249801
+  },
+  {
+   "name": "Kobak",
+   "place": "village",
+   "lon": 92.805427,
+   "lat": 25.285798,
+   "osm_id": 12185046688
+  },
+  {
+   "name": "Kolhen",
+   "place": "village",
+   "lon": 93.494768,
+   "lat": 24.440209,
+   "osm_id": 11615146065
+  },
+  {
+   "name": "Konpi",
+   "place": "village",
+   "lon": 93.401992,
+   "lat": 24.433947,
+   "osm_id": 13275778675
+  },
+  {
+   "name": "Krishnanagar",
+   "place": "village",
+   "lon": 92.441626,
+   "lat": 24.503434,
+   "osm_id": 7160175377
+  },
+  {
+   "name": "Kulbung",
+   "place": "village",
+   "lon": 93.200352,
+   "lat": 24.730743,
+   "osm_id": 11969072865
+  },
+  {
+   "name": "Kumbhir",
+   "place": "village",
+   "lon": 92.96533,
+   "lat": 24.939854,
+   "osm_id": 245728326
+  },
+  {
+   "name": "Kumbhirgram",
+   "place": "village",
+   "lon": 92.981629,
+   "lat": 24.906932,
+   "osm_id": 6245693270
+  },
+  {
+   "name": "Kuwarpār",
+   "place": "village",
+   "lon": 92.87389,
+   "lat": 24.656066,
+   "osm_id": 12224186906
+  },
+  {
+   "name": "L. Phungchongjang",
+   "place": "village",
+   "lon": 93.478976,
+   "lat": 24.309228,
+   "osm_id": 13587535192
+  },
+  {
+   "name": "Lad Rymbai",
+   "place": "town",
+   "lon": 92.32612,
+   "lat": 25.369275,
+   "osm_id": 1728676326
+  },
+  {
+   "name": "Lailong-L",
+   "place": "village",
+   "lon": 93.423089,
+   "lat": 24.483195,
+   "osm_id": 13275554651
+  },
+  {
+   "name": "Lailong-S",
+   "place": "village",
+   "lon": 93.433661,
+   "lat": 24.508381,
+   "osm_id": 13275554640
+  },
+  {
+   "name": "Laisong",
+   "place": "village",
+   "lon": 93.298147,
+   "lat": 25.206252,
+   "osm_id": 4281853611
+  },
+  {
+   "name": "Lakhichara",
+   "place": "village",
+   "lon": 93.131672,
+   "lat": 24.834585,
+   "osm_id": 6247491664
+  },
+  {
+   "name": "Lakhipur",
+   "place": "town",
+   "lon": 93.009095,
+   "lat": 24.792823,
+   "osm_id": 245726361
+  },
+  {
+   "name": "Lala",
+   "place": "town",
+   "lon": 92.607831,
+   "lat": 24.559995,
+   "osm_id": 6241314333
+  },
+  {
+   "name": "Lalpani",
+   "place": "village",
+   "lon": 93.12679,
+   "lat": 24.765572,
+   "osm_id": 12334035592
+  },
+  {
+   "name": "Langting",
+   "place": "town",
+   "lon": 93.113633,
+   "lat": 25.497231,
+   "osm_id": 245734459
+  },
+  {
+   "name": "Laskein",
+   "place": "village",
+   "lon": 92.434462,
+   "lat": 25.519585,
+   "osm_id": 1262014939
+  },
+  {
+   "name": "Latingkhal",
+   "place": "village",
+   "lon": 93.097848,
+   "lat": 24.728411,
+   "osm_id": 12170872558
+  },
+  {
+   "name": "Leijangphai",
+   "place": "village",
+   "lon": 93.33561,
+   "lat": 24.361039,
+   "osm_id": 11171654220
+  },
+  {
+   "name": "Leishabithol",
+   "place": "village",
+   "lon": 93.154272,
+   "lat": 24.74265,
+   "osm_id": 11976451262
+  },
+  {
+   "name": "Leishabithol Kuki",
+   "place": "village",
+   "lon": 93.151026,
+   "lat": 24.744928,
+   "osm_id": 12395672817
+  },
+  {
+   "name": "Lelad",
+   "place": "village",
+   "lon": 92.49557,
+   "lat": 25.310007,
+   "osm_id": 13568394644
+  },
+  {
+   "name": "Lhangnom",
+   "place": "village",
+   "lon": 93.181504,
+   "lat": 24.785159,
+   "osm_id": 12338281900
+  },
+  {
+   "name": "Longshep",
+   "place": "village",
+   "lon": 93.157904,
+   "lat": 25.288144,
+   "osm_id": 6246654287
+  },
+  {
+   "name": "Lowairpoa",
+   "place": "village",
+   "lon": 92.316463,
+   "lat": 24.46885,
+   "osm_id": 12303142212
+  },
+  {
+   "name": "Lowarjiri P.T.V.",
+   "place": "village",
+   "lon": 93.090471,
+   "lat": 24.71381,
+   "osm_id": 12346230233
+  },
+  {
+   "name": "Lower Kharkuplien",
+   "place": "village",
+   "lon": 93.11294,
+   "lat": 24.518019,
+   "osm_id": 11969109586
+  },
+  {
+   "name": "Lower Mabao",
+   "place": "village",
+   "lon": 93.020138,
+   "lat": 25.213807,
+   "osm_id": 11027601108
+  },
+  {
+   "name": "Luangpai",
+   "place": "village",
+   "lon": 93.47942,
+   "lat": 24.644889,
+   "osm_id": 13317712615
+  },
+  {
+   "name": "Lumding",
+   "place": "town",
+   "lon": 93.173168,
+   "lat": 25.753543,
+   "osm_id": 245738612
+  },
+  {
+   "name": "Lummarjai",
+   "place": "village",
+   "lon": 92.206085,
+   "lat": 25.534077,
+   "osm_id": 6253841484
+  },
+  {
+   "name": "Lungchong",
+   "place": "village",
+   "lon": 93.484482,
+   "lat": 24.379245,
+   "osm_id": 13275554903
+  },
+  {
+   "name": "Lungding",
+   "place": "village",
+   "lon": 93.178063,
+   "lat": 25.598688,
+   "osm_id": 245735323
+  },
+  {
+   "name": "Lynnongsynn",
+   "place": "village",
+   "lon": 92.207324,
+   "lat": 25.207057,
+   "osm_id": 5383968521
+  },
+  {
+   "name": "Madhcherra",
+   "place": "village",
+   "lon": 92.666993,
+   "lat": 24.67184,
+   "osm_id": 12373756572
+  },
+  {
+   "name": "Madhupur",
+   "place": "village",
+   "lon": 93.092001,
+   "lat": 24.602167,
+   "osm_id": 11981360569
+  },
+  {
+   "name": "Mahisashan",
+   "place": "village",
+   "lon": 92.287388,
+   "lat": 24.823743,
+   "osm_id": 11428541086
+  },
+  {
+   "name": "Mahur",
+   "place": "town",
+   "lon": 93.113386,
+   "lat": 25.18308,
+   "osm_id": 245730074
+  },
+  {
+   "name": "Maibong",
+   "place": "town",
+   "lon": 93.133292,
+   "lat": 25.302128,
+   "osm_id": 245731951
+  },
+  {
+   "name": "Maite",
+   "place": "village",
+   "lon": 93.484282,
+   "lat": 24.343339,
+   "osm_id": 13587535190
+  },
+  {
+   "name": "Makhabosti",
+   "place": "village",
+   "lon": 93.09385,
+   "lat": 24.715884,
+   "osm_id": 12346230290
+  },
+  {
+   "name": "Manipur Bagan",
+   "place": "village",
+   "lon": 92.56249,
+   "lat": 24.396247,
+   "osm_id": 245721026
+  },
+  {
+   "name": "Maniārkhāl",
+   "place": "village",
+   "lon": 92.949153,
+   "lat": 24.575822,
+   "osm_id": 12249059048
+  },
+  {
+   "name": "Maomual",
+   "place": "village",
+   "lon": 93.397586,
+   "lat": 24.422683,
+   "osm_id": 13275778682
+  },
+  {
+   "name": "Masimpur",
+   "place": "village",
+   "lon": 92.796888,
+   "lat": 24.758252,
+   "osm_id": 3160367468
+  },
+  {
+   "name": "Mathiura",
+   "place": "village",
+   "lon": 92.119821,
+   "lat": 24.823225,
+   "osm_id": 4977354571
+  },
+  {
+   "name": "Matinagar",
+   "place": "village",
+   "lon": 92.963369,
+   "lat": 24.64612,
+   "osm_id": 12224115213
+  },
+  {
+   "name": "Mawlasnai",
+   "place": "village",
+   "lon": 92.141175,
+   "lat": 25.730671,
+   "osm_id": 5789836397
+  },
+  {
+   "name": "Mawryngkneng",
+   "place": "village",
+   "lon": 92.073839,
+   "lat": 25.550846,
+   "osm_id": 1262014578
+  },
+  {
+   "name": "Mesipur",
+   "place": "village",
+   "lon": 92.666185,
+   "lat": 24.67354,
+   "osm_id": 12373756573
+  },
+  {
+   "name": "Mongbung",
+   "place": "village",
+   "lon": 93.127134,
+   "lat": 24.756692,
+   "osm_id": 12053139945
+  },
+  {
+   "name": "Mongbung Meitei",
+   "place": "village",
+   "lon": 93.131015,
+   "lat": 24.758518,
+   "osm_id": 12061686038
+  },
+  {
+   "name": "Monjrong",
+   "place": "village",
+   "lon": 93.477731,
+   "lat": 24.791644,
+   "osm_id": 6236727653
+  },
+  {
+   "name": "Moragang",
+   "place": "village",
+   "lon": 92.634629,
+   "lat": 24.63127,
+   "osm_id": 3160230156
+  },
+  {
+   "name": "Muallian",
+   "place": "village",
+   "lon": 92.491837,
+   "lat": 25.198334,
+   "osm_id": 13550983409
+  },
+  {
+   "name": "Muibung",
+   "place": "village",
+   "lon": 93.489067,
+   "lat": 24.59502,
+   "osm_id": 13317712634
+  },
+  {
+   "name": "Muktapur",
+   "place": "village",
+   "lon": 92.125947,
+   "lat": 25.165125,
+   "osm_id": 1262014635
+  },
+  {
+   "name": "Mukti Khulen",
+   "place": "village",
+   "lon": 93.40853,
+   "lat": 24.650562,
+   "osm_id": 6248175355
+  },
+  {
+   "name": "Muktokhal",
+   "place": "village",
+   "lon": 93.176256,
+   "lat": 24.79164,
+   "osm_id": 12363196036
+  },
+  {
+   "name": "Mullargao",
+   "place": "village",
+   "lon": 93.153696,
+   "lat": 24.754976,
+   "osm_id": 12372569078
+  },
+  {
+   "name": "Munchicherra",
+   "place": "village",
+   "lon": 92.707795,
+   "lat": 24.572994,
+   "osm_id": 12373756576
+  },
+  {
+   "name": "Muolzawl",
+   "place": "village",
+   "lon": 93.105625,
+   "lat": 24.745625,
+   "osm_id": 12343835722
+  },
+  {
+   "name": "Mupa",
+   "place": "village",
+   "lon": 93.119653,
+   "lat": 25.374393,
+   "osm_id": 2081915944
+  },
+  {
+   "name": "Mupliang",
+   "place": "village",
+   "lon": 92.205167,
+   "lat": 25.545655,
+   "osm_id": 6253841710
+  },
+  {
+   "name": "Mynso",
+   "place": "village",
+   "lon": 92.327684,
+   "lat": 25.552675,
+   "osm_id": 1262014344
+  },
+  {
+   "name": "Nagathal",
+   "place": "village",
+   "lon": 92.73721,
+   "lat": 24.588644,
+   "osm_id": 12373756577
+  },
+  {
+   "name": "Narsingpur",
+   "place": "village",
+   "lon": 92.844332,
+   "lat": 24.684272,
+   "osm_id": 12269405274
+  },
+  {
+   "name": "Nartiang",
+   "place": "village",
+   "lon": 92.21701,
+   "lat": 25.573656,
+   "osm_id": 245735667
+  },
+  {
+   "name": "Neilen",
+   "place": "village",
+   "lon": 93.470025,
+   "lat": 24.578192,
+   "osm_id": 13281236111
+  },
+  {
+   "name": "New Tumbung",
+   "place": "village",
+   "lon": 92.714463,
+   "lat": 25.49655,
+   "osm_id": 8717788304
+  },
+  {
+   "name": "Ngahmunphai",
+   "place": "village",
+   "lon": 93.155236,
+   "lat": 24.774775,
+   "osm_id": 12394878687
+  },
+  {
+   "name": "Ngampabung",
+   "place": "village",
+   "lon": 93.09497,
+   "lat": 24.416264,
+   "osm_id": 6258352699
+  },
+  {
+   "name": "Nilambazar",
+   "place": "village",
+   "lon": 92.350663,
+   "lat": 24.746215,
+   "osm_id": 245725971
+  },
+  {
+   "name": "Ningthembam",
+   "place": "village",
+   "lon": 93.102501,
+   "lat": 24.771873,
+   "osm_id": 12349624212
+  },
+  {
+   "name": "Nongbah",
+   "place": "village",
+   "lon": 92.249193,
+   "lat": 25.521395,
+   "osm_id": 6253842329
+  },
+  {
+   "name": "Nongjrong",
+   "place": "village",
+   "lon": 92.090288,
+   "lat": 25.478912,
+   "osm_id": 6255621436
+  },
+  {
+   "name": "Nongtalang",
+   "place": "village",
+   "lon": 92.066535,
+   "lat": 25.208848,
+   "osm_id": 5379579508
+  },
+  {
+   "name": "Nsenlwa",
+   "place": "village",
+   "lon": 93.463435,
+   "lat": 25.469768,
+   "osm_id": 8148134756
+  },
+  {
+   "name": "Nungba",
+   "place": "village",
+   "lon": 93.417504,
+   "lat": 24.743515,
+   "osm_id": 245725127
+  },
+  {
+   "name": "Nungchappi",
+   "place": "village",
+   "lon": 93.105562,
+   "lat": 24.765784,
+   "osm_id": 12349624211
+  },
+  {
+   "name": "Nungkhal",
+   "place": "village",
+   "lon": 93.148595,
+   "lat": 24.732789,
+   "osm_id": 12339415447
+  },
+  {
+   "name": "Nungphou",
+   "place": "village",
+   "lon": 93.108731,
+   "lat": 24.743011,
+   "osm_id": 12162532686
+  },
+  {
+   "name": "Nungsai",
+   "place": "village",
+   "lon": 93.439012,
+   "lat": 24.446222,
+   "osm_id": 13275945799
+  },
+  {
+   "name": "Nutan Bāzār",
+   "place": "village",
+   "lon": 93.069102,
+   "lat": 24.87828,
+   "osm_id": 12200349722
+  },
+  {
+   "name": "Nāgākhāl",
+   "place": "village",
+   "lon": 92.973647,
+   "lat": 24.568396,
+   "osm_id": 12249059034
+  },
+  {
+   "name": "Oinamlong",
+   "place": "village",
+   "lon": 93.268925,
+   "lat": 24.742158,
+   "osm_id": 245725745
+  },
+  {
+   "name": "Okoklong",
+   "place": "village",
+   "lon": 93.402243,
+   "lat": 24.784085,
+   "osm_id": 6248310634
+  },
+  {
+   "name": "Old Kaiphundai",
+   "place": "village",
+   "lon": 93.200139,
+   "lat": 24.780324,
+   "osm_id": 12363196028
+  },
+  {
+   "name": "P. Munlian",
+   "place": "village",
+   "lon": 93.144371,
+   "lat": 24.605459,
+   "osm_id": 12387235357
+  },
+  {
+   "name": "P. Munte",
+   "place": "village",
+   "lon": 93.107837,
+   "lat": 24.566067,
+   "osm_id": 12387366326
+  },
+  {
+   "name": "Paglanala",
+   "place": "village",
+   "lon": 92.687502,
+   "lat": 24.593133,
+   "osm_id": 12373756574
+  },
+  {
+   "name": "Pailapool",
+   "place": "town",
+   "lon": 93.025325,
+   "lat": 24.828525,
+   "osm_id": 3158968781
+  },
+  {
+   "name": "Pamzal",
+   "place": "village",
+   "lon": 93.372228,
+   "lat": 24.317842,
+   "osm_id": 11172744287
+  },
+  {
+   "name": "Pangmol",
+   "place": "village",
+   "lon": 93.202925,
+   "lat": 24.772587,
+   "osm_id": 12363196005
+  },
+  {
+   "name": "Pathar Kandi",
+   "place": "village",
+   "lon": 92.319308,
+   "lat": 24.605525,
+   "osm_id": 245724634
+  },
+  {
+   "name": "Patpuihmun",
+   "place": "village",
+   "lon": 93.071299,
+   "lat": 24.353429,
+   "osm_id": 11168089926
+  },
+  {
+   "name": "Phaibong",
+   "place": "village",
+   "lon": 93.482945,
+   "lat": 24.577509,
+   "osm_id": 13317712603
+  },
+  {
+   "name": "Phailian",
+   "place": "village",
+   "lon": 93.118449,
+   "lat": 24.635349,
+   "osm_id": 12380695921
+  },
+  {
+   "name": "Phaipheng",
+   "place": "village",
+   "lon": 93.457746,
+   "lat": 24.340842,
+   "osm_id": 2084596662
+  },
+  {
+   "name": "Phaitol",
+   "place": "village",
+   "lon": 93.156748,
+   "lat": 24.784132,
+   "osm_id": 11978641677
+  },
+  {
+   "name": "Phulpui",
+   "place": "village",
+   "lon": 93.084819,
+   "lat": 24.384548,
+   "osm_id": 6258353031
+  },
+  {
+   "name": "Poschim Par",
+   "place": "village",
+   "lon": 92.112189,
+   "lat": 24.826157,
+   "osm_id": 5012697124
+  },
+  {
+   "name": "Pourosh Pal",
+   "place": "village",
+   "lon": 92.103397,
+   "lat": 24.827676,
+   "osm_id": 5012669702
+  },
+  {
+   "name": "Purbo Par",
+   "place": "village",
+   "lon": 92.131007,
+   "lat": 24.818429,
+   "osm_id": 5012693825
+  },
+  {
+   "name": "Pālanghāt",
+   "place": "village",
+   "lon": 92.888031,
+   "lat": 24.644482,
+   "osm_id": 12225705625
+  },
+  {
+   "name": "Raliang",
+   "place": "village",
+   "lon": 92.393544,
+   "lat": 25.498901,
+   "osm_id": 6253845460
+  },
+  {
+   "name": "Ramkrishna Nagar",
+   "place": "town",
+   "lon": 92.461796,
+   "lat": 24.566406,
+   "osm_id": 6338319948
+  },
+  {
+   "name": "Rashidpur",
+   "place": "village",
+   "lon": 93.114581,
+   "lat": 24.760575,
+   "osm_id": 12162534726
+  },
+  {
+   "name": "Ratacherra",
+   "place": "village",
+   "lon": 92.461444,
+   "lat": 25.03189,
+   "osm_id": 1262014487
+  },
+  {
+   "name": "Retzol",
+   "place": "village",
+   "lon": 92.992231,
+   "lat": 25.108347,
+   "osm_id": 10226884217
+  },
+  {
+   "name": "Rngat",
+   "place": "village",
+   "lon": 92.233947,
+   "lat": 25.336535,
+   "osm_id": 1262013875
+  },
+  {
+   "name": "Sabughat",
+   "place": "village",
+   "lon": 93.192179,
+   "lat": 24.822933,
+   "osm_id": 12363196029
+  },
+  {
+   "name": "Saichang",
+   "place": "village",
+   "lon": 93.367515,
+   "lat": 24.4316,
+   "osm_id": 13027256508
+  },
+  {
+   "name": "Saikulphai",
+   "place": "village",
+   "lon": 93.136476,
+   "lat": 24.666041,
+   "osm_id": 12003263857
+  },
+  {
+   "name": "Sainouzang",
+   "place": "village",
+   "lon": 93.356007,
+   "lat": 24.338757,
+   "osm_id": 11172132920
+  },
+  {
+   "name": "Saiphai",
+   "place": "village",
+   "lon": 92.79705,
+   "lat": 24.413,
+   "osm_id": 12218662745
+  },
+  {
+   "name": "Saipung",
+   "place": "village",
+   "lon": 92.627061,
+   "lat": 25.334611,
+   "osm_id": 1262015033
+  },
+  {
+   "name": "Sakwa",
+   "place": "village",
+   "lon": 92.459024,
+   "lat": 25.203005,
+   "osm_id": 13550836663
+  },
+  {
+   "name": "Santing",
+   "place": "village",
+   "lon": 93.434695,
+   "lat": 24.397367,
+   "osm_id": 13275778674
+  },
+  {
+   "name": "Savomphai",
+   "place": "village",
+   "lon": 93.093914,
+   "lat": 24.577215,
+   "osm_id": 11969432789
+  },
+  {
+   "name": "Sejang",
+   "place": "village",
+   "lon": 93.12521,
+   "lat": 24.759169,
+   "osm_id": 12054051065
+  },
+  {
+   "name": "Selvung",
+   "place": "village",
+   "lon": 93.480498,
+   "lat": 24.491375,
+   "osm_id": 13275554639
+  },
+  {
+   "name": "Shangpung",
+   "place": "village",
+   "lon": 92.356723,
+   "lat": 25.479847,
+   "osm_id": 8325386818
+  },
+  {
+   "name": "Sibilong",
+   "place": "village",
+   "lon": 93.324625,
+   "lat": 24.802469,
+   "osm_id": 6248175392
+  },
+  {
+   "name": "Sibilong",
+   "place": "village",
+   "lon": 93.327235,
+   "lat": 24.768196,
+   "osm_id": 12398953804
+  },
+  {
+   "name": "Silchar",
+   "place": "city",
+   "lon": 92.797148,
+   "lat": 24.829588,
+   "osm_id": 567777060
+  },
+  {
+   "name": "Silkuri",
+   "place": "village",
+   "lon": 92.784048,
+   "lat": 24.727108,
+   "osm_id": 245725775
+  },
+  {
+   "name": "Sinjang",
+   "place": "village",
+   "lon": 93.391748,
+   "lat": 24.306181,
+   "osm_id": 13587535195
+  },
+  {
+   "name": "Sohmynting",
+   "place": "village",
+   "lon": 92.139993,
+   "lat": 25.442552,
+   "osm_id": 10570249434
+  },
+  {
+   "name": "Sonai",
+   "place": "town",
+   "lon": 92.890305,
+   "lat": 24.733414,
+   "osm_id": 6241309608
+  },
+  {
+   "name": "Sonapur",
+   "place": "village",
+   "lon": 93.130247,
+   "lat": 24.770515,
+   "osm_id": 12342489805
+  },
+  {
+   "name": "Songsang",
+   "place": "village",
+   "lon": 93.309146,
+   "lat": 24.485102,
+   "osm_id": 245723348
+  },
+  {
+   "name": "Sonāimukh",
+   "place": "village",
+   "lon": 92.881159,
+   "lat": 24.725556,
+   "osm_id": 245725657
+  },
+  {
+   "name": "Srikona",
+   "place": "village",
+   "lon": 92.717456,
+   "lat": 24.838818,
+   "osm_id": 12279517047
+  },
+  {
+   "name": "Suangpekmun",
+   "place": "village",
+   "lon": 93.293378,
+   "lat": 24.31904,
+   "osm_id": 2455649857
+  },
+  {
+   "name": "Suangphumun",
+   "place": "village",
+   "lon": 93.176039,
+   "lat": 24.649886,
+   "osm_id": 12003249183
+  },
+  {
+   "name": "Subhang",
+   "place": "village",
+   "lon": 92.802318,
+   "lat": 24.949429,
+   "osm_id": 6245693663
+  },
+  {
+   "name": "Sutnga",
+   "place": "village",
+   "lon": 92.436802,
+   "lat": 25.370212,
+   "osm_id": 245731637
+  },
+  {
+   "name": "Syangkhnai",
+   "place": "village",
+   "lon": 92.085772,
+   "lat": 25.358919,
+   "osm_id": 6255624287
+  },
+  {
+   "name": "Syntung",
+   "place": "village",
+   "lon": 92.05351,
+   "lat": 25.352941,
+   "osm_id": 5381302708
+  },
+  {
+   "name": "Taithu",
+   "place": "village",
+   "lon": 93.126806,
+   "lat": 24.301219,
+   "osm_id": 2455548703
+  },
+  {
+   "name": "Tangnub",
+   "place": "village",
+   "lon": 92.49984,
+   "lat": 25.303026,
+   "osm_id": 13568394643
+  },
+  {
+   "name": "Taodaijang",
+   "place": "village",
+   "lon": 93.493017,
+   "lat": 24.678674,
+   "osm_id": 13263860989
+  },
+  {
+   "name": "Tatbung",
+   "place": "village",
+   "lon": 93.174523,
+   "lat": 24.790605,
+   "osm_id": 12363196037
+  },
+  {
+   "name": "Thadlaskein",
+   "place": "village",
+   "lon": 92.173103,
+   "lat": 25.503301,
+   "osm_id": 1262015020
+  },
+  {
+   "name": "Thangboipunji",
+   "place": "village",
+   "lon": 93.087633,
+   "lat": 24.595578,
+   "osm_id": 12389010633
+  },
+  {
+   "name": "Thingje",
+   "place": "village",
+   "lon": 93.377116,
+   "lat": 25.261207,
+   "osm_id": 6247258124
+  },
+  {
+   "name": "Thingkal",
+   "place": "village",
+   "lon": 93.107159,
+   "lat": 24.438298,
+   "osm_id": 12389187261
+  },
+  {
+   "name": "Thingou",
+   "place": "village",
+   "lon": 93.426361,
+   "lat": 24.806993,
+   "osm_id": 6248310635
+  },
+  {
+   "name": "Thingpuikuol",
+   "place": "village",
+   "lon": 93.027864,
+   "lat": 24.394839,
+   "osm_id": 13063883936
+  },
+  {
+   "name": "Thingtatbung",
+   "place": "village",
+   "lon": 93.212403,
+   "lat": 24.752166,
+   "osm_id": 12389261809
+  },
+  {
+   "name": "Thlang Moi",
+   "place": "village",
+   "lon": 92.488098,
+   "lat": 25.236517,
+   "osm_id": 13572972983
+  },
+  {
+   "name": "Tibong Cherra",
+   "place": "village",
+   "lon": 92.744284,
+   "lat": 25.005913,
+   "osm_id": 12375834698
+  },
+  {
+   "name": "Tieulien",
+   "place": "village",
+   "lon": 93.042986,
+   "lat": 24.422836,
+   "osm_id": 13063802231
+  },
+  {
+   "name": "Tlangmoi",
+   "place": "village",
+   "lon": 92.488865,
+   "lat": 25.237621,
+   "osm_id": 13568394638
+  },
+  {
+   "name": "Tolengram",
+   "place": "village",
+   "lon": 92.972767,
+   "lat": 24.792345,
+   "osm_id": 12282759799
+  },
+  {
+   "name": "Tollen",
+   "place": "village",
+   "lon": 93.268431,
+   "lat": 24.72115,
+   "osm_id": 12366116797
+  },
+  {
+   "name": "Tongseng",
+   "place": "village",
+   "lon": 92.501428,
+   "lat": 25.32598,
+   "osm_id": 13568394653
+  },
+  {
+   "name": "Tousem",
+   "place": "village",
+   "lon": 93.372599,
+   "lat": 25.100523,
+   "osm_id": 5156615408
+  },
+  {
+   "name": "Tuaitengmun",
+   "place": "village",
+   "lon": 93.177284,
+   "lat": 24.654371,
+   "osm_id": 12003263821
+  },
+  {
+   "name": "Tuilijang",
+   "place": "village",
+   "lon": 93.487499,
+   "lat": 24.340645,
+   "osm_id": 13587535191
+  },
+  {
+   "name": "Tuipiphai",
+   "place": "village",
+   "lon": 93.341566,
+   "lat": 24.38207,
+   "osm_id": 13026728853
+  },
+  {
+   "name": "Tuisen",
+   "place": "village",
+   "lon": 93.115482,
+   "lat": 24.623327,
+   "osm_id": 12003263823
+  },
+  {
+   "name": "Tuolpui",
+   "place": "village",
+   "lon": 93.267596,
+   "lat": 25.195253,
+   "osm_id": 5766103458
+  },
+  {
+   "name": "Uchathol",
+   "place": "village",
+   "lon": 93.147847,
+   "lat": 24.778537,
+   "osm_id": 11961414966
+  },
+  {
+   "name": "Udharbond",
+   "place": "village",
+   "lon": 92.881775,
+   "lat": 24.881959,
+   "osm_id": 245727857
+  },
+  {
+   "name": "Umednagar",
+   "place": "village",
+   "lon": 92.616502,
+   "lat": 24.567091,
+   "osm_id": 245724216
+  },
+  {
+   "name": "Umlawang",
+   "place": "village",
+   "lon": 92.448884,
+   "lat": 25.346348,
+   "osm_id": 13568394662
+  },
+  {
+   "name": "Umrangso",
+   "place": "town",
+   "lon": 92.73428,
+   "lat": 25.507827,
+   "osm_id": 6301170168
+  },
+  {
+   "name": "Umroi",
+   "place": "village",
+   "lon": 92.039655,
+   "lat": 25.713886,
+   "osm_id": 245737555
+  },
+  {
+   "name": "Upper Kharkhuplien",
+   "place": "village",
+   "lon": 93.116863,
+   "lat": 24.508691,
+   "osm_id": 11969109587
+  },
+  {
+   "name": "Uttar Par",
+   "place": "village",
+   "lon": 92.123937,
+   "lat": 24.822256,
+   "osm_id": 5012655361
+  },
+  {
+   "name": "Vairengte",
+   "place": "town",
+   "lon": 92.760487,
+   "lat": 24.495662,
+   "osm_id": 5232413103
+  },
+  {
+   "name": "Vangaichungpao",
+   "place": "village",
+   "lon": 93.187862,
+   "lat": 24.746123,
+   "osm_id": 12396486729
+  },
+  {
+   "name": "Vangaichungpao - Part 2",
+   "place": "village",
+   "lon": 93.173486,
+   "lat": 24.754161,
+   "osm_id": 12347713952
+  },
+  {
+   "name": "Vangtungbung",
+   "place": "village",
+   "lon": 93.413813,
+   "lat": 24.572509,
+   "osm_id": 13317712609
+  },
+  {
+   "name": "Vāirengti",
+   "place": "village",
+   "lon": 92.760969,
+   "lat": 24.498367,
+   "osm_id": 12269716844
+  },
+  {
+   "name": "Zening",
+   "place": "village",
+   "lon": 93.443892,
+   "lat": 25.183311,
+   "osm_id": 6381855200
+  },
+  {
+   "name": "Ābin",
+   "place": "village",
+   "lon": 93.29981,
+   "lat": 24.988701,
+   "osm_id": 11972067878
+  },
+  {
+   "name": "কানাইঘাট",
+   "place": "town",
+   "lon": 92.255921,
+   "lat": 25.007275,
+   "osm_id": 9139175177
+  },
+  {
+   "name": "কুলাউড়া",
+   "place": "town",
+   "lon": 92.034073,
+   "lat": 24.522634,
+   "osm_id": 2441620084
+  },
+  {
+   "name": "গোলাপগঞ্জ",
+   "place": "town",
+   "lon": 92.013,
+   "lat": 24.856882,
+   "osm_id": 910553631
+  },
+  {
+   "name": "চারখাই",
+   "place": "village",
+   "lon": 92.149945,
+   "lat": 24.902616,
+   "osm_id": 4728206427
+  },
+  {
+   "name": "জকিগঞ্জ",
+   "place": "town",
+   "lon": 92.369883,
+   "lat": 24.877457,
+   "osm_id": 3396281149
+  },
+  {
+   "name": "জাফলং",
+   "place": "village",
+   "lon": 92.020288,
+   "lat": 25.172966,
+   "osm_id": 5379578776
+  },
+  {
+   "name": "জুড়ী",
+   "place": "town",
+   "lon": 92.118766,
+   "lat": 24.59731,
+   "osm_id": 9167070765
+  },
+  {
+   "name": "জৈন্তাপুর",
+   "place": "town",
+   "lon": 92.123392,
+   "lat": 25.135576,
+   "osm_id": 3396286397
+  },
+  {
+   "name": "তামাবিল",
+   "place": "village",
+   "lon": 92.032707,
+   "lat": 25.180554,
+   "osm_id": 5379578777
+  },
+  {
+   "name": "বড়লেখা",
+   "place": "town",
+   "lon": 92.19305,
+   "lat": 24.704897,
+   "osm_id": 2481974435
+  },
+  {
+   "name": "বিয়ানীবাজার",
+   "place": "town",
+   "lon": 92.159007,
+   "lat": 24.821548,
+   "osm_id": 4977316284
+  },
+  {
+   "name": "শাহবাজপুর",
+   "place": "village",
+   "lon": 92.243102,
+   "lat": 24.803046,
+   "osm_id": 2051081332
+  }
+ ]
+}

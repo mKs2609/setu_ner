@@ -31,10 +31,10 @@
     "mean_brier": {
       "persistence": 0.04062,
       "climatology": 0.05108,
-      "logistic_C0.01": 0.04116,
-      "logistic_C0.1": 0.04125,
-      "logistic_C1.0": 0.04221,
-      "logistic_C10.0": 0.04244
+      "logistic_C0.01": 0.04107,
+      "logistic_C0.1": 0.04147,
+      "logistic_C1.0": 0.04242,
+      "logistic_C10.0": 0.04263
     },
     "selected": "persistence"
   },
@@ -47,124 +47,124 @@
   },
   "test_period": {
     "from": "2026-05-01",
-    "to": "2026-09-09",
-    "examples": 4480,
+    "to": "2026-09-10",
+    "examples": 4515,
     "districts": 35,
-    "positive_rate": 0.119
+    "positive_rate": 0.1183
   },
   "test_metrics": {
     "served": {
       "all": {
-        "n": 4480,
-        "positives": 533,
-        "brier": 0.06822,
-        "log_loss": 0.24574,
-        "roc_auc": 0.8104,
-        "average_precision": 0.471
+        "n": 4515,
+        "positives": 534,
+        "brier": 0.06787,
+        "log_loss": 0.24458,
+        "roc_auc": 0.8107,
+        "average_precision": 0.4715
       },
       "onset": {
-        "n": 3955,
+        "n": 3987,
         "positives": 179,
-        "brier": 0.04324,
-        "log_loss": 0.18463,
+        "brier": 0.0429,
+        "log_loss": 0.18348,
         "roc_auc": 0.5,
         "average_precision": 0.0321
       },
       "recession": {
-        "n": 525,
-        "positives": 354,
-        "brier": 0.25646,
-        "log_loss": 0.70608,
+        "n": 528,
+        "positives": 355,
+        "brier": 0.25639,
+        "log_loss": 0.70594,
         "roc_auc": 0.5,
-        "average_precision": 0.6312
+        "average_precision": 0.6313
       }
     },
     "persistence": {
       "all": {
-        "n": 4480,
-        "positives": 533,
-        "brier": 0.06822,
-        "log_loss": 0.24574,
-        "roc_auc": 0.8104,
-        "average_precision": 0.471
+        "n": 4515,
+        "positives": 534,
+        "brier": 0.06787,
+        "log_loss": 0.24458,
+        "roc_auc": 0.8107,
+        "average_precision": 0.4715
       },
       "onset": {
-        "n": 3955,
+        "n": 3987,
         "positives": 179,
-        "brier": 0.04324,
-        "log_loss": 0.18463,
+        "brier": 0.0429,
+        "log_loss": 0.18348,
         "roc_auc": 0.5,
         "average_precision": 0.0321
       },
       "recession": {
-        "n": 525,
-        "positives": 354,
-        "brier": 0.25646,
-        "log_loss": 0.70608,
+        "n": 528,
+        "positives": 355,
+        "brier": 0.25639,
+        "log_loss": 0.70594,
         "roc_auc": 0.5,
-        "average_precision": 0.6312
+        "average_precision": 0.6313
       }
     },
     "climatology": {
       "all": {
-        "n": 4480,
-        "positives": 533,
-        "brier": 0.10711,
-        "log_loss": 0.37951,
+        "n": 4515,
+        "positives": 534,
+        "brier": 0.10651,
+        "log_loss": 0.37771,
         "roc_auc": 0.5,
         "average_precision": 0.081
       },
       "onset": {
-        "n": 3955,
+        "n": 3987,
         "positives": 179,
-        "brier": 0.04388,
-        "log_loss": 0.19006,
+        "brier": 0.04357,
+        "log_loss": 0.18913,
         "roc_auc": 0.5,
         "average_precision": 0.0321
       },
       "recession": {
-        "n": 525,
-        "positives": 354,
-        "brier": 0.58346,
-        "log_loss": 1.80664,
+        "n": 528,
+        "positives": 355,
+        "brier": 0.5818,
+        "log_loss": 1.80167,
         "roc_auc": 0.5,
-        "average_precision": 0.6312
+        "average_precision": 0.6313
       }
     },
     "logistic": {
       "all": {
-        "n": 4480,
-        "positives": 533,
-        "brier": 0.06622,
-        "log_loss": 0.23588,
-        "roc_auc": 0.8722,
-        "average_precision": 0.6037
+        "n": 4515,
+        "positives": 534,
+        "brier": 0.06458,
+        "log_loss": 0.2327,
+        "roc_auc": 0.871,
+        "average_precision": 0.6282
       },
       "onset": {
-        "n": 3955,
+        "n": 3987,
         "positives": 179,
-        "brier": 0.04255,
-        "log_loss": 0.17652,
-        "roc_auc": 0.6792,
-        "average_precision": 0.0891
+        "brier": 0.04231,
+        "log_loss": 0.17616,
+        "roc_auc": 0.6709,
+        "average_precision": 0.0847
       },
       "recession": {
-        "n": 525,
-        "positives": 354,
-        "brier": 0.24457,
-        "log_loss": 0.68304,
-        "roc_auc": 0.6489,
-        "average_precision": 0.7479
+        "n": 528,
+        "positives": 355,
+        "brier": 0.23272,
+        "log_loss": 0.65966,
+        "roc_auc": 0.6939,
+        "average_precision": 0.7881
       }
     }
   },
-  "trained_at": "2026-09-12T20:56:00+00:00",
-  "version": "dfs-h3-2026-09-13-45463be1",
+  "trained_at": "2026-09-13T19:28:34+00:00",
+  "version": "dfs-h3-2026-09-14-45463be1",
   "verdict": {
     "skill_vs_persistence": 0.0,
     "onset_skill_vs_persistence": 0.0,
-    "logistic_test_skill_vs_persistence": 0.0293,
-    "logistic_test_onset_auc": 0.6792,
+    "logistic_test_skill_vs_persistence": 0.0485,
+    "logistic_test_onset_auc": 0.6709,
     "summary": "The logistic model did not beat persistence on validation, so persistence is served. That is the honest outcome, not a failure to hide."
   }
 }
