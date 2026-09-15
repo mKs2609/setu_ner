@@ -47,6 +47,10 @@ scenarios — starting with floods, architected to extend to other hazards.
 12. **`docs/decisions/0012-explanations-and-audit-trail.md`** — Phase 6: exact
     per-feature explanations, plain-language plan narratives with evidence,
     immutable saved plans and an override log.
+13. **`docs/deployment.md`** and **`docs/decisions/0013-deployment-readiness.md`**
+    — how to deploy (Neon/Supabase + Railway + Vercel), and what makes it safe
+    to: operator tokens, a production config guard, readiness checks, the
+    image, migrations and the data export.
 
 ## Status
 
@@ -126,10 +130,14 @@ values — no language model — so an explanation cannot contradict its number.
 Plans can be saved as immutable records with model versions, and operators
 log overrides with a required, categorised reason.
 
+**Ready to deploy** (`0013`, `docs/deployment.md`): writes that change what the
+system believes need an operator token, the API refuses an unsafe production
+configuration, `/api/v1/health/ready` names what is wrong with a deploy, and
+CI builds the production image on every push. Not deployed yet.
+
 **Not started:** Sentinel-1 flood extent (rest of Phase 2), which needs a
-Copernicus account and a SAR pipeline. Write endpoints (field reports, saved
-plans, overrides) are unauthenticated and need auth before real operational
-use. Field reports still never write `current_accessibility`.
+Copernicus account and a SAR pipeline. Field reports still never write
+`current_accessibility`.
 
 ## Repo layout
 

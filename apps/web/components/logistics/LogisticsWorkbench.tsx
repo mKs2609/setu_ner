@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import OperatorAccess from "@/components/auth/OperatorAccess";
 import PlanWhy from "@/components/explain/PlanWhy";
 import {
   fetchExampleInputs,
@@ -223,6 +224,7 @@ export default function LogisticsWorkbench() {
               </span>
             </span>
           </label>
+          {save && <OperatorAccess compact />}
           {save && (
             <input
               type="text"

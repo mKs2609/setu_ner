@@ -44,35 +44,14 @@ if (-not (Test-Path $ApiDir)) {
 
 Push-Location $ApiDir
 try {
-    # Hazards are fetched in sequence, never in parallel: the polite client
-    # enforces a crawl delay per host, and running them concurrently would
-    # sidestep it.
-    $failed = $false
-    foreach ($hazard in @("flood", "landslide")) {
-        Write-Log "catch-up for $hazard"
-        $output = & python -m app.services.ingestion.run --hazard $hazard --catch-up 2>&1
-        $code = $LASTEXITCODE
-        foreach ($line in $output) { Write-Log "  $line" }
-        if ($code -ne 0) {
-            Write-Log "  $hazard exited $code"
-            $failed = $true
-        }
-    }
-
-    # Re-score roads from whatever was just ingested (docs/decisions/0010).
-    # Without this, current_accessibility would quietly age while the
-    # reports underneath it moved on. The scorer refuses a stale report and
-    # exits non-zero, which is a failure worth seeing in the log.
-    foreach ($step in @("app.services.model.damage_matching", "app.services.model.score")) {
-        Write-Log "running $step"
-        $output = & python -m $step 2>&1
-        $code = $LASTEXITCODE
-        foreach ($line in $output) { Write-Log "  $line" }
-        if ($code -ne 0) {
-            Write-Log "  $step exited $code"
-            $failed = $true
-        }
-    }
+    # One entrypoint for every scheduler (app/jobs/daily.py): flood and
+    # landslide catch-up, damage matching, then scoring. It exits non-zero if
+    # any step failed, including the scorer refusing a stale report.
+    Write-Log "running app.jobs.daily"
+    $output = & python -m app.jobs.daily 2>&1
+    $code = $LASTEXITCODE
+    foreach ($line in $output) { Write-Log "  $line" }
+    $failed = $code -ne 0
 }
 finally {
     Pop-Location

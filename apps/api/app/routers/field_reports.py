@@ -24,13 +24,14 @@ consensus from a model prediction. See services/fusion/reports.py.
 from datetime import datetime, timezone
 from enum import Enum
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from geoalchemy2.shape import to_shape
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import FieldReport, Road
+from app import security
 from app.db.session import get_db
 from app.services.fusion import corroboration as corrob
 from app.services.fusion import reports as fusion
@@ -106,8 +107,20 @@ def _serialise(report: FieldReport) -> dict:
 
 
 @router.post("", response_model=FieldReportOut)
-def submit_field_report(payload: FieldReportIn, db: Session = Depends(get_db)):
+def submit_field_report(
+    payload: FieldReportIn,
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+):
     """Record one observation from the ground."""
+    # A report can close a road in current-conditions routing (0007), so in
+    # production it needs an operator token unless open reporting was chosen.
+    if not security.field_reports_open() and not security.is_authorised(authorization):
+        raise HTTPException(
+            status_code=401,
+            detail="Field reports on this deployment need an operator token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     if fusion.reports_in_last_hour(db, payload.reporter_id) >= MAX_REPORTS_PER_HOUR:
         raise HTTPException(
             status_code=429,

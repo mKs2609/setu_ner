@@ -1,5 +1,41 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ---------------------------------------------------------------------------
+// Operator token (docs/deployment.md). Writes that change what the system
+// believes -- field reports in production, saved plans, overrides -- need it.
+//
+// Kept in sessionStorage, not localStorage: it disappears when the tab
+// closes, which narrows how long a token sits in a shared browser. It is only
+// ever sent as a header to this API, never put in a URL.
+// ---------------------------------------------------------------------------
+
+const OPERATOR_TOKEN_KEY = "setuner.operator_token";
+
+export function getOperatorToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(OPERATOR_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setOperatorToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (token) window.sessionStorage.setItem(OPERATOR_TOKEN_KEY, token.trim());
+    else window.sessionStorage.removeItem(OPERATOR_TOKEN_KEY);
+    window.dispatchEvent(new Event("setuner-operator-token"));
+  } catch {
+    /* storage blocked: the token simply is not remembered */
+  }
+}
+
+function operatorAuthHeaders(): Record<string, string> {
+  const token = getOperatorToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export interface RoadFeatureProperties {
   road_class: string | null;
   is_bridge: boolean;
@@ -275,7 +311,7 @@ export function getReporterId(): string {
 export async function submitFieldReport(body: FieldReportIn): Promise<FieldReportAck> {
   const res = await fetch(`${API_BASE}/api/v1/field-reports`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -614,7 +650,7 @@ export async function fetchExampleInputs(): Promise<ExampleInputs> {
 export async function requestPlan(body: PlanRequest): Promise<PlanResponse> {
   const res = await fetch(`${API_BASE}/api/v1/logistics/plan`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -793,7 +829,7 @@ export async function postOverride(
 ): Promise<OverrideRecord> {
   const res = await fetch(`${API_BASE}/api/v1/recommendations/${encodeURIComponent(id)}/overrides`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify({ ...body, operator_id: getOperatorId() }),
   });
   if (!res.ok) {

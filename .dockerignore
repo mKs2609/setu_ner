@@ -1,0 +1,23 @@
+# The API image builds from the repo root (see apps/api/Dockerfile), so keep
+# the context small and free of secrets and local data.
+**/node_modules
+**/.next
+**/.turbo
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv
+**/venv
+.git
+.github
+.env
+**/.env
+**/.env.*
+data/
+logs/
+docs/*.pdf
+*.dump
+geo/osm/
+geo/dem/
+geo/river/
+apps/web/

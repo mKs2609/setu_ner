@@ -18,7 +18,11 @@ services:
       retries: 5
 
   api:
-    build: ./apps/api
+    # Context is the repo root: the image needs ml/models, geo/gazetteer and
+    # infra/migrations as well as apps/api (see apps/api/Dockerfile).
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -26,23 +30,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # The Phase 3 model artifacts live at the repo root, outside the API's
-      # build context. See app/services/model/district_model.py.
-      SETUNER_MODEL_DIR: /models
-      SETUNER_GAZETTEER: /gazetteer/corridor_places.json
     volumes:
-      - ./apps/api:/app
-      - ./ml/models:/models:ro
-      - ./geo/gazetteer:/gazetteer:ro
+      # Live-reload the code in development; artifacts come from the image.
+      - ./apps/api/app:/app/app
 
-  web:
-    build: ./apps/web
-    ports:
-      - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-    depends_on:
-      - api
+  # No web container: apps/web has no Dockerfile and deploys to Vercel. Run it
+  # locally with `pnpm --filter @setu_ner/web dev` against this API.
 
   # Daily hazard ingestion. Behind a profile so a normal `docker compose up`
   # does not start it -- ingestion hits a government portal, and that should
@@ -54,25 +47,21 @@ services:
   # and its output lands in `docker compose logs` like everything else.
   # --catch-up means a container that was down for a week recovers that week.
   ingestion:
-    build: ./apps/api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     profiles: ["scheduling"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-sih26002}:${POSTGRES_PASSWORD:-sih26002}@postgres:5432/${POSTGRES_DB:-sih26002}
-      SETUNER_MODEL_DIR: /models
-    volumes:
-      - ./ml/models:/models:ro
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    # Same entrypoint as every other scheduler (app/jobs/daily.py).
     command: >
       sh -c 'while true; do
-        echo "[$(date -Iseconds)] ingestion starting";
-        python -m app.services.ingestion.run --hazard flood --catch-up || true;
-        python -m app.services.ingestion.run --hazard landslide --catch-up || true;
-        python -m app.services.model.damage_matching || true;
-        python -m app.services.model.score || true;
-        echo "[$(date -Iseconds)] sleeping 24h";
+        python -m app.jobs.daily || true;
+        echo "sleeping 24h";
         sleep 86400;
       done'
 

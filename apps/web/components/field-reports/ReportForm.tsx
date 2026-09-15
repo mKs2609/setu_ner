@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 
+import OperatorAccess from "@/components/auth/OperatorAccess";
 import { submitFieldReport, type FieldReportAck, type ReportStatus } from "@/lib/api";
 
 const STATUS_CHOICES: { value: ReportStatus; label: string; hint: string; classes: string }[] = [
@@ -175,6 +176,8 @@ export default function ReportForm({
           className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs"
         />
       </div>
+
+      <OperatorAccess compact />
 
       <button
         type="button"

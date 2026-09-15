@@ -15,10 +15,14 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import threading
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
+from app import security
+from app.config import get_settings
 from app.db.session import get_db
 from app.services.explain import audit
 from app.services.explain import plan as plan_explain
@@ -27,6 +31,11 @@ from app.services.logistics import optimize
 from app.services.logistics import plan as plan_mod
 
 router = APIRouter()
+
+# Each plan holds several shortest-path trees over the corridor in memory.
+# Past this many at once, new requests are turned away rather than queued
+# into an out-of-memory kill that would take every other request with them.
+_plan_slots = threading.BoundedSemaphore(get_settings().max_concurrent_plans)
 
 
 class StockIn(BaseModel):
@@ -101,7 +110,31 @@ def example_inputs():
 
 
 @router.post("/plan")
-def make_plan(body: PlanRequest, db: Session = Depends(get_db)):
+def make_plan(
+    body: PlanRequest,
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+):
+    # Planning is public; making it part of the audit trail is not.
+    if body.save and not security.is_authorised(authorization):
+        raise HTTPException(
+            status_code=401,
+            detail="Saving a plan as a record needs an operator token. Planning without saving does not.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not _plan_slots.acquire(blocking=False):
+        raise HTTPException(
+            status_code=429,
+            detail="The planner is busy with other requests; try again in a few seconds.",
+            headers={"Retry-After": "5"},
+        )
+    try:
+        return _make_plan(body, db)
+    finally:
+        _plan_slots.release()
+
+
+def _make_plan(body: PlanRequest, db: Session) -> dict:
     try:
         result = plan_mod.build_plan(
             db,

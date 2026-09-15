@@ -34,6 +34,14 @@ from app.routers import (
 
 settings = get_settings()
 
+# Refuse to serve an unsafe production configuration (see app/config.py).
+if settings.is_production:
+    _problems = settings.production_problems()
+    if _problems:
+        raise RuntimeError(
+            "Refusing to start in production:\n  - " + "\n  - ".join(_problems)
+        )
+
 app = FastAPI(
     title="SIH26002 — NER Accessibility & Logistics Intelligence API",
     description=(
@@ -47,8 +55,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])

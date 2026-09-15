@@ -2,18 +2,41 @@
 Centralized settings, loaded from environment variables (.env in local dev).
 Keep every config value here -- no hardcoded connection strings or flags
 scattered through the codebase.
+
+PRODUCTION FAILS FAST
+With ENVIRONMENT=production the app refuses to start on a configuration that
+would be unsafe to serve: no operator tokens (so anyone could save plans or
+close roads with field reports), a localhost CORS origin, or the development
+database URL. A service that boots with a bad config and fails quietly later
+is worse than one that does not boot. See docs/deployment.md.
 """
 
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEV_DATABASE_URL = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     environment: str = "development"
-    database_url: str = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
+    database_url: str = DEV_DATABASE_URL
     cors_allowed_origins: list[str] = ["http://localhost:3000"]
+
+    # SHA-256 hex digests of operator tokens, never the tokens themselves.
+    # Generate with: python -m app.security new-token
+    operator_token_hashes: list[str] = []
+
+    # Field reports close and slow roads in current-conditions routing, so in
+    # production they need an operator token unless this is set explicitly --
+    # an open crowdsourcing deployment is a deliberate choice, not a default.
+    public_field_reports: bool = False
+
+    # Planning runs shortest paths over the whole corridor; more concurrent
+    # requests than this get a 429 rather than exhausting memory.
+    max_concurrent_plans: int = 2
 
     # data source config -- filled in once §1 access checks confirm the real shape
     cwc_nwdp_base_url: str | None = None
@@ -22,6 +45,29 @@ class Settings(BaseSettings):
     # object storage (satellite scenes, DEM tiles) -- stub for now
     object_storage_endpoint: str | None = None
     object_storage_bucket: str | None = None
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() == "production"
+
+    def production_problems(self) -> list[str]:
+        """Everything that makes this configuration unsafe to serve publicly."""
+        problems = []
+        if not self.operator_token_hashes:
+            problems.append(
+                "OPERATOR_TOKEN_HASHES is empty: every write endpoint would be open. "
+                "Generate one with `python -m app.security new-token`."
+            )
+        bad = [h for h in self.operator_token_hashes if len(h) != 64 or not all(c in "0123456789abcdef" for c in h.lower())]
+        if bad:
+            problems.append("OPERATOR_TOKEN_HASHES must be 64-character SHA-256 hex digests, not raw tokens.")
+        if any("localhost" in o or "127.0.0.1" in o for o in self.cors_allowed_origins):
+            problems.append("CORS_ALLOWED_ORIGINS includes localhost; set it to the deployed web origin.")
+        if "*" in self.cors_allowed_origins:
+            problems.append("CORS_ALLOWED_ORIGINS must not be '*' while credentials are allowed.")
+        if self.database_url == DEV_DATABASE_URL:
+            problems.append("DATABASE_URL is the local development default.")
+        return problems
 
 
 @lru_cache

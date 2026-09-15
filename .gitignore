@@ -23,6 +23,9 @@ venv/
 # data (never commit real datasets)
 data/raw/*
 data/processed/*
+# database exports for deployment (scripts/deploy/export_data.ps1)
+data/deploy/
+*.dump
 !data/raw/README.md
 !data/processed/README.md
 

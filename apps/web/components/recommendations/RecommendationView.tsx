@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import OperatorAccess from "@/components/auth/OperatorAccess";
 import PlanWhy from "@/components/explain/PlanWhy";
 import {
   fetchOverrides,
@@ -186,6 +187,7 @@ export default function RecommendationView({ id }: { id: string }) {
             placeholder="Reason (required)"
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
+          <OperatorAccess compact />
           {formError && <p className="text-xs text-red-700">{formError}</p>}
           <button
             onClick={submit}

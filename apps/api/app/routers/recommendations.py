@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Recommendation, RecommendationOverride
+from app import security
 from app.db.session import get_db
 from app.services.explain import audit
 
@@ -97,7 +98,9 @@ def list_overrides(rec_id: str, db: Session = Depends(get_db)):
     return {"id": rec.id, "overrides": [audit.override_dict(o) for o in rows]}
 
 
-@router.post("/{rec_id}/overrides", status_code=201)
+@router.post(
+    "/{rec_id}/overrides", status_code=201, dependencies=[Depends(security.require_operator)]
+)
 def add_override(rec_id: str, body: OverrideIn, db: Session = Depends(get_db)):
     rec = _get(db, rec_id)
     try:

@@ -22,6 +22,33 @@ jobs:
       - name: Run tests
         run: pytest -v
 
+  # Builds the production API image exactly as a host would, from the repo
+  # root. Catches a Dockerfile COPY of a moved file, or a dependency that
+  # stops shipping a wheel -- neither of which the test job would notice.
+  # The image is only built, never pushed.
+  api-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t setuner-api:ci .
+      - name: Artifacts are inside the image
+        run: |
+          docker run --rm -i setuner-api:ci python - <<'PY'
+          from app.services.model import district_model as dm
+          from app.services.logistics import gazetteer
+          from app.db.migrate import migration_files
+          assert all(dm.load(h) for h in dm.HORIZONS), "model artifacts missing"
+          assert gazetteer.GAZETTEER_PATH.exists(), "gazetteer missing"
+          assert migration_files(), "migrations missing"
+          print("artifacts ok")
+          PY
+      - name: Refuses an unsafe production config
+        run: |
+          if docker run --rm -e ENVIRONMENT=production setuner-api:ci python -c "import app.main"; then
+            echo "expected startup to be refused"; exit 1
+          fi
+
   web-build:
     runs-on: ubuntu-latest
     steps:
