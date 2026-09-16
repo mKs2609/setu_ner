@@ -18,6 +18,18 @@ Everything below was rehearsed locally except the hosted steps themselves:
 the export, the migrations runner, the image recipe (built in CI), token
 enforcement and the daily job.
 
+### Free path (no card)
+
+| Piece | Free host |
+|---|---|
+| Database | **Neon** free tier |
+| API | **Hugging Face Docker Space** — free CPU tier, 16 GB RAM; sleeps after 48 h without visits and takes a minute or two to wake |
+| Daily job | **GitHub Actions** scheduled workflow (`.github/workflows/daily-job.yml`) — free for a public repo |
+| Web | **Vercel** free tier |
+
+Render's free web tier (512 MB) is not recommended: the road graph alone uses
+~240 MB and planning adds more. Steps 2 and 3 below have free-path variants.
+
 ---
 
 ## 0. Before you start
@@ -110,6 +122,24 @@ curl https://YOUR-API/api/v1/health/ready
 `"ready": true` with every check `ok`. `data_freshness` will show the age of
 the newest report — it goes stale until step 3 runs.
 
+### 2 (free path). API on a Hugging Face Space
+
+1. Create a free account at huggingface.co, then **New Space**: SDK **Docker**,
+   template **Blank**, hardware **CPU basic (free)**, visibility public or
+   private.
+2. Upload the two files from `deploy/huggingface/` in this repo
+   (`Dockerfile`, `README.md`) to the Space (Files -> Add file -> Upload).
+   The Dockerfile clones this GitHub repo at build time, so nothing else is
+   needed in the Space.
+3. Space **Settings -> Variables and secrets**, add as **secrets**:
+   `ENVIRONMENT=production`, `DATABASE_URL` (Neon *pooled* string),
+   `CORS_ALLOWED_ORIGINS=["https://your-app.vercel.app"]`,
+   `OPERATOR_TOKEN_HASHES=["<hash>"]`, `PUBLIC_FIELD_REPORTS=false`.
+4. The Space builds and starts. Its API is at
+   `https://<username>-<space-name>.hf.space`; check `/api/v1/health/ready`.
+5. After new commits to `master`, use **Settings -> Restart / rebuild** to pick
+   them up.
+
 ---
 
 ## 3. Daily job
@@ -125,6 +155,13 @@ A second service from the **same repo and Dockerfile**, run on a schedule:
 It runs flood and landslide catch-up, damage matching and scoring, then exits.
 A non-zero exit means a step failed — including the scorer refusing a report
 older than three days — so point the platform's failed-job alert at it.
+
+**Free path:** the workflow `.github/workflows/daily-job.yml` runs the same
+command on GitHub's scheduler at the same time. Add one repository secret,
+`DATABASE_URL` (GitHub repo -> Settings -> Secrets and variables -> Actions ->
+New repository secret), then run it once by hand from the Actions tab
+("Daily job" -> Run workflow). Without the secret it skips instead of failing.
+GitHub pauses schedules in repos with no activity for 60 days.
 
 The job fetches from the ASDMA portal through the polite client (robots.txt,
 crawl delay, identified user agent). Do not schedule it more than once a day.

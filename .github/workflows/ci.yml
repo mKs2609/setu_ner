@@ -49,6 +49,24 @@ jobs:
             echo "expected startup to be refused"; exit 1
           fi
 
+  # The free-tier API image (docs/deployment.md, "Free path"). It clones the
+  # public repo at build time, so this checks the recipe, not this commit.
+  space-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Hugging Face Space image
+        run: docker build -t setuner-space:ci deploy/huggingface
+      - name: Space image carries the artifacts
+        run: |
+          docker run --rm -i setuner-space:ci python - <<'PY'
+          from app.services.model import district_model as dm
+          from app.services.logistics import gazetteer
+          assert all(dm.load(h) for h in dm.HORIZONS), "model artifacts missing"
+          assert gazetteer.GAZETTEER_PATH.exists(), "gazetteer missing"
+          print("space artifacts ok")
+          PY
+
   web-build:
     runs-on: ubuntu-latest
     steps:
