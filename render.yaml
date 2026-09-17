@@ -1,0 +1,43 @@
+# Render blueprint for the SetuNER API (free instance type).
+#
+# Render reads this from the repo root: New -> Blueprint -> pick this repo.
+# It builds the same image as apps/api/Dockerfile, from the repo root context
+# so the model artifacts, gazetteer and migrations are included.
+#
+# FREE TIER, HONESTLY
+#   512 MB RAM.  Measured: ~120 MB idle, ~270 MB after building a full supply
+#                plan (the road graph is cached after the first request). That
+#                fits, without much room to spare -- a second simultaneous
+#                plan is what would push it over, which is why
+#                MAX_CONCURRENT_PLANS is 1 here.
+#   Sleeps after 15 minutes idle; the next request waits ~50 s for a cold
+#   start, and the first plan after that rebuilds the graph (~1 s).
+#   No cron on the free tier -- the daily job runs on GitHub Actions instead
+#   (.github/workflows/daily-job.yml).
+#
+# The four secret-ish values are marked sync:false, so Render asks for them in
+# the dashboard instead of keeping them in git.
+
+services:
+  - type: web
+    name: setuner-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health/ready
+    autoDeployTrigger: commit
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: MAX_CONCURRENT_PLANS
+        value: "1"
+      - key: PUBLIC_FIELD_REPORTS
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: OPERATOR_TOKEN_HASHES
+        sync: false
