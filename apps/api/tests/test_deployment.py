@@ -226,3 +226,50 @@ def test_local_schema_has_no_pending_migrations():
     from app.db.migrate import run
 
     assert run(status_only=True) == []
+
+
+# ---------------------------------------------------------------------------
+# List settings accept what people type into hosting dashboards
+# ---------------------------------------------------------------------------
+
+HASH_A = "a" * 64
+HASH_B = "b" * 64
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        (f'["{HASH_A}"]', [HASH_A]),                       # JSON, as documented
+        (HASH_A, [HASH_A]),                                # a bare hash: the first real deploy
+        (f"{HASH_A},{HASH_B}", [HASH_A, HASH_B]),          # comma-separated
+        (f" {HASH_A} , {HASH_B} ", [HASH_A, HASH_B]),      # with stray spaces
+        (f'["{HASH_A}", "{HASH_B}"]', [HASH_A, HASH_B]),
+        ("", []),
+    ],
+)
+def test_token_hashes_accept_every_reasonable_form(monkeypatch, raw, expected):
+    monkeypatch.setenv("OPERATOR_TOKEN_HASHES", raw)
+    assert Settings().operator_token_hashes == expected
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ('["https://a.example"]', ["https://a.example"]),
+        ("https://a.example", ["https://a.example"]),
+        ("https://a.example,https://b.example", ["https://a.example", "https://b.example"]),
+    ],
+)
+def test_cors_origins_accept_every_reasonable_form(monkeypatch, raw, expected):
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", raw)
+    assert Settings().cors_allowed_origins == expected
+
+
+def test_a_bare_hash_still_authorises(monkeypatch):
+    """The end-to-end version of the bug: a bare hash in the environment has
+    to produce a working deployment, not a stack trace at import time."""
+    monkeypatch.setenv("OPERATOR_TOKEN_HASHES", security.token_hash(TOKEN))
+    s = Settings()
+    monkeypatch.setattr(security, "get_settings", lambda: s)
+    assert security.is_authorised(f"Bearer {TOKEN}")
+    assert not security.is_authorised("Bearer nope")

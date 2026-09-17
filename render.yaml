@@ -37,6 +37,7 @@ services:
         value: "false"
       - key: DATABASE_URL
         sync: false
+      # Plain values are fine: "https://your-app.vercel.app" and a bare hash.
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: OPERATOR_TOKEN_HASHES

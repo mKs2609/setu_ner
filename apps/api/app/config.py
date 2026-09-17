@@ -13,13 +13,47 @@ is worse than one that does not boot. See docs/deployment.md.
 
 from functools import lru_cache
 
+import json
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEV_DATABASE_URL = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
 
 
+def _as_list(value):
+    """Accept the forms a person actually types into a hosting dashboard.
+
+    A list setting given as a bare value crashes pydantic's JSON parsing at
+    startup with a stack trace that names json.decoder, not the variable --
+    which is exactly what happened on the first real deploy, with
+    OPERATOR_TOKEN_HASHES pasted as a bare hash. All of these now work:
+
+        ["a", "b"]      JSON, as the docs show
+        a,b             comma-separated
+        a               one value
+
+    A single hash or origin is the common case, and it should not be the one
+    that fails.
+    """
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        return json.loads(text)
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # enable_decoding=False stops pydantic-settings JSON-decoding list fields
+    # before validators see them, which is what made a bare hash in
+    # OPERATOR_TOKEN_HASHES a startup crash. `_parse_list` below does the
+    # decoding instead, and accepts the plain forms too.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", enable_decoding=False
+    )
 
     environment: str = "development"
     database_url: str = DEV_DATABASE_URL
@@ -41,6 +75,11 @@ class Settings(BaseSettings):
     # data source config -- filled in once §1 access checks confirm the real shape
     cwc_nwdp_base_url: str | None = None
     asdma_base_url: str | None = None
+
+    @field_validator("cors_allowed_origins", "operator_token_hashes", mode="before")
+    @classmethod
+    def _parse_list(cls, value):
+        return _as_list(value)
 
     # object storage (satellite scenes, DEM tiles) -- stub for now
     object_storage_endpoint: str | None = None

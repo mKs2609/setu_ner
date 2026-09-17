@@ -104,9 +104,13 @@ Environment variables:
 |---|---|
 | `ENVIRONMENT` | `production` |
 | `DATABASE_URL` | the connection string from step 1 |
-| `CORS_ALLOWED_ORIGINS` | `["https://your-app.vercel.app"]` |
-| `OPERATOR_TOKEN_HASHES` | `["<hash>", "<hash>"]` |
+| `CORS_ALLOWED_ORIGINS` | `https://your-app.vercel.app` |
+| `OPERATOR_TOKEN_HASHES` | `<hash>` |
 | `PUBLIC_FIELD_REPORTS` | `false` (set `true` only for open crowdsourcing) |
+
+The two list settings accept a single plain value (`<hash>`), several
+comma-separated (`<hash>,<hash>`), or JSON (`["<hash>"]`) -- whichever is
+easiest to paste into the dashboard.
 
 `PORT` is read from the platform. **The API refuses to start** if the token
 list is empty, CORS includes localhost or `*`, or `DATABASE_URL` is the local
@@ -131,10 +135,11 @@ the newest report — it goes stale until step 3 runs.
    (`Dockerfile`, `README.md`) to the Space (Files -> Add file -> Upload).
    The Dockerfile clones this GitHub repo at build time, so nothing else is
    needed in the Space.
-3. Space **Settings -> Variables and secrets**, add as **secrets**:
-   `ENVIRONMENT=production`, `DATABASE_URL` (Neon *pooled* string),
-   `CORS_ALLOWED_ORIGINS=["https://your-app.vercel.app"]`,
-   `OPERATOR_TOKEN_HASHES=["<hash>"]`, `PUBLIC_FIELD_REPORTS=false`.
+3. Space **Settings -> Variables and secrets**. `DATABASE_URL` and
+   `OPERATOR_TOKEN_HASHES` must be **secrets** (public variables are readable
+   by anyone who opens the Space); `ENVIRONMENT=production`,
+   `CORS_ALLOWED_ORIGINS=https://your-app.vercel.app` and
+   `PUBLIC_FIELD_REPORTS=false` can be plain variables.
 4. The Space builds and starts. Its API is at
    `https://<username>-<space-name>.hf.space`; check `/api/v1/health/ready`.
 5. After new commits to `master`, use **Settings -> Restart / rebuild** to pick
