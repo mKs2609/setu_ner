@@ -14,6 +14,17 @@
 #
 # Then matches new damage reports to roads and re-scores accessibility.
 #
+# WHICH DATABASE
+# By default, whatever apps/api/.env says (the local database). To keep the
+# DEPLOYED database current -- the reason this runs on a machine in India at
+# all, since the ASDMA portal does not answer from abroad -- set a user
+# environment variable once:
+#
+#   [Environment]::SetEnvironmentVariable("SETUNER_DATABASE_URL", "<neon pooled url>", "User")
+#
+# It lives in your Windows user profile, never in the repo or a script. Log
+# lines never print it.
+#
 # EXIT CODES
 # 0 for success and for "no report published" -- the latter is a normal
 # outcome most of the year. Non-zero only for real failures, which is what
@@ -36,6 +47,16 @@ function Write-Log($Message) {
 }
 
 Write-Log "--- ingestion run starting ---"
+
+# Target the deployed database when configured (see WHICH DATABASE above).
+# Environment variables override apps/api/.env, so nothing on disk changes.
+$Target = [Environment]::GetEnvironmentVariable("SETUNER_DATABASE_URL", "User")
+if ($Target) {
+    $env:DATABASE_URL = $Target
+    Write-Log "target: deployed database (SETUNER_DATABASE_URL)"
+} else {
+    Write-Log "target: local database (apps/api/.env)"
+}
 
 if (-not (Test-Path $ApiDir)) {
     Write-Log "ERROR: expected the API at $ApiDir and it is not there."

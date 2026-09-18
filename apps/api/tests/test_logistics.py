@@ -277,3 +277,94 @@ def test_lower_exposure_route_never_has_more_exposure_than_fastest():
 def test_unknown_report_day_is_a_404():
     r = client.get("/api/v1/logistics/demand", params={"as_of": date(1999, 1, 1).isoformat()})
     assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Compiled routing equals the reference algorithm (no database)
+# ---------------------------------------------------------------------------
+
+
+def _toy_corridor():
+    """A small graph with the awkward cases: parallel roads, a zero-minute
+    link, a closed road, a slowed road, and an unreachable junction."""
+    import networkx as nx
+    import numpy as np
+
+    from app.services.routing.graph import Alternative, CorridorGraph
+
+    def alt(rid, minutes, km):
+        return Alternative(rid, minutes, km, False, "primary", "Cachar")
+
+    edges = {
+        (1, 2): [alt(10, 5.0, 4.0), alt(11, 4.0, 4.0)],   # parallel: 11 is faster
+        (2, 3): [alt(12, 0.0, 0.01)],                      # zero-minute link
+        (3, 4): [alt(13, 6.0, 5.0)],
+        (1, 4): [alt(14, 12.0, 9.0)],                      # longer but safe
+        (4, 5): [alt(15, 3.0, 2.0)],
+        (2, 5): [alt(16, 1.0, 1.0)],                       # closed below
+        (6, 1): [alt(17, 1.0, 1.0)],                       # 6 reaches in, nothing reaches 6
+    }
+    g = nx.DiGraph()
+    index = {}
+    for (u, v), alts in edges.items():
+        g.add_edge(u, v, alternatives=alts)
+        for a in alts:
+            index[a.road_id] = (u, v)
+    nodes = np.array(sorted(g.nodes), dtype=np.int64)
+    return CorridorGraph(g, nodes, np.zeros((len(nodes), 2)), index)
+
+
+@pytest.mark.parametrize("penalty", [0.0, 30.0, 120.0])
+def test_compiled_routing_matches_networkx(penalty):
+    import networkx as nx
+
+    from app.services.logistics import routes
+
+    cg = _toy_corridor()
+    ctx = routes.RiskContext(
+        accessibility={13: 0.2, 15: 0.9, 11: 0.5},   # 13 badly at risk
+        source="test",
+        closed={16},
+        degraded={10: 2.0},
+    )
+    targets = [3, 4, 5, 6]
+    got = routes.routes_from(cg, 1, targets, ctx, penalty)
+
+    def weight(u, v, data):
+        return routes._best_alternative(data["alternatives"], ctx, penalty)[1]
+
+    dist, paths = nx.single_source_dijkstra(cg.graph, 1, weight=weight)
+    for t in targets:
+        if t not in dist:
+            assert not got[t].reachable, "an unreachable junction must stay unreachable"
+            continue
+        expected = [
+            routes._best_alternative(cg.graph[u][v]["alternatives"], ctx, penalty)[0].road_id
+            for u, v in zip(paths[t], paths[t][1:])
+        ]
+        assert got[t].road_ids == expected
+
+
+def test_zero_minute_links_survive_sparse_matrix_cleanup():
+    """The toy graph has a 0-minute link (2 -> 3), the only way to reach 3.
+    A stored zero is an edge to scipy until something calls eliminate_zeros,
+    after which it is gone. The cost floor means there is no zero to lose."""
+    from app.services.logistics import routes
+
+    cg = _toy_corridor()
+    ctx = routes.RiskContext(accessibility={}, source="test", closed={16})
+    matrix = routes._cost_matrix(cg, ctx, 0.0).copy()
+    before = matrix.nnz
+    matrix.eliminate_zeros()
+    assert matrix.nnz == before, "a zero-cost link would have been deleted"
+    got = routes.routes_from(cg, 1, [3], ctx, 0.0)
+    assert got[3].reachable and 12 in got[3].road_ids
+
+
+def test_closed_roads_are_never_used():
+    from app.services.logistics import routes
+
+    cg = _toy_corridor()
+    ctx = routes.RiskContext(accessibility={}, source="test", closed={16})
+    got = routes.routes_from(cg, 1, [5], ctx, 0.0)
+    assert 16 not in got[5].road_ids

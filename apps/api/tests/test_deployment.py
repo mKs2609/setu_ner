@@ -273,3 +273,46 @@ def test_a_bare_hash_still_authorises(monkeypatch):
     monkeypatch.setattr(security, "get_settings", lambda: s)
     assert security.is_authorised(f"Bearer {TOKEN}")
     assert not security.is_authorised("Bearer nope")
+
+
+# ---------------------------------------------------------------------------
+# Daily job: an unreachable portal is skipped quickly, not retried for an hour
+# ---------------------------------------------------------------------------
+
+
+def test_daily_job_skips_ingestion_when_the_portal_does_not_answer(monkeypatch, capsys):
+    """The first hosted run spent 17 minutes on one request from GitHub's US
+    runners. Unreachable must mean: skip ingestion, still score, report why,
+    exit non-zero."""
+    import subprocess
+
+    from app.jobs import daily
+
+    ran = []
+
+    class Done:
+        returncode, stdout, stderr = 0, "", ""
+
+    monkeypatch.setattr(daily, "portal_reachable", lambda: (False, "TimeoutError: timed out"))
+    monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
+
+    assert daily.main() == 1
+    assert ran == ["app.services.model.damage_matching", "app.services.model.score"]
+    assert "does not answer from outside India" in capsys.readouterr().out
+
+
+def test_daily_job_runs_every_step_when_the_portal_answers(monkeypatch):
+    import subprocess
+
+    from app.jobs import daily
+
+    ran = []
+
+    class Done:
+        returncode, stdout, stderr = 0, "", ""
+
+    monkeypatch.setattr(daily, "portal_reachable", lambda: (True, "ok"))
+    monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
+
+    assert daily.main() == 0
+    assert len(ran) == 4

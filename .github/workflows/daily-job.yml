@@ -1,6 +1,16 @@
-# The daily job (app/jobs/daily.py) on GitHub's scheduler: ingest missing
-# DRIMS report days, match damage to roads, re-score accessibility -- against
-# the hosted database.
+# The daily job (app/jobs/daily.py) on GitHub's runners: ingest missing DRIMS
+# report days, match damage to roads, re-score accessibility -- against the
+# hosted database.
+#
+# NOT SCHEDULED, AND WHY
+# The ASDMA portal does not answer GitHub's US runners: the first hosted run
+# sat 17 minutes on its first request and ingested nothing, while the same
+# portal answers from India in half a second. A nightly schedule here would
+# fail every night. Ingestion runs from a machine in India instead
+# (scripts/scheduling/README.md). This workflow stays as a manual button:
+# useful to re-score from data already stored, or to test whether the portal
+# has become reachable -- the job probes it first and skips ingestion quickly
+# if not.
 #
 # Free for a public repository, and no extra host to run. Needs one repository
 # secret, DATABASE_URL (Settings -> Secrets and variables -> Actions). Without
@@ -13,9 +23,6 @@
 name: Daily job
 
 on:
-  schedule:
-    # 20:30 UTC = 02:00 IST. DRIMS publishes late in the day.
-    - cron: "30 20 * * *"
   workflow_dispatch: {}
 
 # Never two at once: overlapping runs would both hit the government portal.

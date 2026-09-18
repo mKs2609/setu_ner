@@ -15,6 +15,30 @@ The scorer refuses a report more than three days old and exits non-zero, so
 a portal outage shows up as a failed run instead of a map quietly showing
 last week's forecast as today's.
 
+## Where it has to run: India
+
+The ASDMA portal answers from India in under a second and does not answer
+GitHub's (or most cloud providers') US machines at all. So the daily job runs
+on a machine in India -- this one -- and writes to whichever database it is
+pointed at. When the PC is off, nothing is lost: the next run's catch-up
+fetches every day it missed (up to 14).
+
+### Point it at the deployed database (once)
+
+In PowerShell, with the Neon **pooled** connection string:
+
+```powershell
+[Environment]::SetEnvironmentVariable("SETUNER_DATABASE_URL", "<neon pooled url>", "User")
+```
+
+This stores it in your Windows user profile -- not in the repo, not in a
+script. The task picks it up; logs say `target: deployed database` without
+printing it. To go back to the local database, remove it:
+
+```powershell
+[Environment]::SetEnvironmentVariable("SETUNER_DATABASE_URL", $null, "User")
+```
+
 ## Windows (this machine)
 
 Register the task once, as the user who owns the database:

@@ -24,7 +24,7 @@ enforcement and the daily job.
 |---|---|
 | Database | **Neon** free tier |
 | API | **Hugging Face Docker Space** — free CPU tier, 16 GB RAM; sleeps after 48 h without visits and takes a minute or two to wake |
-| Daily job | **GitHub Actions** scheduled workflow (`.github/workflows/daily-job.yml`) — free for a public repo |
+| Daily job | **Windows Task Scheduler on a PC in India** (`scripts/scheduling/`) — the ASDMA portal does not answer from GitHub's or other cloud machines abroad |
 | Web | **Vercel** free tier |
 
 Render's free web tier (512 MB) is not recommended: the road graph alone uses
@@ -161,12 +161,20 @@ It runs flood and landslide catch-up, damage matching and scoring, then exits.
 A non-zero exit means a step failed — including the scorer refusing a report
 older than three days — so point the platform's failed-job alert at it.
 
-**Free path:** the workflow `.github/workflows/daily-job.yml` runs the same
-command on GitHub's scheduler at the same time. Add one repository secret,
-`DATABASE_URL` (GitHub repo -> Settings -> Secrets and variables -> Actions ->
-New repository secret), then run it once by hand from the Actions tab
-("Daily job" -> Run workflow). Without the secret it skips instead of failing.
-GitHub pauses schedules in repos with no activity for 60 days.
+**The job has to run from India.** The ASDMA portal answers from India in
+half a second and not at all from GitHub's US runners: the first hosted run
+sat 17 minutes on one request and ingested nothing. A cloud cron abroad will
+hit the same wall. The job now probes the portal first and skips ingestion
+within 20 seconds when it does not answer, so a misplaced run fails fast and
+says why.
+
+**Free path:** run it from a Windows PC in India with the scheduled task in
+`scripts/scheduling/`, pointed at the deployed database via the
+`SETUNER_DATABASE_URL` user environment variable (see that folder's README).
+Catch-up means days the PC was off are fetched on the next run.
+`.github/workflows/daily-job.yml` remains as a manual button with no schedule
+-- useful for re-scoring from stored data, or for testing whether the portal
+has become reachable.
 
 The job fetches from the ASDMA portal through the polite client (robots.txt,
 crawl delay, identified user agent). Do not schedule it more than once a day.

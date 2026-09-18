@@ -18,6 +18,11 @@ rasterio==1.5.1
 networkx==3.3
 ortools==9.15.6755
 scikit-learn==1.7.2
+# Direct dependency: logistics routing runs scipy's compiled Dijkstra over a
+# sparse cost matrix (services/logistics/routes.py). Also a scikit-learn
+# dependency, but a direct import belongs here, pinned to a version with a
+# Linux cp312 wheel.
+scipy==1.17.1
 # xgboost==2.1.1
 requests==2.32.3
 # Hazard ingestion parses the DRIMS daily report, which is published

@@ -39,11 +39,12 @@ Trucks are assumed to return the way they came: round trip = 2 x one way.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from datetime import date
-from heapq import heappop, heappush
 
+import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import dijkstra
 from sqlalchemy import select
 
 from app.db.models import Road
@@ -63,6 +64,8 @@ class RiskContext:
     degraded: dict[int, float] = field(default_factory=dict)
     live_conditions_applied: bool = False
     district_probability: dict[str, float] = field(default_factory=dict)
+    # Sparse cost matrices by penalty, shared by every depot in one plan.
+    matrix_cache: dict = field(default_factory=dict, repr=False)
 
 
 def risk_context(db, cgraph: CorridorGraph, as_of: date, latest: date) -> RiskContext:
@@ -156,50 +159,114 @@ class RouteOption:
         }
 
 
-def _dijkstra(g, source: int, targets: set[int], ctx: RiskContext, penalty: float):
-    """Shortest paths from one depot, keeping predecessors and stopping early.
+# Edge costs can be exactly zero (a junction pair a few metres apart rounds to
+# 0 minutes). scipy's csgraph keeps an explicitly stored zero as an edge, but
+# any operation that calls eliminate_zeros -- several conversions and
+# arithmetic on sparse matrices do -- silently deletes it, and the link with
+# it. A tiny floor makes the matrix immune to that rather than relying on
+# nothing ever touching it.
+_MIN_COST = 1e-9
 
-    networkx's `single_source_dijkstra` builds and stores the full path to
-    every one of the corridor's 47,424 junctions, when a plan needs paths to a
-    handful of circles. On a 512 MB host that spike killed the process (a real
-    502 on the first deployment), and it kept searching long after every
-    destination was settled.
 
-    This keeps one predecessor per node -- a few hundred kilobytes -- and
-    returns as soon as the last target is settled. Same algorithm, same
-    answers; it just stops doing work nobody asked for.
+@dataclass
+class _EdgeArrays:
+    """The corridor graph flattened into arrays, built once per graph.
+
+    One row per junction, one entry per road alternative, so per-plan costs
+    are a vectorised calculation instead of ~725,000 Python function calls.
     """
-    dist: dict[int, float] = {source: 0.0}
-    prev: dict[int, int] = {}
-    heap: list[tuple[float, int]] = [(0.0, source)]
-    remaining = set(targets)
-    remaining.discard(source)
 
-    while heap and remaining:
-        d, u = heappop(heap)
-        if d > dist.get(u, math.inf):
-            continue  # a stale heap entry, already improved on
-        remaining.discard(u)
-        for v, data in g[u].items():
-            _, w = _best_alternative(data["alternatives"], ctx, penalty)
-            if w is None:
-                continue
-            nd = d + w
-            if nd < dist.get(v, math.inf):
-                dist[v] = nd
-                prev[v] = u
-                heappush(heap, (nd, v))
-    return dist, prev
+    nodes: np.ndarray        # row -> junction id
+    index: dict[int, int]    # junction id -> row
+    edge_u: np.ndarray       # edge -> row of its start
+    edge_v: np.ndarray       # edge -> row of its end
+    alt_edge: np.ndarray     # alternative -> its edge
+    alt_road: np.ndarray     # alternative -> road id
+    alt_time: np.ndarray     # alternative -> baseline minutes
+    alt_len: np.ndarray      # alternative -> km
 
 
-def _path_to(target: int, source: int, prev: dict[int, int]) -> list[int] | None:
-    if target == source:
-        return [source]
-    if target not in prev:
+_arrays_cache: tuple[int, _EdgeArrays] | None = None
+
+
+def _edge_arrays(cgraph: CorridorGraph) -> _EdgeArrays:
+    global _arrays_cache
+    if _arrays_cache is not None and _arrays_cache[0] == id(cgraph):
+        return _arrays_cache[1]
+    g = cgraph.graph
+    nodes = np.fromiter(g.nodes, dtype=np.int64, count=g.number_of_nodes())
+    index = {int(n): i for i, n in enumerate(nodes)}
+    eu, ev, ae, ar, at, al = [], [], [], [], [], []
+    for e, (u, v, data) in enumerate(g.edges(data=True)):
+        eu.append(index[u])
+        ev.append(index[v])
+        for alt in data["alternatives"]:
+            ae.append(e)
+            ar.append(alt.road_id)
+            at.append(alt.travel_time_min)
+            al.append(alt.length_km)
+    arrays = _EdgeArrays(
+        nodes, index,
+        np.asarray(eu, dtype=np.int64), np.asarray(ev, dtype=np.int64),
+        np.asarray(ae, dtype=np.int64), np.asarray(ar, dtype=np.int64),
+        np.asarray(at, dtype=float), np.asarray(al, dtype=float),
+    )
+    _arrays_cache = (id(cgraph), arrays)
+    return arrays
+
+
+def _cost_matrix(cgraph: CorridorGraph, ctx: RiskContext, penalty: float):
+    """Sparse junction-to-junction cost matrix for one risk setting.
+
+    Same rule as `_edge_cost` / `_best_alternative`: minutes (slowed by live
+    reports) plus penalty x km x (1 - accessibility), closed roads removed,
+    and the cheapest alternative per junction pair -- the first in list order
+    on a tie, which is also what `_best_alternative` picks. Cached on the
+    context, because every depot in one plan shares it.
+    """
+    cache = ctx.matrix_cache
+    if penalty in cache:
+        return cache[penalty]
+    a = _edge_arrays(cgraph)
+    roads = a.alt_road.tolist()
+    access = np.fromiter(
+        (ctx.accessibility.get(r, np.nan) for r in roads), dtype=float, count=len(roads)
+    )
+    slow = (
+        np.fromiter((ctx.degraded.get(r, 1.0) for r in roads), dtype=float, count=len(roads))
+        if ctx.degraded else 1.0
+    )
+    risk = np.where(np.isnan(access), 0.0, penalty * a.alt_len * (1.0 - np.nan_to_num(access)))
+    cost = a.alt_time * slow + risk
+    if ctx.closed:
+        closed = np.fromiter((r in ctx.closed for r in roads), dtype=bool, count=len(roads))
+        cost[closed] = np.inf
+
+    order = np.lexsort((cost, a.alt_edge))  # stable: ties keep list order
+    edges_sorted = a.alt_edge[order]
+    first = np.r_[True, edges_sorted[1:] != edges_sorted[:-1]]
+    best = order[first]
+    edge_cost = cost[best]
+    edge = a.alt_edge[best]
+    usable = np.isfinite(edge_cost)
+
+    n = len(a.nodes)
+    matrix = csr_matrix(
+        (np.maximum(edge_cost[usable], _MIN_COST), (a.edge_u[edge[usable]], a.edge_v[edge[usable]])),
+        shape=(n, n),
+    )
+    cache[penalty] = matrix
+    return matrix
+
+
+def _path_to(target_row: int, source_row: int, pred: np.ndarray) -> list[int] | None:
+    if target_row == source_row:
+        return [source_row]
+    if pred[target_row] < 0:
         return None
-    path = [target]
-    while path[-1] != source:
-        path.append(prev[path[-1]])
+    path = [target_row]
+    while path[-1] != source_row:
+        path.append(int(pred[path[-1]]))
     path.reverse()
     return path
 
@@ -216,14 +283,27 @@ def routes_from(
     if source not in g:
         return {t: RouteOption(False) for t in targets}
 
-    _, prev = _dijkstra(g, source, set(targets), ctx, penalty)
+    # scipy's compiled Dijkstra over a per-plan cost matrix. The first
+    # deployment ran networkx's, which stored a full path to every one of the
+    # 47,424 junctions (~109 MB per depot -- the 502 on a 512 MB host); a
+    # pure-Python replacement fixed the memory but still made ~725,000 cost
+    # calls per plan, which took 25 s on a free-tier CPU share. Here the costs
+    # are one vectorised pass and the search runs in C. Each path is then
+    # walked with `_best_alternative`, so the road chosen on every edge is
+    # exactly the one the cost rule picks.
+    a = _edge_arrays(cgraph)
+    src = a.index[source]
+    _, pred = dijkstra(
+        _cost_matrix(cgraph, ctx, penalty), directed=True, indices=src, return_predecessors=True
+    )
 
     out: dict[int, RouteOption] = {}
     for t in targets:
-        path = _path_to(t, source, prev)
-        if path is None:
+        rows = _path_to(a.index[t], src, pred) if t in a.index else None
+        if rows is None:
             out[t] = RouteOption(False)
             continue
+        path = [int(a.nodes[r]) for r in rows]
         opt = RouteOption(True, 0.0, 0.0, 0.0, 0.0, None, 0, [])
         for u, v in zip(path, path[1:]):
             alt, _ = _best_alternative(g[u][v]["alternatives"], ctx, penalty)
