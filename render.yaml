@@ -5,11 +5,12 @@
 # so the model artifacts, gazetteer and migrations are included.
 #
 # FREE TIER, HONESTLY
-#   512 MB RAM.  Measured: ~120 MB idle, ~270 MB after building a full supply
-#                plan (the road graph is cached after the first request). That
-#                fits, without much room to spare -- a second simultaneous
-#                plan is what would push it over, which is why
-#                MAX_CONCURRENT_PLANS is 1 here.
+#   512 MB RAM.  Measured: ~120 MB idle, ~260 MB after a full four-depot plan
+#                (the road graph is cached after the first request). Routing
+#                keeps predecessors rather than every junction's path, which
+#                costs ~4 MB per depot instead of ~109 MB -- the first
+#                deployment's 502 was that spike. MAX_CONCURRENT_PLANS is 1
+#                here so two simultaneous plans queue instead of competing.
 #   Sleeps after 15 minutes idle; the next request waits ~50 s for a cold
 #   start, and the first plan after that rebuilds the graph (~1 s).
 #   No cron on the free tier -- the daily job runs on GitHub Actions instead

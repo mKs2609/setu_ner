@@ -39,10 +39,11 @@ Trucks are assumed to return the way they came: round trip = 2 x one way.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import date
+from heapq import heappop, heappush
 
-import networkx as nx
 from sqlalchemy import select
 
 from app.db.models import Road
@@ -155,6 +156,54 @@ class RouteOption:
         }
 
 
+def _dijkstra(g, source: int, targets: set[int], ctx: RiskContext, penalty: float):
+    """Shortest paths from one depot, keeping predecessors and stopping early.
+
+    networkx's `single_source_dijkstra` builds and stores the full path to
+    every one of the corridor's 47,424 junctions, when a plan needs paths to a
+    handful of circles. On a 512 MB host that spike killed the process (a real
+    502 on the first deployment), and it kept searching long after every
+    destination was settled.
+
+    This keeps one predecessor per node -- a few hundred kilobytes -- and
+    returns as soon as the last target is settled. Same algorithm, same
+    answers; it just stops doing work nobody asked for.
+    """
+    dist: dict[int, float] = {source: 0.0}
+    prev: dict[int, int] = {}
+    heap: list[tuple[float, int]] = [(0.0, source)]
+    remaining = set(targets)
+    remaining.discard(source)
+
+    while heap and remaining:
+        d, u = heappop(heap)
+        if d > dist.get(u, math.inf):
+            continue  # a stale heap entry, already improved on
+        remaining.discard(u)
+        for v, data in g[u].items():
+            _, w = _best_alternative(data["alternatives"], ctx, penalty)
+            if w is None:
+                continue
+            nd = d + w
+            if nd < dist.get(v, math.inf):
+                dist[v] = nd
+                prev[v] = u
+                heappush(heap, (nd, v))
+    return dist, prev
+
+
+def _path_to(target: int, source: int, prev: dict[int, int]) -> list[int] | None:
+    if target == source:
+        return [source]
+    if target not in prev:
+        return None
+    path = [target]
+    while path[-1] != source:
+        path.append(prev[path[-1]])
+    path.reverse()
+    return path
+
+
 def routes_from(
     cgraph: CorridorGraph,
     source: int,
@@ -164,18 +213,14 @@ def routes_from(
 ) -> dict[int, RouteOption]:
     """One Dijkstra from a depot to every target at once."""
     g = cgraph.graph
-
-    def weight(u, v, data):
-        return _best_alternative(data["alternatives"], ctx, penalty)[1]
-
-    try:
-        _, paths = nx.single_source_dijkstra(g, source, weight=weight)
-    except nx.NodeNotFound:
+    if source not in g:
         return {t: RouteOption(False) for t in targets}
+
+    _, prev = _dijkstra(g, source, set(targets), ctx, penalty)
 
     out: dict[int, RouteOption] = {}
     for t in targets:
-        path = paths.get(t)
+        path = _path_to(t, source, prev)
         if path is None:
             out[t] = RouteOption(False)
             continue
