@@ -15,6 +15,7 @@ Then visit http://localhost:8000/docs for interactive API docs.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.config import get_settings
 from app.routers import (
@@ -50,6 +51,11 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+# Road maps are megabytes of highly repetitive JSON; gzip cuts them several
+# times over. Level 5 rather than 9: most of the size win for much less CPU,
+# which matters on a free instance's fraction of a core.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 
 app.add_middleware(
     CORSMiddleware,

@@ -316,3 +316,29 @@ def test_daily_job_runs_every_step_when_the_portal_answers(monkeypatch):
 
     assert daily.main() == 0
     assert len(ran) == 4
+
+
+@needs_db
+def test_road_map_is_built_by_postgis_and_gzipped():
+    """The Cachar map (51,839 roads) ran the 512 MB host out of memory when
+    it was built object by object in Python. It must come back gzipped, with
+    the same feature shape the web map reads."""
+    r = client.get(
+        "/api/v1/roads/geojson", params={"district": "Hailakandi"},
+        headers={"Accept-Encoding": "gzip"},
+    )
+    assert r.status_code == 200
+    assert r.headers.get("content-encoding") == "gzip"
+    body = r.json()
+    assert body["type"] == "FeatureCollection"
+    assert body["meta"]["count"] == len(body["features"]) > 0
+    f = body["features"][0]
+    assert isinstance(f["id"], int)
+    assert f["geometry"]["type"] == "LineString"
+    assert {
+        "road_class", "is_bridge", "district", "baseline_accessibility",
+        "current_accessibility", "hazard_exposure", "current_accessibility_as_of",
+    } <= set(f["properties"])
+    # 5 decimal places at most: the rounding that keeps the payload small.
+    lon = str(f["geometry"]["coordinates"][0][0])
+    assert len(lon.split(".")[1]) <= 5
