@@ -13,8 +13,8 @@ jobs:
       run:
         working-directory: apps/api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install dependencies
@@ -29,7 +29,7 @@ jobs:
   api-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build API image
         run: docker build -f apps/api/Dockerfile -t setuner-api:ci .
       - name: Artifacts are inside the image
@@ -54,7 +54,7 @@ jobs:
   space-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build Hugging Face Space image
         run: docker build -t setuner-space:ci deploy/huggingface
       - name: Space image carries the artifacts
@@ -70,14 +70,14 @@ jobs:
   web-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # No `version:` here on purpose -- package.json's "packageManager"
       # field (pnpm@9.11.0) is the single source of truth. Declaring it in
       # both places fails with ERR_PNPM_BAD_PM_VERSION.
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
