@@ -50,6 +50,8 @@ $Action = New-ScheduledTaskAction -Execute "powershell.exe" `
 $Trigger = New-ScheduledTaskTrigger -Daily -At 7:30am
 $Settings = New-ScheduledTaskSettingsSet `
   -StartWhenAvailable `
+  -AllowStartIfOnBatteries `
+  -DontStopIfGoingOnBatteries `
   -MultipleInstances IgnoreNew `
   -ExecutionTimeLimit (New-TimeSpan -Hours 1)
 Register-ScheduledTask -TaskName "SetuNER daily hazard ingestion" `
@@ -60,6 +62,12 @@ The settings matter more than the schedule:
 
 - **`-StartWhenAvailable`** runs a missed trigger once the machine is back.
   Without it, a laptop that was asleep at 07:30 simply skips that day.
+- **`-AllowStartIfOnBatteries -DontStopIfGoingOnBatteries`** override
+  Windows' defaults, which on a laptop silently skip the run when unplugged
+  and kill it if the charger is pulled mid-run. The run is a few minutes of
+  network I/O; battery is not a reason to lose a day. An existing task can be
+  changed in place:
+  `Set-ScheduledTask -TaskName "SetuNER daily hazard ingestion" -Settings $Settings`
 - **`-MultipleInstances IgnoreNew`** stops a slow catch-up from overlapping
   the next day's run. Ingestion is idempotent so an overlap would not corrupt
   anything, but two runs hitting a government portal at once defeats the

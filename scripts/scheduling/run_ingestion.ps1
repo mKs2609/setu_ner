@@ -68,10 +68,17 @@ try {
     # One entrypoint for every scheduler (app/jobs/daily.py): flood and
     # landslide catch-up, damage matching, then scoring. It exits non-zero if
     # any step failed, including the scorer refusing a stale report.
+    #
+    # Output is logged line by line as it arrives, not collected and written
+    # at the end: a run killed halfway (laptop shut, window closed) used to
+    # leave only "starting" in the log, with no trace of how far it got.
+    # -u keeps Python from buffering it. Stop would turn any stderr line into
+    # a terminating error in Windows PowerShell, so it is relaxed here only.
     Write-Log "running app.jobs.daily"
-    $output = & python -m app.jobs.daily 2>&1
+    $ErrorActionPreference = "Continue"
+    & python -u -m app.jobs.daily 2>&1 | ForEach-Object { Write-Log "  $_" }
     $code = $LASTEXITCODE
-    foreach ($line in $output) { Write-Log "  $line" }
+    $ErrorActionPreference = "Stop"
     $failed = $code -ne 0
 }
 finally {
