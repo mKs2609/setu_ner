@@ -171,6 +171,9 @@ closest".
 
 ## Rainfall: tried, blocked, recorded
 
+> **Update 22 Sep 2026:** NASA GPM IMERG, with a free Earthdata account, is
+> now collected daily. See `0014` for the result and why it is not yet served.
+
 Rainfall is the model's biggest missing input — without it a flood is only
 visible once reported. Every free daily source was checked and respected:
 

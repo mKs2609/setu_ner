@@ -92,7 +92,8 @@ def forecast_districts(
         feats = features_for(history, key, as_of)
         if feats is None:
             raise ValueError(f"no published report on {as_of}; cannot forecast from it")
-        for h, payload in artifacts.items():
+        for h, artifact in artifacts.items():
+            payload = dm.for_inputs(artifact, feats)
             persistence = dm.Predictor("persistence", payload["baselines"]["persistence"])
             a = np.asarray([int(feats["affected"])])
             X = np.zeros((1, len(payload["features"])))
@@ -106,7 +107,13 @@ def forecast_districts(
                     "persistence_probability": round(float(persistence.predict(X, a)[0]), 5),
                     "affected_on_as_of": bool(feats["affected"]),
                     "model_version": payload["version"],
-                    "model_kind": payload["kind"],
+                    # "persistence_fallback" marks a row the model could not
+                    # score (see district_model.for_inputs), so the track
+                    # record can tell the model's misses from the fallback's.
+                    "model_kind": (
+                        "persistence_fallback" if "fallback_reason" in payload
+                        else payload["kind"]
+                    ),
                 }
             )
     return out

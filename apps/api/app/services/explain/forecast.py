@@ -30,7 +30,6 @@ import math
 from dataclasses import dataclass
 
 from app.services.model import district_model as dm
-from app.services.model.dataset import FEATURES
 
 # How to say each feature's actual value, and what raising it means.
 # `value` receives the raw feature dict and returns a human phrase.
@@ -77,6 +76,17 @@ PHRASES = {
         if f["state_trend"] < -0.01
         else "the number of affected districts statewide is unchanged"
     ),
+    # Rain is lagged a day (dataset.RAIN_LAG_DAYS), so the phrases say
+    # "up to yesterday" rather than implying today's rain is known.
+    "rain_1d": lambda f: (
+        f"{math.expm1(f['rain_1d']):.0f} mm of rain fell on the latest day measured"
+    ),
+    "rain_3d": lambda f: (
+        f"{math.expm1(f['rain_3d']):.0f} mm of rain fell over the 3 days measured up to yesterday"
+    ),
+    "rain_7d": lambda f: (
+        f"{math.expm1(f['rain_7d']):.0f} mm of rain fell over the 7 days measured up to yesterday"
+    ),
 }
 
 
@@ -99,6 +109,7 @@ def explain(payload: dict, features: dict[str, float], district: str) -> dict:
     `features` are the raw values from dataset.features_for for the as-of
     day; `payload` is the artifact that produced the forecast.
     """
+    payload = dm.for_inputs(payload, features)
     probability = dm.predict_one(payload, features)
     horizon = payload["horizon_days"]
     kind = payload["kind"]
@@ -109,6 +120,8 @@ def explain(payload: dict, features: dict[str, float], district: str) -> dict:
         "model_version": payload["version"],
         "probability": round(probability, 5),
     }
+    if "fallback_reason" in payload:
+        base["fallback_reason"] = payload["fallback_reason"]
 
     if kind == "persistence":
         p = payload["params"]
@@ -124,7 +137,10 @@ def explain(payload: dict, features: dict[str, float], district: str) -> dict:
             ),
             "contributions": [],
             "why_this_model": (
-                "Persistence is served at this horizon because the logistic model did not "
+                payload["fallback_reason"].capitalize() + ". It uses only today's state, so "
+                "it cannot anticipate a flood that has not yet been reported."
+                if "fallback_reason" in payload
+                else "Persistence is served at this horizon because the logistic model did not "
                 "beat it on validation. It uses only today's state, so it cannot anticipate "
                 "a flood that has not yet been reported."
             ),
@@ -137,7 +153,8 @@ def explain(payload: dict, features: dict[str, float], district: str) -> dict:
     params = payload["params"]
     mean, scale, coef = params["scaler_mean"], params["scaler_scale"], params["coef"]
     contributions = []
-    for i, name in enumerate(FEATURES):
+    # In the artifact's own order: its coefficients are indexed that way.
+    for i, name in enumerate(payload["features"]):
         z = (features[name] - mean[i]) / scale[i]
         contributions.append(
             Contribution(name, features[name], coef[i] * z, PHRASES[name](features))

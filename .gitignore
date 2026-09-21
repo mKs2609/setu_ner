@@ -52,6 +52,10 @@ geo/**/*.png
 # reviewable and not cheaply regenerable (docs/decisions/0011).
 !geo/gazetteer/
 !geo/gazetteer/corridor_places.json
+# ...and the district rainfall boxes, read at runtime by the model for the
+# same reason (built by geo/rainfall/fetch_district_points.py).
+!geo/rainfall/
+!geo/rainfall/assam_district_points.json
 apps/web/next-env.d.ts
 # Build/tooling caches
 .turbo/

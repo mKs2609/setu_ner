@@ -1,0 +1,287 @@
+{
+  "source": "OpenStreetMap via Overpass",
+  "licence": "ODbL 1.0",
+  "admin_level": 5,
+  "districts": [
+    {
+      "name": "Bajali",
+      "osm_relation": 16704179,
+      "lat": 26.5396,
+      "lon": 91.1415,
+      "half_lat": 0.126,
+      "half_lon": 0.15
+    },
+    {
+      "name": "Baksa",
+      "osm_relation": 9521712,
+      "lat": 26.6276,
+      "lon": 91.1988,
+      "half_lat": 0.211,
+      "half_lon": 0.333
+    },
+    {
+      "name": "Barpeta",
+      "osm_relation": 1791158,
+      "lat": 26.3456,
+      "lon": 90.966,
+      "half_lat": 0.256,
+      "half_lon": 0.314
+    },
+    {
+      "name": "Biswanath",
+      "osm_relation": 16701825,
+      "lat": 26.7942,
+      "lon": 93.4168,
+      "half_lat": 0.2,
+      "half_lon": 0.372
+    },
+    {
+      "name": "Bongaigaon",
+      "osm_relation": 1791154,
+      "lat": 26.3486,
+      "lon": 90.6254,
+      "half_lat": 0.183,
+      "half_lon": 0.236
+    },
+    {
+      "name": "Cachar",
+      "osm_relation": 2025971,
+      "lat": 24.7584,
+      "lon": 92.8401,
+      "half_lat": 0.385,
+      "half_lon": 0.422
+    },
+    {
+      "name": "Charaideo",
+      "osm_relation": 9521247,
+      "lat": 27.0698,
+      "lon": 95.0532,
+      "half_lat": 0.157,
+      "half_lon": 0.319
+    },
+    {
+      "name": "Chirang",
+      "osm_relation": 9521711,
+      "lat": 26.6452,
+      "lon": 90.6497,
+      "half_lat": 0.259,
+      "half_lon": 0.313
+    },
+    {
+      "name": "Darrang",
+      "osm_relation": 1791255,
+      "lat": 26.4343,
+      "lon": 92.0621,
+      "half_lat": 0.235,
+      "half_lon": 0.315
+    },
+    {
+      "name": "Dhemaji",
+      "osm_relation": 2026407,
+      "lat": 27.5947,
+      "lon": 94.8632,
+      "half_lat": 0.285,
+      "half_lon": 0.652
+    },
+    {
+      "name": "Dhubri",
+      "osm_relation": 2025887,
+      "lat": 26.1323,
+      "lon": 90.0909,
+      "half_lat": 0.253,
+      "half_lon": 0.392
+    },
+    {
+      "name": "Dibrugarh",
+      "osm_relation": 2026441,
+      "lat": 27.4009,
+      "lon": 95.0244,
+      "half_lat": 0.31,
+      "half_lon": 0.461
+    },
+    {
+      "name": "Dima Hasao",
+      "osm_relation": 2025931,
+      "lat": 25.4,
+      "lon": 92.997,
+      "half_lat": 0.429,
+      "half_lon": 0.476
+    },
+    {
+      "name": "Goalpara",
+      "osm_relation": 2025888,
+      "lat": 26.0493,
+      "lon": 90.6058,
+      "half_lat": 0.166,
+      "half_lon": 0.49
+    },
+    {
+      "name": "Golaghat",
+      "osm_relation": 2026354,
+      "lat": 26.3694,
+      "lon": 93.7325,
+      "half_lat": 0.562,
+      "half_lon": 0.445
+    },
+    {
+      "name": "Hailakandi district",
+      "osm_relation": 2026004,
+      "lat": 24.5081,
+      "lon": 92.5994,
+      "half_lat": 0.372,
+      "half_lon": 0.181
+    },
+    {
+      "name": "Hojai",
+      "osm_relation": 16701845,
+      "lat": 25.9629,
+      "lon": 92.9743,
+      "half_lat": 0.245,
+      "half_lon": 0.274
+    },
+    {
+      "name": "Jorhat",
+      "osm_relation": 2026355,
+      "lat": 26.6499,
+      "lon": 94.2874,
+      "half_lat": 0.303,
+      "half_lon": 0.316
+    },
+    {
+      "name": "Kamrup",
+      "osm_relation": 1791256,
+      "lat": 26.1465,
+      "lon": 91.3798,
+      "half_lat": 0.423,
+      "half_lon": 0.442
+    },
+    {
+      "name": "Kamrup Metropolitan",
+      "osm_relation": 9521878,
+      "lat": 26.1352,
+      "lon": 91.8682,
+      "half_lat": 0.138,
+      "half_lon": 0.308
+    },
+    {
+      "name": "Karbi Anglong",
+      "osm_relation": 2025924,
+      "lat": 26.0713,
+      "lon": 93.3454,
+      "half_lat": 0.54,
+      "half_lon": 0.551
+    },
+    {
+      "name": "Karimganj",
+      "osm_relation": 2026005,
+      "lat": 24.5828,
+      "lon": 92.4003,
+      "half_lat": 0.334,
+      "half_lon": 0.186
+    },
+    {
+      "name": "Kokrajhar",
+      "osm_relation": 1789229,
+      "lat": 26.4909,
+      "lon": 90.133,
+      "half_lat": 0.377,
+      "half_lon": 0.303
+    },
+    {
+      "name": "Lakhimpur",
+      "osm_relation": 2026356,
+      "lat": 27.177,
+      "lon": 94.1627,
+      "half_lat": 0.349,
+      "half_lon": 0.465
+    },
+    {
+      "name": "Majuli",
+      "osm_relation": 9521299,
+      "lat": 27.0243,
+      "lon": 94.2747,
+      "half_lat": 0.158,
+      "half_lon": 0.318
+    },
+    {
+      "name": "Marigaon",
+      "osm_relation": 2025921,
+      "lat": 26.2902,
+      "lon": 92.2699,
+      "half_lat": 0.228,
+      "half_lon": 0.297
+    },
+    {
+      "name": "Nagaon",
+      "osm_relation": 2025972,
+      "lat": 26.3312,
+      "lon": 92.8577,
+      "half_lat": 0.369,
+      "half_lon": 0.461
+    },
+    {
+      "name": "Nalbari",
+      "osm_relation": 1791238,
+      "lat": 26.3538,
+      "lon": 91.3997,
+      "half_lat": 0.218,
+      "half_lon": 0.186
+    },
+    {
+      "name": "Sivasagar",
+      "osm_relation": 2026443,
+      "lat": 26.994,
+      "lon": 94.6704,
+      "half_lat": 0.281,
+      "half_lon": 0.272
+    },
+    {
+      "name": "Sonitpur",
+      "osm_relation": 2026041,
+      "lat": 26.7678,
+      "lon": 92.7346,
+      "half_lat": 0.271,
+      "half_lon": 0.412
+    },
+    {
+      "name": "South Salmara-Mankachar",
+      "osm_relation": 9522272,
+      "lat": 25.7605,
+      "lon": 90.0067,
+      "half_lat": 0.294,
+      "half_lon": 0.19
+    },
+    {
+      "name": "Tamulpur",
+      "osm_relation": 16702229,
+      "lat": 26.6426,
+      "lon": 91.6046,
+      "half_lat": 0.196,
+      "half_lon": 0.197
+    },
+    {
+      "name": "Tinsukia",
+      "osm_relation": 2026439,
+      "lat": 27.5972,
+      "lon": 95.6148,
+      "half_lat": 0.374,
+      "half_lon": 0.398
+    },
+    {
+      "name": "Udalguri",
+      "osm_relation": 9521466,
+      "lat": 26.7053,
+      "lon": 92.0535,
+      "half_lat": 0.23,
+      "half_lon": 0.347
+    },
+    {
+      "name": "West Karbi Anglong",
+      "osm_relation": 9521812,
+      "lat": 25.8533,
+      "lon": 92.6104,
+      "half_lat": 0.302,
+      "half_lon": 0.466
+    }
+  ]
+}

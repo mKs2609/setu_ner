@@ -45,4 +45,36 @@ def load_history(db) -> ReportHistory:
             HazardObservation.source_document_date.isnot(None),
         )
     ).all()
-    return build_history(published, [tuple(r) for r in rows])
+    history = build_history(published, [tuple(r) for r in rows])
+    history.rainfall = load_rainfall(db)
+    return history
+
+
+def load_rainfall(db) -> dict:
+    """(district key, day) -> mm, keyed the way the model keys districts.
+
+    Rows are stored under OpenStreetMap's district name; weather.points owns
+    the translation to the report's spelling, so it is looked up there rather
+    than repeated here.
+    """
+    from app.services.weather import ingest as rain
+    from app.services.weather.points import load_points
+
+    key_for_name = {p.name: key for key, p in load_points().items()}
+    out = {}
+    for day, place, mm in db.execute(
+        select(
+            HazardObservation.source_document_date,
+            HazardObservation.place_name,
+            HazardObservation.value_num,
+        ).where(
+            HazardObservation.source == rain.SOURCE,
+            HazardObservation.hazard_type == rain.HAZARD,
+            HazardObservation.metric == rain.METRIC,
+            HazardObservation.value_num.isnot(None),
+        )
+    ):
+        key = key_for_name.get(place)
+        if key is not None:
+            out[(key, day)] = float(mm)
+    return out

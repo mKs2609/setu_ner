@@ -58,6 +58,34 @@ FEATURES = (
     "state_trend",          # change in that since the previous report
 )
 
+# Rainfall over the district (NASA IMERG, see services/weather). Log-scaled:
+# rain is heavy-tailed, and the difference between 0 and 20 mm matters far
+# more to a flood than the difference between 200 and 220.
+RAIN_FEATURES = (
+    "rain_1d",              # log1p(mm) on the most recent day available
+    "rain_3d",              # log1p(mm) summed over the last 3 days available
+    "rain_7d",              # log1p(mm) summed over the last 7 days available
+)
+
+# Every feature the code knows how to compute. A model artifact lists the
+# subset it was trained on, in its own order.
+ALL_FEATURES = FEATURES + RAIN_FEATURES
+
+# Rain for day D is published around 20:00 IST on D+1; the daily job scores
+# report D at 07:30 on D+1. So when report D is scored live, the newest rain
+# that exists is D-1 -- and the model is trained with exactly that lag.
+# Training on same-day rain would test better than it could ever run.
+RAIN_LAG_DAYS = 1
+
+
+# Squashing repairs a name broken mid-word, but not one that lost a letter to
+# the page margin. This is the one case in 314 reports: 2025-10-06 prints
+# "D hemaji", whose leading letter never made it into the text layer, so it
+# squashes to a district that does not exist. Listed explicitly rather than
+# guessed at by string distance -- a fuzzy match here would silently merge
+# real districts with similar names.
+SPELLING_FIXES = {"hemaji": "dhemaji"}
+
 
 def district_key(place_name: str | None) -> str | None:
     """A stable key for a district as the report prints it.
@@ -73,6 +101,7 @@ def district_key(place_name: str | None) -> str | None:
     if canonical:
         return canonical
     squashed = re.sub(r"[^a-z]", "", place_name.lower())
+    squashed = SPELLING_FIXES.get(squashed, squashed)
     return squashed or None
 
 
@@ -92,6 +121,8 @@ class ReportHistory:
     states: dict[tuple[str, date], DayState]
     districts: list[str]
     display_names: dict[str, str] = field(default_factory=dict)
+    # (district key, day) -> mm. Absent means not measured, never "dry".
+    rainfall: dict[tuple[str, date], float] = field(default_factory=dict)
 
     def state(self, key: str, day: date) -> DayState | None:
         """None when no report was published that day -- unknown, not quiet."""
@@ -152,6 +183,26 @@ def _previous_published(history: ReportHistory, day: date, within_days: int) -> 
     return None
 
 
+def rain_features(history: ReportHistory, key: str, day: date) -> dict[str, float]:
+    """Rain features for one district as of one report day, or {} if any
+    day in the window is unmeasured.
+
+    All-or-nothing on purpose. Summing whatever days happen to be present
+    would report a gap as dry weather, and a model fed that learns that
+    missing data means no flood. Leaving the features out instead makes the
+    caller decide, visibly, what to do without rain.
+    """
+    newest = day - timedelta(days=RAIN_LAG_DAYS)
+    window = [history.rainfall.get((key, newest - timedelta(days=b))) for b in range(7)]
+    if any(v is None for v in window):
+        return {}
+    return {
+        "rain_1d": math.log1p(window[0]),
+        "rain_3d": math.log1p(sum(window[:3])),
+        "rain_7d": math.log1p(sum(window)),
+    }
+
+
 def features_for(history: ReportHistory, key: str, day: date) -> dict[str, float] | None:
     """Features for one district on one report day, using only reports up to
     and including that day. None when that day has no report."""
@@ -183,6 +234,7 @@ def features_for(history: ReportHistory, key: str, day: date) -> dict[str, float
     n_prev = state_count(prev_day) if prev_day else n_today
 
     return {
+        **rain_features(history, key, day),
         "affected": float(today.affected),
         "log_population": math.log1p(today.population),
         "affected_frac_7d": sum(s.affected for s in window7) / len(window7),
@@ -210,9 +262,24 @@ class Example:
     affected_today: int
 
 
-def build_examples(history: ReportHistory, horizon_days: int) -> list[Example]:
+def build_examples(
+    history: ReportHistory,
+    horizon_days: int,
+    features: tuple[str, ...] = FEATURES,
+    only_where: tuple[str, ...] = (),
+) -> list[Example]:
     """One example per (district, report day) whose target day also has a
-    published report. Days whose outcome is unknown are skipped, not guessed."""
+    published report. Days whose outcome is unknown are skipped, not guessed.
+
+    `features` is what goes into x. `only_where` restricts to rows where these
+    extra features also exist -- used to compare two feature sets on exactly
+    the same rows, so a difference in score is the features and not a
+    difference in which days each was tested on.
+    """
+    unknown = set(features) - set(ALL_FEATURES)
+    if unknown:
+        raise ValueError(f"unknown features: {sorted(unknown)}")
+    required = set(features) | set(only_where)
     out: list[Example] = []
     for day in history.published:
         target = day + timedelta(days=horizon_days)
@@ -221,14 +288,14 @@ def build_examples(history: ReportHistory, horizon_days: int) -> list[Example]:
         for key in history.districts:
             f = features_for(history, key, day)
             outcome = history.state(key, target)
-            if f is None or outcome is None:
+            if f is None or outcome is None or not required <= f.keys():
                 continue
             out.append(
                 Example(
                     district=key,
                     as_of=day,
                     target_date=target,
-                    x=[f[name] for name in FEATURES],
+                    x=[f[name] for name in features],
                     y=int(outcome.affected),
                     affected_today=int(f["affected"]),
                 )

@@ -26,6 +26,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     SETUNER_MODEL_DIR=/app/artifacts/models \
     SETUNER_GAZETTEER=/app/artifacts/gazetteer/corridor_places.json \
+    SETUNER_DISTRICT_POINTS=/app/artifacts/rainfall/assam_district_points.json \
     SETUNER_MIGRATIONS_DIR=/app/artifacts/migrations \
     PORT=7860
 
@@ -42,9 +43,10 @@ WORKDIR /app
 RUN pip install -r /src/apps/api/requirements.txt
 
 RUN cp -r /src/apps/api/app ./app \
-    && mkdir -p artifacts/models artifacts/gazetteer artifacts/migrations \
+    && mkdir -p artifacts/models artifacts/gazetteer artifacts/rainfall artifacts/migrations \
     && cp /src/ml/models/*.json artifacts/models/ \
     && cp /src/geo/gazetteer/corridor_places.json artifacts/gazetteer/ \
+    && cp /src/geo/rainfall/assam_district_points.json artifacts/rainfall/ \
     && cp /src/infra/migrations/*.sql artifacts/migrations/ \
     && git -C /src rev-parse HEAD > /app/COMMIT \
     && rm -rf /src

@@ -58,6 +58,19 @@ if ($Target) {
     Write-Log "target: local database (apps/api/.env)"
 }
 
+# Rainfall comes from NASA and needs a free Earthdata login (see
+# app/services/weather/imerg.py). Loaded from the user profile explicitly
+# rather than trusting the scheduler to pass it through; never logged.
+foreach ($Name in "EARTHDATA_USERNAME", "EARTHDATA_PASSWORD") {
+    $Value = [Environment]::GetEnvironmentVariable($Name, "User")
+    if ($Value) { Set-Item -Path "Env:$Name" -Value $Value }
+}
+if ($env:EARTHDATA_USERNAME -and $env:EARTHDATA_PASSWORD) {
+    Write-Log "rainfall: Earthdata login found"
+} else {
+    Write-Log "rainfall: EARTHDATA_USERNAME / EARTHDATA_PASSWORD not set -- rainfall step will fail"
+}
+
 if (-not (Test-Path $ApiDir)) {
     Write-Log "ERROR: expected the API at $ApiDir and it is not there."
     exit 1

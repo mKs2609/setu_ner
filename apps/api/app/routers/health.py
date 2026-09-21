@@ -22,9 +22,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db.session import SessionLocal
+from app.services.ingestion.sources import drims
 from app.services.logistics import gazetteer
 from app.services.model import district_model as dm
 from app.services.model import score as scoring
+from app.services.weather import ingest as rainfall
+from app.services.weather import points as rainfall_points
 
 router = APIRouter()
 
@@ -42,6 +45,16 @@ def health_check():
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _latest_success(db, source: str, hazard_type: str) -> date | None:
+    return db.execute(
+        text(
+            "SELECT max(target_date) FROM ingest_runs "
+            "WHERE status = 'success' AND source = :source AND hazard_type = :hazard"
+        ),
+        {"source": source, "hazard": hazard_type},
+    ).scalar()
 
 
 @router.get("/health/ready")
@@ -83,9 +96,10 @@ def readiness():
                 checks["road_graph_data"] = {"ok": roads > 0, "roads": roads}
 
             if "ingest_runs" in present:
-                latest = db.execute(
-                    text("SELECT max(target_date) FROM ingest_runs WHERE status = 'success'")
-                ).scalar()
+                # Per source. Counting any source's runs would let a fresh
+                # rainfall day hide a dead report feed -- the one failure
+                # this check exists to show.
+                latest = _latest_success(db, drims.SOURCE_NAME, "flood")
                 age = (date.today() - latest).days if latest else None
                 checks["data_freshness"] = {
                     "ok": True,  # informational; see module docstring
@@ -93,12 +107,24 @@ def readiness():
                     "age_days": age,
                     "stale": age is None or age > scoring.MAX_STALE_DAYS,
                 }
+                rain = _latest_success(db, rainfall.SOURCE, rainfall.HAZARD)
+                rain_age = (date.today() - rain).days if rain else None
+                checks["rainfall_freshness"] = {
+                    # Informational too: without rain the scorer serves
+                    # persistence and says so, rather than failing.
+                    "ok": True,
+                    "latest_day": rain.isoformat() if rain else None,
+                    "age_days": rain_age,
+                    "stale": rain_age is None or rain_age > scoring.MAX_STALE_DAYS,
+                }
     except Exception as exc:  # noqa: BLE001 -- reported, not swallowed
         checks["database"] = {"ok": False, "error": type(exc).__name__}
 
     artifacts = {h: dm.load(h) is not None for h in dm.HORIZONS}
     checks["model_artifacts"] = {"ok": all(artifacts.values()), "present": artifacts}
     checks["gazetteer"] = {"ok": gazetteer.GAZETTEER_PATH.exists()}
+    # The model reads rainfall per district through these boxes.
+    checks["rainfall_points"] = {"ok": rainfall_points.POINTS_PATH.exists()}
 
     ready = all(c.get("ok") for c in checks.values())
     return JSONResponse(

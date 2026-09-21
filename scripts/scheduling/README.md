@@ -39,6 +39,28 @@ printing it. To go back to the local database, remove it:
 [Environment]::SetEnvironmentVariable("SETUNER_DATABASE_URL", $null, "User")
 ```
 
+### Rainfall login (once)
+
+The job also fetches daily rainfall from NASA (`docs/decisions/0014`), which
+needs a free Earthdata account: register at
+https://urs.earthdata.nasa.gov/users/new, then in the profile under
+Applications → Authorized Apps approve **NASA GESDISC DATA ARCHIVE** (without
+this the server refuses even a correct password). Then:
+
+```powershell
+[Environment]::SetEnvironmentVariable("EARTHDATA_USERNAME", "<username>", "User")
+$p = Read-Host "Earthdata password" -AsSecureString; [Environment]::SetEnvironmentVariable("EARTHDATA_PASSWORD", [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p)), "User"); Remove-Variable p
+```
+
+The second line keeps the password off the screen and out of PowerShell's
+history. `run_ingestion.ps1` loads both itself and logs only whether they
+were found. Check the login works with
+`python -m app.services.weather.check` from `apps/api`.
+
+NASA's daily file for day D appears around 20:00 IST on D+1, so the 07:30
+run always finds yesterday's rain missing and fetches it the next morning.
+That is expected, and it is why the model lags rain by one day.
+
 ## Windows (this machine)
 
 Register the task once, as the user who owns the database:

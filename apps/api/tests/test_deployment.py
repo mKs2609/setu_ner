@@ -186,6 +186,27 @@ def test_the_image_does_not_run_as_root():
     assert re.search(r"^USER (?!root)\S+", dockerfile, re.M)
 
 
+def test_runtime_data_files_are_committed_and_shipped():
+    """geo/**/*.json is ignored (most of it is large and rebuildable). The
+    files the API reads at runtime must be the exceptions, and both images
+    must carry them -- otherwise the deploy builds and then fails on the
+    first forecast page, which is what the gazetteer once did."""
+    import subprocess
+
+    runtime = ["geo/gazetteer/corridor_places.json", "geo/rainfall/assam_district_points.json"]
+    for path in runtime:
+        ignored = subprocess.run(
+            ["git", "check-ignore", "-q", path], cwd=REPO, capture_output=True
+        ).returncode == 0
+        assert not ignored, f"{path} is gitignored, so the deploy would not have it"
+    render = (REPO / "apps" / "api" / "Dockerfile").read_text(encoding="utf-8")
+    space = (REPO / "deploy" / "huggingface" / "Dockerfile").read_text(encoding="utf-8")
+    for path in runtime:
+        assert path in render, f"apps/api/Dockerfile does not copy {path}"
+        assert path in space, f"deploy/huggingface/Dockerfile does not copy {path}"
+    assert "SETUNER_DISTRICT_POINTS=" in render and "SETUNER_DISTRICT_POINTS=" in space
+
+
 def test_database_dumps_can_never_be_committed():
     ignore = (REPO / ".gitignore").read_text(encoding="utf-8")
     assert "data/deploy/" in ignore and "*.dump" in ignore
@@ -217,8 +238,30 @@ def test_readiness_names_every_check():
     r = client.get("/api/v1/health/ready")
     body = r.json()
     assert r.status_code in (200, 503)
-    assert {"database", "postgis", "tables", "migrations", "model_artifacts", "gazetteer"} <= set(body["checks"])
+    assert {
+        "database", "postgis", "tables", "migrations", "model_artifacts", "gazetteer",
+        "rainfall_points", "rainfall_freshness",
+    } <= set(body["checks"])
     assert body["ready"] == (r.status_code == 200)
+
+
+@needs_db
+def test_report_freshness_is_the_report_feeds_own_date():
+    """A fresh rainfall day must not stand in for a missing report: the
+    weekly check is how a dead ASDMA feed gets noticed."""
+    from sqlalchemy import text
+
+    from app.db.session import SessionLocal
+    from app.services.ingestion.sources import drims
+
+    with SessionLocal() as db:
+        report = db.execute(text(
+            "SELECT max(target_date) FROM ingest_runs "
+            "WHERE status='success' AND source=:s AND hazard_type='flood'"
+        ), {"s": drims.SOURCE_NAME}).scalar()
+    body = client.get("/api/v1/health/ready").json()
+    got = body["checks"]["data_freshness"]["latest_report"]
+    assert got == (report.isoformat() if report else None)
 
 
 @needs_db
@@ -297,7 +340,13 @@ def test_daily_job_skips_ingestion_when_the_portal_does_not_answer(monkeypatch, 
     monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
 
     assert daily.main() == 1
-    assert ran == ["app.services.model.damage_matching", "app.services.model.score"]
+    # Rainfall comes from NASA, not the portal, so it still runs -- and it
+    # runs before scoring, which may need it.
+    assert ran == [
+        "app.services.weather.ingest",
+        "app.services.model.damage_matching",
+        "app.services.model.score",
+    ]
     assert "does not answer from outside India" in capsys.readouterr().out
 
 
@@ -315,7 +364,13 @@ def test_daily_job_runs_every_step_when_the_portal_answers(monkeypatch):
     monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
 
     assert daily.main() == 0
-    assert len(ran) == 4
+    assert ran == [
+        "app.services.ingestion.run",
+        "app.services.ingestion.run",
+        "app.services.weather.ingest",
+        "app.services.model.damage_matching",
+        "app.services.model.score",
+    ]
 
 
 @needs_db

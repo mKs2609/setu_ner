@@ -77,7 +77,7 @@ export default function Home() {
         <div>
           <h2 className="font-semibold text-gray-900">What it does not claim</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>No rainfall input yet — floods are visible to the model once reported</li>
+            <li>Rainfall is collected daily but not yet used by the served model — it has to beat it on new days first</li>
             <li>Per-road risk uses a stated terrain assumption, not a fitted model</li>
             <li>Depot stock and fleet are operator inputs; the defaults are examples</li>
           </ul>

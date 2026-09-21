@@ -19,6 +19,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     SETUNER_MODEL_DIR=/app/artifacts/models \
     SETUNER_GAZETTEER=/app/artifacts/gazetteer/corridor_places.json \
+    SETUNER_DISTRICT_POINTS=/app/artifacts/rainfall/assam_district_points.json \
     SETUNER_MIGRATIONS_DIR=/app/artifacts/migrations \
     PORT=8000
 
@@ -35,6 +36,7 @@ COPY apps/api/app ./app
 COPY apps/api/create_tables.py ./create_tables.py
 COPY ml/models/*.json ./artifacts/models/
 COPY geo/gazetteer/corridor_places.json ./artifacts/gazetteer/
+COPY geo/rainfall/assam_district_points.json ./artifacts/rainfall/
 COPY infra/migrations/*.sql ./artifacts/migrations/
 
 # Do not run as root.

@@ -1,5 +1,6 @@
 """
-The daily job: ingest what is missing, match damage to roads, re-score.
+The daily job: ingest what is missing (reports and rainfall), match damage to
+roads, re-score.
 
     cd apps/api
     python -m app.jobs.daily
@@ -36,6 +37,11 @@ from datetime import datetime, timezone
 STEPS = [
     ("flood ingestion", ["-m", "app.services.ingestion.run", "--hazard", "flood", "--catch-up"]),
     ("landslide ingestion", ["-m", "app.services.ingestion.run", "--hazard", "landslide", "--catch-up"]),
+    # NASA, not ASDMA: runs even when the portal is down. Before scoring,
+    # because a model trained with rainfall needs it; if it fails, scoring
+    # still runs and serves persistence for the rows it cannot score
+    # (district_model.for_inputs), which the stored forecasts record.
+    ("rainfall ingestion", ["-m", "app.services.weather.ingest", "--catch-up"]),
     ("damage matching", ["-m", "app.services.model.damage_matching"]),
     ("scoring", ["-m", "app.services.model.score"]),
 ]

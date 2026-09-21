@@ -43,9 +43,11 @@ CAVEATS = {
         "reports to fit or validate it."
     ),
     "no_rainfall": (
-        "The model has no rainfall input. Every free daily source tried disallows "
-        "automated access, so a flood becomes visible to it only once reported. "
-        "Onset skill is expected to be weak, and is reported separately."
+        "The served model has no rainfall input, so a flood becomes visible to it only "
+        "once reported, and onset skill is reported separately. Daily rainfall (NASA "
+        "IMERG) is collected; a model using it did better on the 2026 test season but "
+        "worse on the validation data the selection rule uses, so it is not served "
+        "(docs/decisions/0014)."
     ),
     "damage_dates": (
         "DRIMS damage rows are dated when reported, sometimes weeks after the damage, "

@@ -44,7 +44,7 @@ from pathlib import Path
 
 import numpy as np
 
-from app.services.model.dataset import FEATURES, Example
+from app.services.model.dataset import ALL_FEATURES, FEATURES, Example
 
 # ml/models at the repo root. Overridable because a container that copies only
 # apps/api has no repo root above it.
@@ -99,7 +99,8 @@ class Predictor:
 
 
 def _arrays(examples: list[Example]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    X = np.asarray([e.x for e in examples], dtype=float).reshape(-1, len(FEATURES))
+    width = len(examples[0].x) if examples else len(FEATURES)
+    X = np.asarray([e.x for e in examples], dtype=float).reshape(-1, width)
     y = np.asarray([e.y for e in examples], dtype=int)
     a = np.asarray([e.affected_today for e in examples], dtype=int)
     return X, y, a
@@ -282,7 +283,10 @@ def _period(examples: list[Example]) -> dict | None:
 
 
 def train_and_evaluate(
-    examples: list[Example], horizon_days: int, test_from: date
+    examples: list[Example],
+    horizon_days: int,
+    test_from: date,
+    features: tuple[str, ...] = FEATURES,
 ) -> dict:
     """Train on everything before `test_from`, select on validation folds
     inside that, then evaluate once on the held-out season."""
@@ -316,7 +320,7 @@ def train_and_evaluate(
     payload = {
         "horizon_days": horizon_days,
         "kind": chosen.kind,
-        "features": list(FEATURES),
+        "features": list(features),
         "params": chosen.params,
         "baselines": {k: v.params for k, v in baselines.items()},
         "selection": selection,
@@ -395,18 +399,55 @@ def load(horizon_days: int, path: Path | None = None) -> dict | None:
 
 
 def predictor_from(payload: dict) -> Predictor:
-    if payload["features"] != list(FEATURES):
-        # Coefficients silently applied to reordered features would produce
-        # confident nonsense. Refuse instead.
+    # An artifact names its features in the order its coefficients use, and
+    # every caller builds X in that order (predict_one below). What must be
+    # refused is a feature this code no longer computes -- a renamed or
+    # removed one -- because there is nothing correct to feed it.
+    unknown = set(payload["features"]) - set(ALL_FEATURES)
+    if unknown:
         raise ValueError(
-            "artifact features do not match the code's FEATURES; retrain the model"
+            f"artifact uses features this code does not compute: {sorted(unknown)}; "
+            "retrain the model"
         )
     return Predictor(payload["kind"], payload["params"])
 
 
+def missing_inputs(payload: dict, features: dict[str, float]) -> list[str]:
+    """Features the artifact needs that this row does not have."""
+    return [name for name in payload["features"] if name not in features]
+
+
+def for_inputs(payload: dict, features: dict[str, float]) -> dict:
+    """The artifact to serve for this row.
+
+    A model that needs rainfall cannot run on a morning when NASA has not
+    published yesterday's file. Rather than fail the whole scoring run, or
+    quietly feed it zeros (which would read as a dry week), that row is
+    served by the artifact's own persistence baseline -- the reference every
+    forecast is already graded against -- and says so in `fallback_reason`,
+    which the stored forecast and the explanation both carry.
+    """
+    missing = missing_inputs(payload, features)
+    if not missing or payload["kind"] != "logistic":
+        return payload
+    return {
+        **payload,
+        "kind": "persistence",
+        "params": payload["baselines"]["persistence"],
+        "fallback_reason": (
+            f"{', '.join(missing)} not available for this day, so the persistence "
+            "baseline was served instead of the model"
+        ),
+    }
+
+
 def predict_one(payload: dict, features: dict[str, float]) -> float:
     predictor = predictor_from(payload)
-    X = np.asarray([[features[name] for name in FEATURES]], dtype=float)
+    if predictor.kind == "logistic":
+        X = np.asarray([[features[name] for name in payload["features"]]], dtype=float)
+    else:
+        # The baselines read only `affected`; X is a placeholder of the right width.
+        X = np.zeros((1, len(payload["features"])))
     a = np.asarray([int(features["affected"])])
     p = float(predictor.predict(X, a)[0])
     return p if math.isfinite(p) else 0.5

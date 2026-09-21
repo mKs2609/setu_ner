@@ -20,10 +20,12 @@ from app.services.model import district_model as dm
 from app.services.model import score as scoring
 from app.services.model.dataset import (
     FEATURES,
+    RAIN_FEATURES,
     build_examples,
     build_history,
     district_key,
     features_for,
+    rain_features,
 )
 
 client = TestClient(app)
@@ -193,6 +195,93 @@ def test_brier_of_a_perfect_forecast_is_near_zero():
 
 
 # ---------------------------------------------------------------------------
+# Rainfall
+# ---------------------------------------------------------------------------
+
+
+def _with_rain(history, key, mm_by_day):
+    history.rainfall.update({(key, d): mm for d, mm in mm_by_day.items()})
+    return history
+
+
+def test_rain_is_lagged_one_day_to_match_what_exists_at_scoring_time():
+    """Report D is scored at 07:30 on D+1; rain for D is published at 20:00
+    on D+1. Training on same-day rain would test better than it can run."""
+    h = build_history([day(10)], [(day(10), "Cachar", "population_affected", 1.0)])
+    _with_rain(h, "Cachar", {day(10 - b): 0.0 for b in range(8)})
+    h.rainfall[("Cachar", day(10))] = 500.0  # same-day: must not be used
+    h.rainfall[("Cachar", day(9))] = 20.0    # yesterday: is the newest used
+    f = rain_features(h, "Cachar", day(10))
+    assert np.expm1(f["rain_1d"]) == pytest.approx(20.0)
+    assert np.expm1(f["rain_7d"]) == pytest.approx(20.0)
+
+
+def test_rain_windows_sum_the_right_days():
+    h = build_history([day(10)], [])
+    _with_rain(h, "Cachar", {day(9 - b): float(b + 1) for b in range(7)})  # 1..7 mm
+    f = rain_features(h, "Cachar", day(10))
+    assert np.expm1(f["rain_1d"]) == pytest.approx(1.0)
+    assert np.expm1(f["rain_3d"]) == pytest.approx(1 + 2 + 3)
+    assert np.expm1(f["rain_7d"]) == pytest.approx(sum(range(1, 8)))
+
+
+def test_a_gap_in_rainfall_is_missing_not_dry():
+    """Summing the days that happen to exist would teach the model that a
+    satellite outage is a dry spell."""
+    h = build_history([day(10)], [])
+    _with_rain(h, "Cachar", {day(9 - b): 50.0 for b in range(7) if b != 4})
+    assert rain_features(h, "Cachar", day(10)) == {}
+    assert not set(RAIN_FEATURES) & features_for(h, "Cachar", day(10)).keys()
+
+
+def test_a_rain_model_without_rain_falls_back_to_persistence_and_says_so():
+    """A late NASA file must neither crash the morning run nor be read as a
+    dry week. The row is served by persistence and labelled."""
+    h = _synthetic(days=120)
+    for key in h.districts:
+        for d in range(-8, 120):
+            h.rainfall[(key, day(d))] = 3.0
+    feats_all = FEATURES + RAIN_FEATURES
+    payload = dm.train_and_evaluate(build_examples(h, 1, features=feats_all), 1, day(90), feats_all)
+    assert payload["kind"] == "logistic"
+
+    feats = features_for(h, h.districts[0], day(100))
+    assert dm.for_inputs(payload, feats) is payload  # everything present: the model
+
+    no_rain = {k: v for k, v in feats.items() if k not in RAIN_FEATURES}
+    served = dm.for_inputs(payload, no_rain)
+    assert served["kind"] == "persistence"
+    assert "rain_1d" in served["fallback_reason"]
+    persistence = dm.Predictor("persistence", payload["baselines"]["persistence"])
+    expected = persistence.predict(np.zeros((1, 1)), np.array([int(feats["affected"])]))[0]
+    assert dm.predict_one(served, no_rain) == pytest.approx(expected)
+
+    rows = scoring.forecast_districts(
+        _drop_rain_for(h, day(100)), day(100), {1: payload}
+    )
+    assert {r["model_kind"] for r in rows} == {"persistence_fallback"}
+
+
+def _drop_rain_for(history, as_of):
+    history.rainfall = {k: v for k, v in history.rainfall.items() if k[1] < as_of - timedelta(days=3)}
+    return history
+
+
+def test_feature_sets_can_be_compared_on_identical_rows():
+    h = _synthetic(days=40)
+    for d in range(20, 40):  # rain for only the second half
+        h.rainfall[("Cachar", day(d))] = 5.0
+    with_rain = build_examples(h, 1, features=FEATURES + RAIN_FEATURES)
+    base_same_rows = build_examples(h, 1, features=FEATURES, only_where=RAIN_FEATURES)
+    assert [(e.district, e.as_of) for e in with_rain] == [
+        (e.district, e.as_of) for e in base_same_rows
+    ]
+    assert len(base_same_rows) < len(build_examples(h, 1))
+    with pytest.raises(ValueError, match="unknown"):
+        build_examples(h, 1, features=("snowfall",))
+
+
+# ---------------------------------------------------------------------------
 # Artifacts
 # ---------------------------------------------------------------------------
 
@@ -204,12 +293,48 @@ def test_artifact_round_trips_as_json(tmp_path):
     assert dm.load(1, path)["version"] == payload["version"]
 
 
-def test_coefficients_are_refused_for_a_different_feature_order():
-    """Applying coefficients to reordered features gives confident nonsense
-    with no error. The loader must refuse instead."""
-    payload = {"features": list(reversed(FEATURES)), "kind": "logistic", "params": {}}
-    with pytest.raises(ValueError):
+def test_an_artifact_using_a_feature_the_code_no_longer_computes_is_refused():
+    """There is nothing correct to feed a renamed or removed feature."""
+    payload = {"features": [*FEATURES, "river_level"], "kind": "logistic", "params": {}}
+    with pytest.raises(ValueError, match="river_level"):
         dm.predictor_from(payload)
+
+
+def test_coefficients_follow_the_artifacts_own_feature_order():
+    """Reordering must not change the answer. Applying coefficients to
+    features in a different order than they were fitted in gives confident
+    nonsense with no error, so the order is read from the artifact."""
+    payload = dm.train_and_evaluate(build_examples(_synthetic(days=120), 1), 1, day(90))
+    assert payload["kind"] == "logistic"
+    feats = features_for(_synthetic(days=120), "Cachar", day(60))
+
+    order = list(reversed(payload["features"]))
+    params = payload["params"]
+    idx = [payload["features"].index(n) for n in order]
+    reordered = {
+        **payload,
+        "features": order,
+        "params": {
+            **params,
+            "scaler_mean": [params["scaler_mean"][i] for i in idx],
+            "scaler_scale": [params["scaler_scale"][i] for i in idx],
+            "coef": [params["coef"][i] for i in idx],
+        },
+    }
+    assert dm.predict_one(reordered, feats) == pytest.approx(dm.predict_one(payload, feats))
+
+
+def test_a_model_trained_before_rainfall_still_loads_and_predicts():
+    """The deployed artifacts predate rainfall. Adding features to the code
+    must not break them."""
+    payload = dm.train_and_evaluate(build_examples(_synthetic(days=120), 1), 1, day(90))
+    assert payload["features"] == list(FEATURES)
+    feats = features_for(_synthetic(days=120), "Cachar", day(60))
+    assert 0 < dm.predict_one(payload, feats) < 1
+    for h in dm.HORIZONS:
+        deployed = dm.load(h)
+        if deployed is not None:
+            dm.predictor_from(deployed)  # raises if the shipped files stopped loading
 
 
 # ---------------------------------------------------------------------------
