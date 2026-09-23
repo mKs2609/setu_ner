@@ -1,0 +1,227 @@
+{
+  "horizon_days": 3,
+  "kind": "logistic",
+  "features": [
+    "affected",
+    "log_population",
+    "affected_frac_7d",
+    "run_length",
+    "population_trend",
+    "relief_camps_open",
+    "infra_damage_7d",
+    "affected_frac_60d",
+    "state_log_affected",
+    "state_trend",
+    "rain_1d",
+    "rain_3d",
+    "rain_7d"
+  ],
+  "params": {
+    "C": 0.01,
+    "scaler_mean": [
+      0.072161,
+      0.32539,
+      0.071905,
+      0.018468,
+      0.001457,
+      0.029583,
+      0.079343,
+      0.074597,
+      0.838434,
+      0.000896,
+      1.757718,
+      2.899967,
+      3.896902
+    ],
+    "scaler_scale": [
+      0.258755,
+      1.572565,
+      0.196792,
+      0.084401,
+      1.197262,
+      0.169433,
+      0.270274,
+      0.102151,
+      0.828134,
+      0.476017,
+      1.166777,
+      1.193529,
+      1.09143
+    ],
+    "coef": [
+      0.352184,
+      0.06828,
+      0.282915,
+      -0.02044,
+      0.067026,
+      0.040859,
+      -0.056042,
+      0.137684,
+      0.140415,
+      0.175507,
+      0.270549,
+      0.320747,
+      0.209474
+    ],
+    "intercept": -3.171319
+  },
+  "baselines": {
+    "persistence": {
+      "p_given_affected": 0.4834905660377358,
+      "p_given_not_affected": 0.04126750184229919
+    },
+    "climatology": {
+      "base_rate": 0.07301641586867305
+    }
+  },
+  "selection": {
+    "validation_folds": 3,
+    "mean_brier": {
+      "persistence": 0.04157,
+      "climatology": 0.05243,
+      "logistic_C0.01": 0.04374,
+      "logistic_C0.1": 0.04688,
+      "logistic_C1.0": 0.04612,
+      "logistic_C10.0": 0.04579
+    },
+    "selected": "persistence",
+    "challenger_selected": "logistic_C0.01"
+  },
+  "train_period": {
+    "from": "2025-05-02",
+    "to": "2025-10-28",
+    "examples": 5848,
+    "districts": 34,
+    "positive_rate": 0.073
+  },
+  "test_period": {
+    "from": "2026-05-01",
+    "to": "2026-09-11",
+    "examples": 4420,
+    "districts": 34,
+    "positive_rate": 0.121
+  },
+  "test_metrics": {
+    "served": {
+      "all": {
+        "n": 4420,
+        "positives": 535,
+        "brier": 0.06366,
+        "log_loss": 0.2303,
+        "roc_auc": 0.8752,
+        "average_precision": 0.6668
+      },
+      "onset": {
+        "n": 3890,
+        "positives": 179,
+        "brier": 0.0433,
+        "log_loss": 0.17792,
+        "roc_auc": 0.6813,
+        "average_precision": 0.0883
+      },
+      "recession": {
+        "n": 530,
+        "positives": 356,
+        "brier": 0.21314,
+        "log_loss": 0.61471,
+        "roc_auc": 0.7389,
+        "average_precision": 0.8439
+      }
+    },
+    "persistence": {
+      "all": {
+        "n": 4420,
+        "positives": 535,
+        "brier": 0.06934,
+        "log_loss": 0.24902,
+        "roc_auc": 0.8103,
+        "average_precision": 0.4732
+      },
+      "onset": {
+        "n": 3890,
+        "positives": 179,
+        "brier": 0.04392,
+        "log_loss": 0.18689,
+        "roc_auc": 0.5,
+        "average_precision": 0.0331
+      },
+      "recession": {
+        "n": 530,
+        "positives": 356,
+        "brier": 0.25594,
+        "log_loss": 0.70504,
+        "roc_auc": 0.5,
+        "average_precision": 0.6314
+      }
+    },
+    "climatology": {
+      "all": {
+        "n": 4420,
+        "positives": 535,
+        "brier": 0.1087,
+        "log_loss": 0.38341,
+        "roc_auc": 0.5,
+        "average_precision": 0.0835
+      },
+      "onset": {
+        "n": 3890,
+        "positives": 179,
+        "brier": 0.04463,
+        "log_loss": 0.19276,
+        "roc_auc": 0.5,
+        "average_precision": 0.0331
+      },
+      "recession": {
+        "n": 530,
+        "positives": 356,
+        "brier": 0.57894,
+        "log_loss": 1.78277,
+        "roc_auc": 0.5,
+        "average_precision": 0.6314
+      }
+    },
+    "logistic": {
+      "all": {
+        "n": 4420,
+        "positives": 535,
+        "brier": 0.06366,
+        "log_loss": 0.2303,
+        "roc_auc": 0.8752,
+        "average_precision": 0.6668
+      },
+      "onset": {
+        "n": 3890,
+        "positives": 179,
+        "brier": 0.0433,
+        "log_loss": 0.17792,
+        "roc_auc": 0.6813,
+        "average_precision": 0.0883
+      },
+      "recession": {
+        "n": 530,
+        "positives": 356,
+        "brier": 0.21314,
+        "log_loss": 0.61471,
+        "roc_auc": 0.7389,
+        "average_precision": 0.8439
+      }
+    }
+  },
+  "trained_at": "2026-09-21T19:30:30+00:00",
+  "version": "dfs-h3-shadow-2026-09-22-d78f8d3b",
+  "verdict": {
+    "summary": "Challenger, not served. Graded live against the served model on reports dated 2026-09-22 or later."
+  },
+  "role": "challenger",
+  "frozen_on": "2026-09-22",
+  "frozen_at": "2026-09-21T19:30:30+00:00",
+  "promotion_rule": {
+    "min_pairs": 1500,
+    "min_flood_onsets": 30,
+    "bootstrap": "resample report days with replacement, 2000 times, seed 0",
+    "interval": 0.9,
+    "promote_if": "the whole 90% interval of Brier(served) - Brier(challenger) is above 0",
+    "reject_if": "the whole 90% interval is below 0",
+    "otherwise": "undecided -- keep collecting"
+  }
+}

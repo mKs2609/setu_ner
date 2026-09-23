@@ -68,7 +68,7 @@ Register the task once, as the user who owns the database:
 ```powershell
 $Repo = "C:\Users\Mohit\OneDrive\Desktop\sih26002-scaffold\setuner"
 $Action = New-ScheduledTaskAction -Execute "powershell.exe" `
-  -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Repo\scripts\scheduling\run_ingestion.ps1`""
+  -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Repo\scripts\scheduling\run_ingestion.ps1`""
 $Trigger = New-ScheduledTaskTrigger -Daily -At 7:30am
 $Settings = New-ScheduledTaskSettingsSet `
   -StartWhenAvailable `
@@ -81,6 +81,14 @@ Register-ScheduledTask -TaskName "SetuNER daily hazard ingestion" `
 ```
 
 The settings matter more than the schedule:
+
+- **`-WindowStyle Hidden`** keeps the console out of the way. Without it, a
+  run that starts the moment you log in (see the next point) pops up a black
+  window, and closing it kills the run -- exit code `0xC000013A`, twice in
+  September 2026, each time 14 seconds in. Nothing is lost (the next run
+  catches up), but the day is late. An existing task can be changed in place:
+  `Set-ScheduledTask -TaskName "SetuNER daily hazard ingestion" -Action $Action`
+  after re-creating `$Action` as above.
 
 - **`-StartWhenAvailable`** runs a missed trigger once the machine is back.
   Without it, a laptop that was asleep at 07:30 simply skips that day.

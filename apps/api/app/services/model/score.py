@@ -58,6 +58,7 @@ from app.db.models import DistrictFloodForecast
 from app.db.session import SessionLocal
 from app.services.ingestion.districts import CORRIDOR_DISTRICTS
 from app.services.model import district_model as dm
+from app.services.model import shadow
 from app.services.model.dataset import ReportHistory, features_for
 from app.services.model.history import load_history
 
@@ -247,6 +248,18 @@ def run(as_of: date | None = None, allow_stale: bool = False, today: date | None
         # One version string identifies the pair of horizon artifacts.
         version = "+".join(artifacts[h]["version"] for h in dm.HORIZONS)
         roads = score_roads(db, as_of, forecasts, version)
+
+        # The shadow test (services/model/shadow.py). Stored beside the served
+        # forecasts for grading; never used for roads, maps or explanations.
+        challengers = {
+            h: c for h in dm.HORIZONS if (c := shadow.load_challenger(h)) is not None
+        }
+        shadow_stored = shadow_skipped = 0
+        if challengers:
+            raw = forecast_districts(history, as_of, challengers)
+            rows = shadow.shadow_rows(raw)
+            shadow_skipped = len(raw) - len(rows)
+            shadow_stored = store_forecasts(db, as_of, rows)
         db.commit()
 
     corridor = {
@@ -260,6 +273,10 @@ def run(as_of: date | None = None, allow_stale: bool = False, today: date | None
         "age_days": age,
         "forecasts_stored": stored,
         "roads_scored": roads,
+        "shadow_forecasts_stored": shadow_stored,
+        # Rows the challenger could not score (rain not yet published); not
+        # stored, so they neither help nor hurt it.
+        "shadow_skipped_missing_inputs": shadow_skipped,
         "corridor_p_affected_tomorrow": corridor,
         "model_version": version,
     }

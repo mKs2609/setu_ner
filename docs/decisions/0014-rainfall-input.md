@@ -97,6 +97,8 @@ step is a shadow run — the rainfall model scored every day alongside the
 served one, stored, and graded live against the same outcomes. If it beats
 the served model there, that is evidence the choice did not produce.
 
+That shadow test is running: see `0015`.
+
 ## What was built
 
 - `app/services/weather/` — `imerg.py` (client, parsing, alignment check),

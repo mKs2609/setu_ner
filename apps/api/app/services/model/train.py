@@ -17,6 +17,13 @@ The one with the lower *validation* Brier is saved. Both are then shown on the
 test season, marked as not used for choosing: picking whichever looked better
 on test would make the test number a training number.
 
+    python -m app.services.model.train --freeze-challenger
+
+freezes the rainfall model as the shadow challenger instead (services/model/
+shadow.py) and leaves the served artifacts alone. It refuses to replace an
+existing challenger without --replace-challenger, because replacing it
+restarts the shadow test from zero.
+
 Re-running on the same data produces the same coefficients. Running after
 another season has been ingested produces a new version with new test
 numbers -- which is the point of versioning it.
@@ -30,6 +37,7 @@ from datetime import date
 
 from app.db.session import SessionLocal
 from app.services.model import district_model as dm
+from app.services.model import shadow
 from app.services.model.dataset import FEATURES, RAIN_FEATURES, build_examples
 from app.services.model.history import load_history
 
@@ -63,10 +71,45 @@ def _report(h: int, name: str, payload: dict) -> None:
     print(f"verdict: {payload['verdict']['summary']}")
 
 
+def _freeze_challenger(history, test_from: date, args) -> int:
+    features = FEATURES + RAIN_FEATURES
+    existing = {h: shadow.load_challenger(h) for h in dm.HORIZONS}
+    if any(existing.values()) and not args.replace_challenger:
+        for h, c in existing.items():
+            if c:
+                print(f"h={h}: challenger {c['version']} frozen on {c['frozen_on']} already exists")
+        print("Refusing to replace it: that would restart the shadow test. "
+              "Pass --replace-challenger if that is the intent.")
+        return 1
+
+    today = date.today()
+    for h in dm.HORIZONS:
+        examples = build_examples(history, h, features=features)
+        if not examples:
+            print(f"h={h}: no rows with rainfall; ingest rainfall first")
+            return 1
+        payload = shadow.make_challenger(examples, h, test_from, features, frozen_on=today)
+        print(f"\n=== challenger h={h}: {payload['version']} ===")
+        print(f"features: {', '.join(payload['features'])}")
+        print(f"C chosen on validation: {payload['selection']['challenger_selected']}")
+        print(f"graded live on reports dated {payload['frozen_on']} or later")
+        if not args.dry_run:
+            print(f"saved: {dm.save(payload, shadow.challenger_path(h))}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Train the district flood-state model.")
     parser.add_argument("--test-from", default=DEFAULT_TEST_FROM.isoformat())
     parser.add_argument("--dry-run", action="store_true", help="Evaluate without saving.")
+    parser.add_argument(
+        "--freeze-challenger", action="store_true",
+        help="Freeze the rainfall model as the shadow challenger; served artifacts untouched.",
+    )
+    parser.add_argument(
+        "--replace-challenger", action="store_true",
+        help="Allow replacing an existing challenger (restarts the shadow test).",
+    )
     args = parser.parse_args(argv)
     test_from = date.fromisoformat(args.test_from)
 
@@ -76,6 +119,9 @@ def main(argv: list[str] | None = None) -> int:
         f"history: {len(history.published)} published report days, "
         f"{len(history.districts)} districts"
     )
+
+    if args.freeze_challenger:
+        return _freeze_challenger(history, test_from, args)
 
     for h in dm.HORIZONS:
         candidates = {}

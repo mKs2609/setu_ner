@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import DistrictFloodForecast, Road
 from app.db.session import get_db
+from app.services.model import shadow
 from app.services.model.score import MAX_STALE_DAYS
 from app.routers.model import CAVEATS
 from app.services.explain import road as road_explain
@@ -49,6 +50,7 @@ def get_accessibility(road_id: int, db: Session = Depends(get_db)):
                     DistrictFloodForecast.district_key == road.district,
                     DistrictFloodForecast.as_of_date == as_of,
                     DistrictFloodForecast.horizon_days == 1,
+                    shadow.served_only(),
                 )
                 .order_by(DistrictFloodForecast.created_at.desc())
                 .first()

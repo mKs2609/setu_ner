@@ -23,6 +23,7 @@ import {
   type MetricScore,
   type ModelArtifact,
   type ModelStatus,
+  type ShadowTest,
 } from "@/lib/api";
 import ForecastWhy from "@/components/explain/ForecastWhy";
 
@@ -96,6 +97,50 @@ function ArtifactCard({ a }: { a: ModelArtifact }) {
         Logistic skill vs persistence on test: {skill(a.verdict.logistic_test_skill_vs_persistence)}
       </p>
     </div>
+  );
+}
+
+const DECISION_TEXT: Record<string, string> = {
+  promote: "Better than the served model on new days — ready to be considered for promotion.",
+  reject: "Worse than the served model on new days.",
+  undecided: "Undecided.",
+};
+
+/**
+ * The rainfall challenger, graded only on reports after it was frozen. Shows
+ * progress toward the rule's minimums, because "undecided" alone does not say
+ * whether that is a week or a season away.
+ */
+function ShadowSection({ tests }: { tests: Record<string, ShadowTest> }) {
+  const active = Object.entries(tests).filter(([, t]) => t.challenger_version);
+  if (!active.length) return null;
+  return (
+    <section>
+      <h2 className="font-semibold">Shadow test: rainfall model</h2>
+      <p className="text-xs text-gray-600">
+        A model that also uses daily rainfall runs every day beside the served one but is not
+        shown on the map. It did better on the 2026 test season, but not on the data the model
+        is chosen with, so it has to prove itself on days neither model has seen. The rule was
+        fixed before the first graded day.
+      </p>
+      <ul className="mt-2 space-y-1 text-xs text-gray-700">
+        {active.map(([h, t]) => (
+          <li key={h}>
+            <span className="font-medium">{h}-day:</span>{" "}
+            {t.pairs ?? 0}/{t.rule?.min_pairs ?? "?"} graded forecasts,{" "}
+            {t.onsets_that_flooded ?? 0}/{t.rule?.min_flood_onsets ?? "?"} flood onsets.{" "}
+            {t.brier &&
+              `Brier ${num(t.brier.challenger, 4)} with rain vs ${num(t.brier.served, 4)} served. `}
+            {DECISION_TEXT[t.decision ?? "undecided"]}{" "}
+            <span className="text-gray-500">({t.reason})</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-gray-500">
+        Graded from reports dated {active[0][1].frozen_on} onward. Nothing is promoted
+        automatically.
+      </p>
+    </section>
   );
 }
 
@@ -200,6 +245,8 @@ export default function ModelPanel() {
             .join(" · ")}
         </p>
       </section>
+
+      {status.shadow_test && <ShadowSection tests={status.shadow_test} />}
 
       <section>
         <h2 className="font-semibold">Per-road values</h2>

@@ -27,6 +27,7 @@ from app.services.model.dataset import district_key, features_for
 from app.db.session import get_db
 from app.services.model import district_model as dm
 from app.services.model import score as scoring
+from app.services.model import shadow
 from app.services.model.history import load_history
 
 router = APIRouter()
@@ -81,7 +82,8 @@ def _artifact_summary(payload: dict | None) -> dict | None:
 def _live_track_record(db: Session, history) -> dict:
     """Score stored forecasts whose target day now has a published report."""
     published = set(history.published)
-    rows = db.execute(select(DistrictFloodForecast)).scalars().all()
+    # Served forecasts only: the challenger is graded separately (shadow.py).
+    rows = db.execute(select(DistrictFloodForecast).where(shadow.served_only())).scalars().all()
     by_h: dict[int, list] = {}
     for f in rows:
         if f.target_date not in published:
@@ -182,6 +184,9 @@ def model_status(db: Session = Depends(get_db)):
         },
         "scoring": scoring_state,
         "live_track_record": _live_track_record(db, history),
+        # A challenger graded on days neither model has seen; see
+        # docs/decisions/0015. Informational: nothing is promoted automatically.
+        "shadow_test": shadow.track_record(db, history),
         "exposure_prior": {
             "formula": (
                 f"clamp(1 - height_above_district_floor / {scoring.EXPOSURE_RELIEF_M:g} m, "
@@ -200,11 +205,15 @@ def latest_district_forecasts(
     corridor_only: bool = Query(True),
     db: Session = Depends(get_db),
 ):
-    latest = db.execute(select(func.max(DistrictFloodForecast.as_of_date))).scalar()
+    latest = db.execute(
+        select(func.max(DistrictFloodForecast.as_of_date)).where(shadow.served_only())
+    ).scalar()
     if latest is None:
         return {"as_of": None, "districts": [], "note": "no forecasts stored yet"}
 
-    stmt = select(DistrictFloodForecast).where(DistrictFloodForecast.as_of_date == latest)
+    stmt = select(DistrictFloodForecast).where(
+        DistrictFloodForecast.as_of_date == latest, shadow.served_only()
+    )
     if corridor_only:
         stmt = stmt.where(DistrictFloodForecast.in_corridor.is_(True))
     rows = db.execute(

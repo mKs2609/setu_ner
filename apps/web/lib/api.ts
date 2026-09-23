@@ -399,6 +399,19 @@ export interface ModelArtifact {
   };
 }
 
+export interface ShadowTest {
+  status?: string; // "no challenger frozen"
+  challenger_version?: string;
+  frozen_on?: string;
+  pairs?: number;
+  onsets_that_flooded?: number;
+  decision?: "promote" | "reject" | "undecided";
+  reason?: string;
+  brier?: { served: number; challenger: number; persistence: number };
+  improvement_interval?: [number, number];
+  rule?: { min_pairs: number; min_flood_onsets: number };
+}
+
 export interface ModelStatus {
   artifacts: Record<string, ModelArtifact | null>;
   data: {
@@ -418,6 +431,8 @@ export interface ModelStatus {
     string,
     { n: number; note?: string; skill_vs_persistence?: number | null }
   >;
+  // Optional: an API deployed before the shadow test does not send it.
+  shadow_test?: Record<string, ShadowTest>;
   exposure_prior: {
     formula: string;
     fitted: boolean;
