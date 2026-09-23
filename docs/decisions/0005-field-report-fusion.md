@@ -7,9 +7,9 @@ end to end, with a UI. Verified 9 Sep 2026.
 
 `0001` section 4 calls this "the layer that's genuinely missing: humans" and
 says the data matrix treating field data as a footnote is "backwards from
-what's actually being asked for". The MDoNER problem statement asks for
-AI/ML and GIS **and real-time field inputs**. It is Tier 1 differentiator #1
-in our own gap analysis.
+what's actually being asked for". The original brief asks for AI/ML and GIS
+**and real-time field inputs**. It is Tier 1 differentiator #1 in our own gap
+analysis.
 
 It is also the only remaining Tier 1 item blocked by nothing: no external
 data source, no trained model, no population figures. And it is the 2022

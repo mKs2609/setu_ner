@@ -11,7 +11,7 @@ pinned: false
 # SetuNER API
 
 FastAPI backend for SetuNER — road accessibility forecasting and relief supply
-planning for the Barak Valley corridor, Assam (SIH 2026, PS SIH26002).
+planning for the Barak Valley corridor, Assam.
 
 Code: https://github.com/mKs2609/setu_ner — this Space only holds the
 Dockerfile that builds it. Health: `/api/v1/health/ready`. API docs: `/docs`.

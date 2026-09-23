@@ -69,7 +69,7 @@ SOURCE_LABEL = "copernicus_dem_glo30"
 # The corridor, from the road graph's own extent with a small margin.
 CORRIDOR = (91.9, 24.5, 93.4, 25.7)  # min lon, min lat, max lon, max lat
 
-DEFAULT_DSN = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
+DEFAULT_DSN = "postgresql://setuner:setuner@localhost:5432/setuner"
 
 
 def tile_url(lat: int, lon: int) -> str:

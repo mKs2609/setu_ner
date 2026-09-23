@@ -41,7 +41,7 @@ OUT = Path(__file__).with_name("assam_district_points.json")
 
 USER_AGENT = (
     "SetuNER-district-points/0.1 "
-    "(SIH26002 student project, non-commercial; one-off build script)"
+    "(+https://github.com/mKs2609/setu_ner; non-commercial research; one-off build script)"
 )
 
 # admin_level 5 is the district level in India in OSM; 4 is the state.

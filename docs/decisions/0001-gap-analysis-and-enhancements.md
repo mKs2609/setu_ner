@@ -1,7 +1,9 @@
-# SIH26002 — Gap Analysis & Enhancement Addendum
-**Companion to Master Reference v2.0 — read together, not instead of**
+# 0001 — Gap Analysis & Enhancements
 
-This document is the audit-and-upgrade pass on v2.0. It doesn't replace the master reference; it's what should get folded into it as the team makes real decisions. Treat it the way the original asks to be treated: a living document, updated as data access, model results, and design choices land. Suggested home once the repo exists: `docs/decisions/0001-gap-analysis-and-enhancements.md`.
+> Written at the start of the project as an audit of the original brief and
+> plan. Kept as written: later records say what actually happened.
+
+This is the audit-and-upgrade pass on the original plan: what it got right, where it assumed access it did not have, and what had to change before any code was written.
 
 ---
 
@@ -46,7 +48,7 @@ This is a known field: **time-dependent shortest path**. The full academic machi
 - Have Model A output a short forecast vector per edge (accessibility at t+1h, +3h, +6h, +12h, +24h) instead of one point estimate.
 - Route with a label-correcting approach that estimates arrival time at each node, looks up the forecast at *that* time (interpolating between horizon buckets), and — since the ETA estimate changes as the route is built — runs 2–3 fixed-point passes until the route stabilizes. This converges fast on road-network-sized graphs and is buildable in-timeline.
 
-State this explicitly in the pitch. Most teams building "AI-powered routing" will silently do static-weight shortest path. Doing this correctly, and being able to explain why in the bridge-closure demo, is a real technical moat.
+Worth stating explicitly. Most projects building "AI-powered routing" will silently do static-weight shortest path. Doing this correctly, and being able to explain why in the bridge-closure demo, is a real technical moat.
 
 ### 2.3 — Confidence is decorative unless wired end-to-end
 "Confidence" appears as an edge attribute (§7) with no traced origin. Weather-forecast uncertainty should visibly propagate: forecast confidence → accessibility model confidence → route reliability confidence → optimization's risk posture → the explanation drawer. **Fix:** treat uncertainty as a value that flows with the prediction, not a UI decoration added at the end.
@@ -63,13 +65,13 @@ State this explicitly in the pitch. Most teams building "AI-powered routing" wil
 **Fix — a pluggable hazard-module interface, not a bigger flood model:**
 - A `hazard_events` table: `hazard_type, geometry, severity, source, observed_at, confidence, provenance` — hazard-agnostic.
 - A shared feature-extractor interface (e.g. an abstract `HazardFeatureExtractor`) with one implementation per hazard type (`FloodFeatures`, later `LandslideFeatures`, `SeismicFeatures`), all emitting into the same feature contract Model A consumes.
-- Still only *build* flood for SIH — that's the correct scope call — but "extensible" becomes an architecture fact, not a slide claim, and it's a checkable answer if a judge pushes on it.
+- Still only *build* flood for now — that is the correct scope call — but "extensible" becomes an architecture fact rather than a claim, and it is checkable.
 
 ---
 
 ## 4. The layer that's genuinely missing: humans
 
-The **official PS text** (MDoNER, SIH26002) explicitly asks the platform to combine AI/ML/GIS with weather data *and real-time field inputs* — not satellite/telemetry alone. The current data matrix treats field data as a footnote ("government/field data where available"). That's backwards from what's actually being asked for, and it's the biggest real-world-impact lever available, because official telemetry in NER is genuinely sparse (§1) — human reports are how the actual data gap gets filled, not just a UX nicety.
+The **original brief** explicitly asks the platform to combine AI/ML/GIS with weather data *and real-time field inputs* — not satellite/telemetry alone. The current data matrix treats field data as a footnote ("government/field data where available"). That's backwards from what's actually being asked for, and it's the biggest real-world-impact lever available, because official telemetry in NER is genuinely sparse (§1) — human reports are how the actual data gap gets filled, not just a UX nicety.
 
 There's real regional precedent: a community-based flood early-warning system has operated since 2013 on the Singora and Jiadhal rivers in the Assam Himalayan foothills (ICIMOD/Aranyak), where local sensors trigger warnings sent to downstream communities. That proves the *pattern* (local ground-truth → warning) is trusted in this exact region. What doesn't exist anywhere is the next step: turning that ground truth into a routing and resource-allocation decision. That's the real white space (see §6).
 
@@ -77,7 +79,7 @@ There's real regional precedent: a community-based flood early-warning system ha
 - A lightweight PWA report form (part of the Next.js app, no native app needed for MVP): geolocation + road-status selector (clear / slow / blocked) + optional photo + optional note.
 - Each report carries a **reporter trust score** (start neutral, adjust up when reports later correlate with confirmed status — satellite confirmation or corroborating reports — down when contradicted repeatedly). This is what stops the layer from being trivially gameable, and it's a good talking point on its own.
 - Fuse reports into the model's belief about an edge's accessibility as a trust-weighted update on top of the ML prediction — start with a simple weighted average for the MVP demo; a proper Bayesian update (each report as a noisy observation with reporter-specific likelihood) is the natural v2.
-- WhatsApp/SMS intake is the right real-world channel eventually, but Business API approval overhead isn't worth the hackathon timeline — build the PWA now, name WhatsApp/IVR as the explicit "how this becomes real" roadmap item.
+- WhatsApp/SMS intake is the right real-world channel eventually, but Business API approval overhead is not worth it yet — build the PWA now, name WhatsApp/IVR as the explicit "how this becomes real" roadmap item.
 
 ---
 
@@ -94,7 +96,7 @@ The Security & Reliability section (§30) is standard SaaS boilerplate — fine 
 
 ## 6. "Why not just use Bhuvan / Sachet?" — have a real answer ready
 
-Judges will ask this. There's a good answer available; it just needs to be said explicitly.
+This deserves a straight answer, stated explicitly.
 
 | Existing system | What it actually does | What it doesn't do |
 |---|---|---|
@@ -103,7 +105,7 @@ Judges will ask this. There's a good answer available; it just needs to be said 
 | **NDEM** (MHA) | National multi-hazard GIS database | A database, not a decision system |
 | **ASDMA/NESAC FLEWS** | Assam-specific flood alerts | Same pattern: observe → alert, stops there |
 
-The pattern across all four: **observe → alert.** None of them ask "given what we now know, which route should this truck take, and how confident are we it'll still work when the truck arrives?" That's the actual gap, and it's exactly what the ML-predicts / optimization-decides / scenario-reassesses architecture is built to fill. A version worth putting in the pitch: *existing systems tell you a flood is happening; nothing tells you which road will still work when your truck gets there, or what to do about the one that won't.*
+The pattern across all four: **observe → alert.** None of them ask "given what we now know, which route should this truck take, and how confident are we it'll still work when the truck arrives?" That's the actual gap, and it's exactly what the ML-predicts / optimization-decides / scenario-reassesses architecture is built to fill. Put plainly: *existing systems tell you a flood is happening; nothing tells you which road will still work when your truck gets there, or what to do about the one that won't.*
 
 ---
 
@@ -192,7 +194,6 @@ ALERTING / NOTIFICATION HOOK (new)
 ---
 
 ### Sources checked (Aug 2026)
-- SIH 2026 PS SIH26002 (MDoNER) — sih2026.vuce.in problem-statement listing
 - India-WRIS / CWC — indiawris.gov.in, nwdp.nwic.gov.in, PIB press release on India-WRIS relaunch, GUARDIAN framework paper (*Scientific Data*, 2024)
 - ASDMA — asdma.assam.gov.in (Flood Alerts, Flood Reports, NRSC hazard-mapping project page)
 - Bhuvan / NRSC — bhuvan.nrsc.gov.in (Spatial Flood Early Warning System, Disaster Services)
@@ -200,4 +201,4 @@ ALERTING / NOTIFICATION HOOK (new)
 - Community-based flood EWS (Singora/Jiadhal) — UNFCCC/ICIMOD case study
 - 2022/2024/2025 Barak Valley flood reporting — Scroll.in, Eastern Mirror, Assam Tribune, Deccan Herald, Wikipedia (2022 Silchar Floods)
 
-*Compiled alongside Master Reference v2.0, August 2026.*
+*Compiled August 2026, before any code was written.*

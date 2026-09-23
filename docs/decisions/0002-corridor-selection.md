@@ -21,9 +21,8 @@ free historical-replay dataset from public reporting.
       right districts.
 - [ ] OSM road-graph quality for the corridor has been spot-checked by hand
       (bridge flags, surface type) — don't trust the tags blindly.
-- [ ] The corridor genuinely fits in the SIH demo (§28 of the master
-      reference): 5 minutes, one bridge-closure scenario, one rain/river
-      what-if.
+- [ ] The corridor can be walked through in about five minutes: one
+      bridge-closure scenario, one rain/river what-if.
 
 ## Results log
 

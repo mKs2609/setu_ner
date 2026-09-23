@@ -18,7 +18,7 @@ import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEV_DATABASE_URL = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
+DEV_DATABASE_URL = "postgresql://setuner:setuner@localhost:5432/setuner"
 
 
 def _as_list(value):
@@ -104,8 +104,14 @@ class Settings(BaseSettings):
             problems.append("CORS_ALLOWED_ORIGINS includes localhost; set it to the deployed web origin.")
         if "*" in self.cors_allowed_origins:
             problems.append("CORS_ALLOWED_ORIGINS must not be '*' while credentials are allowed.")
+        # Any local database, not just the documented default: a production
+        # service pointed at localhost is wrong however it got there, and
+        # matching one exact string made the check depend on that string
+        # never changing (it did change, and the check went quiet).
         if self.database_url == DEV_DATABASE_URL:
             problems.append("DATABASE_URL is the local development default.")
+        elif "@localhost" in self.database_url or "@127.0.0.1" in self.database_url:
+            problems.append("DATABASE_URL points at a local database.")
         return problems
 
 

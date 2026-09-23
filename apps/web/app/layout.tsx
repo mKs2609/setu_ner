@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIH26002 — NER Accessibility & Logistics Intelligence",
+  title: "SetuNER — Road Accessibility & Relief Logistics",
   description:
-    "Dynamic accessibility forecasting and logistics optimization for the North Eastern Region.",
+    "Flood accessibility forecasting and relief logistics for the Barak Valley corridor, Assam.",
 };
 
 export default function RootLayout({

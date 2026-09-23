@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sih26002}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih26002}
-      POSTGRES_DB: ${POSTGRES_DB:-sih26002}
+      POSTGRES_USER: ${POSTGRES_USER:-setuner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-setuner}
+      POSTGRES_DB: ${POSTGRES_DB:-setuner}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sih26002}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-setuner}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-sih26002}:${POSTGRES_PASSWORD:-sih26002}@postgres:5432/${POSTGRES_DB:-sih26002}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-setuner}:${POSTGRES_PASSWORD:-setuner}@postgres:5432/${POSTGRES_DB:-setuner}
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,7 +52,7 @@ services:
       dockerfile: apps/api/Dockerfile
     profiles: ["scheduling"]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-sih26002}:${POSTGRES_PASSWORD:-sih26002}@postgres:5432/${POSTGRES_DB:-sih26002}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-setuner}:${POSTGRES_PASSWORD:-setuner}@postgres:5432/${POSTGRES_DB:-setuner}
     depends_on:
       postgres:
         condition: service_healthy

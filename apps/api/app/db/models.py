@@ -228,7 +228,7 @@ class FieldReport(Base):
     One person's report that a specific place is clear, slow, or blocked.
 
     WHY THIS TABLE EXISTS AT ALL (docs/decisions/0001 section 4)
-    The problem statement asks for real-time field inputs alongside AI/ML and
+    The original brief asked for real-time field inputs alongside AI/ML and
     GIS. Official telemetry across the NER is genuinely sparse, so human
     reports are not a UX nicety -- they are how the data gap actually gets
     filled. In the 2022 Bethukandi dyke breach an on-site engineer reported it

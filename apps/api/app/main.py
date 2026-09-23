@@ -1,5 +1,5 @@
 """
-SIH26002 API entrypoint.
+SetuNER API entrypoint.
 
 This is a real, runnable FastAPI app -- not a mockup. Every router below is
 currently a stub that returns placeholder data, but the app boots, the
@@ -44,7 +44,7 @@ if settings.is_production:
         )
 
 app = FastAPI(
-    title="SIH26002 — NER Accessibility & Logistics Intelligence API",
+    title="SetuNER — Road Accessibility & Relief Logistics API",
     description=(
         "Dynamic accessibility forecasting and logistics optimization for "
         "the North Eastern Region. See /docs for interactive API reference."
@@ -82,7 +82,7 @@ app.include_router(public.router, prefix="/api/v1/public", tags=["public"])
 @app.get("/")
 def root():
     return {
-        "service": "sih26002-api",
+        "service": "setuner-api",
         "status": "ok",
         "docs": "/docs",
     }

@@ -37,7 +37,7 @@ HERE = Path(__file__).parent
 EDGES_PATH = HERE / "edges_with_baseline_accessibility.geojson"
 DISTRICTS_PATH = HERE / "districts.geojson"
 
-DATABASE_URL = "postgresql://sih26002:sih26002@localhost:5432/sih26002"
+DATABASE_URL = "postgresql://setuner:setuner@localhost:5432/setuner"
 
 
 def load_roads(engine, edges_path: Path):
@@ -153,7 +153,7 @@ def main():
             conn.execute(text("SELECT 1"))
     except Exception as e:
         print(f"Couldn't connect to Postgres: {e}")
-        print("Is it running and did you create the sih26002 database/user?")
+        print("Is it running and did you create the setuner database/user?")
         sys.exit(1)
 
     load_roads(engine, EDGES_PATH)

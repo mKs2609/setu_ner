@@ -23,8 +23,8 @@ param(
     [string]$Output = "data\deploy\setuner.dump",
     [string]$PgBin = "C:\Program Files\PostgreSQL\16\bin",
     [string]$DbHost = "localhost",
-    [string]$DbName = "sih26002",
-    [string]$DbUser = "sih26002"
+    [string]$DbName = "setuner",
+    [string]$DbUser = "setuner"
 )
 
 $ErrorActionPreference = "Stop"

@@ -60,7 +60,7 @@ from urllib.robotparser import RobotFileParser
 
 USER_AGENT = (
     "SetuNER-hazard-ingestion/0.1 "
-    "(SIH26002 student project, non-commercial; respects robots.txt)"
+    "(+https://github.com/mKs2609/setu_ner; non-commercial research; respects robots.txt)"
 )
 
 DEFAULT_TIMEOUT = 45.0

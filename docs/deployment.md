@@ -38,7 +38,7 @@ Render's free web tier (512 MB) is not recommended: the road graph alone uses
 From the repo root, with the local database running:
 
 ```powershell
-$env:PGPASSWORD = "sih26002"
+$env:PGPASSWORD = "setuner"
 .\scripts\deploy\export_data.ps1
 ```
 

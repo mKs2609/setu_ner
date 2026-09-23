@@ -42,8 +42,7 @@ const SCREENS = [
 export default function Home() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <p className="text-sm font-medium text-teal-700">SIH 2026 · PS SIH26002 · MDoNER</p>
-      <h1 className="mt-1 text-3xl font-semibold">SetuNER</h1>
+      <h1 className="text-3xl font-semibold">SetuNER</h1>
       <p className="mt-2 max-w-3xl text-gray-700">
         Road accessibility forecasting and relief logistics for the Barak Valley corridor in Assam —
         Cachar, Karimganj, Hailakandi and Dima Hasao. Existing systems report that a flood is happening;

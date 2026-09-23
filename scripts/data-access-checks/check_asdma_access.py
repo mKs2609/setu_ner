@@ -26,7 +26,7 @@ except ImportError:
     sys.exit(1)
 
 TIMEOUT = 15
-HEADERS = {"User-Agent": "SIH26002-data-access-check/0.1 (student project, non-commercial)"}
+HEADERS = {"User-Agent": "SetuNER-data-access-check/0.1 (+https://github.com/mKs2609/setu_ner; non-commercial research)"}
 
 CHECKS = [
     {"name": "ASDMA home", "url": "https://asdma.assam.gov.in/"},

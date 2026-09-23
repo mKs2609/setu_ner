@@ -1,7 +1,7 @@
 """
 Field reports: the crowdsourced ground-truth layer.
 
-This is the direct answer to the problem statement's call for the platform to
+This answers the original brief's call for the platform to
 use real-time field inputs, not just satellite and telemetry (see
 docs/decisions/0001 section 4). Official telemetry across the NER is sparse,
 so human reports are how the data gap actually gets filled.

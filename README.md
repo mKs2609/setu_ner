@@ -1,192 +1,289 @@
-# SetuNER — NER Accessibility & Logistics Intelligence Platform
+# SetuNER
 
-Built for SIH 2026 · Problem Statement SIH26002 · Software · Smart Automation · Ministry of Development of North Eastern Region (MDoNER)
+**Road accessibility forecasting and relief logistics for flood-prone Assam.**
 
-Repo: `setu_ner`
+Existing systems report that a flood is happening. SetuNER estimates **which
+roads will still work tomorrow**, and **what can reach the people who need
+supplying** — from live government reports, satellite rainfall, terrain and
+field reports, with every number traceable to its source.
 
-Forecasts how accessibility across the North Eastern Region's road network
-changes under hazard conditions, estimates critical demand, optimizes
-resource movement under constraints, and lets an operator test what-if
-scenarios — starting with floods, architected to extend to other hazards.
+[![CI](https://github.com/mKs2609/setu_ner/actions/workflows/ci.yml/badge.svg)](https://github.com/mKs2609/setu_ner/actions/workflows/ci.yml)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![Next.js 14](https://img.shields.io/badge/next.js-14-black)
+![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
+![Tests](https://img.shields.io/badge/tests-301%20passing-brightgreen)
 
-## Start here
+| | |
+|---|---|
+| **Live app** | https://setu-ner-web.vercel.app |
+| **API** | https://setuner-api.onrender.com · [interactive docs](https://setuner-api.onrender.com/docs) · [readiness](https://setuner-api.onrender.com/api/v1/health/ready) |
+| **Coverage** | Barak Valley corridor, Assam — Cachar, Karimganj (Sribhumi), Hailakandi, Dima Hasao |
+| **Data** | 110,266 road segments · 321 daily flood reports since May 2025 · 515 days of satellite rainfall · updated every morning |
 
-1. **`docs/decisions/0001-gap-analysis-and-enhancements.md`** — the audit of
-   the original master reference plus the differentiators baked into this
-   build. Read this before touching the data or model layers.
-2. **`docs/decisions/0002-corridor-selection.md`** — study corridor is
-   locked (provisionally): Silchar/Cachar via Dima Hasao and NH-6.
-3. **`scripts/data-access-checks/`** — the throwaway scripts already run;
-   see 0002 for results. Re-run if data sources need re-verifying later.
-3. **`docs/decisions/0003-scenario-engine.md`** — what the what-if engine
-   does, its measured results, and exactly what its numbers do and don't
-   mean. Read before quoting any travel time.
-4. **`docs/decisions/0004-live-hazard-ingestion.md`** — the live data
-   pipeline, what makes it safe to run unattended, and the district rename
-   that would otherwise have broken it silently.
-5. **`docs/decisions/0005-field-report-fusion.md`** — the human layer: how a
-   report becomes a belief, how reporter trust moves, and why none of it
-   touches `current_accessibility`.
-6. **`docs/decisions/0006-corroboration.md`** — where the two live data
-   sources meet: why independent evidence may support a report but never
-   count against one.
-7. **`docs/decisions/0007-current-conditions-routing.md`** — routing from what
-   is actually reported now, why Phase 3 is still blocked, and the difference
-   between a severed corridor and a blocked driveway.
-8. **`docs/decisions/0008-scheduled-ingestion.md`** — keeping the data
-   actually live, why catch-up beats "fetch yesterday", and how to register
-   the schedule.
-9. **`docs/decisions/0009-terrain-and-satellite-coverage.md`** — terrain per
-   road, and an honest account of why Sentinel-1 flood extent is not built.
-10. **`docs/decisions/0010-accessibility-model.md`** — the Phase 3 model: what
-    it predicts and why, its results against persistence, and why the
-    baseline is what is served.
-11. **`docs/decisions/0011-demand-and-supply-planning.md`** — Phase 4: demand
-    from people actually in relief camps, OSM-located revenue circles,
-    exposure-aware routes, and an optimiser that says what is limiting it.
-12. **`docs/decisions/0012-explanations-and-audit-trail.md`** — Phase 6: exact
-    per-feature explanations, plain-language plan narratives with evidence,
-    immutable saved plans and an override log.
-13. **`docs/deployment.md`** and **`docs/decisions/0013-deployment-readiness.md`**
-    — how to deploy (Neon/Supabase + Railway + Vercel), and what makes it safe
-    to: operator tokens, a production config guard, readiness checks, the
-    image, migrations and the data export.
+> The API runs on a free instance that sleeps when idle. The first request
+> after a quiet spell can take up to a minute.
 
-## Status
+---
 
-Foundation is real; the intelligence layer is mostly still ahead.
+## What it does
 
-**Working end to end on real data:** the road graph (110,266 segments,
-47,424 junctions for the Barak Valley corridor), 2025 district flood
-severity joined to every road in the four Assam districts that have it, a
-baseline accessibility score, PostGIS + a FastAPI serving real queries, an
-interactive MapLibre map, and the **scenario engine** — close or flood a
-set of roads and get the routing consequence, with the causal trail
-(see `docs/decisions/0003-scenario-engine.md`).
+**1 · Forecasts accessibility, not just flooding.**
+A statewide model predicts whether each Assam district will be flood-affected
+1 and 3 days out. That probability becomes a per-road accessibility score
+(`1 − P(affected) × terrain exposure`) for every segment in the corridor, with
+its model version and as-of date attached. Every forecast is stored and
+**graded against a "tomorrow looks like today" baseline once the outcome
+arrives** — including when it loses.
 
-**The accessibility model exists** (Phase 3, `0010`): trained on 312 daily
-DRIMS reports across 35 Assam districts and two monsoons, it forecasts
-whether a district is flood-affected 1 and 3 days ahead, and
-`current_accessibility` is now populated for 71,520 corridor roads — each
-value with its model version and as-of date. It is judged against
-persistence ("tomorrow looks like today"). After the 2025 population data was
-repaired in Phase 4, validation selects **logistic regression for the 1-day
-forecast** — a tie with persistence on Brier score, but far better at ranking
-new flood onsets (AUC 0.71 vs 0.50) — while **persistence is still served for
-3 days ahead**. The per-road spread comes from a stated terrain prior, not a fitted
-one. The model has no rainfall input: every free source tried disallows
-automated access.
+**2 · Plans relief deliveries under real constraints.**
+Demand comes from people actually in relief camps (from the daily reports),
+turned into water and food requirements using cited humanitarian norms. A
+lexicographic linear program decides what each depot sends where, on routes
+that trade travel time against exposure to at-risk roads. The plan reports
+**which constraint is binding** — stock, trucks or reachability — from the
+LP's own dual values.
 
-**Live hazard ingestion works** (Phase 2): the DRIMS Assam daily report is
-fetched, parsed and stored with provenance and staleness tracking, covering
-nine hazard types and including per-district road/bridge damage. See
-`docs/decisions/0004-live-hazard-ingestion.md` — it also records that CWC's
-bulletin URL, which `0002` planned around, is dead.
+**3 · Answers "what if this bridge closes?"**
+Close or flood any set of roads and get the routing consequence: the new
+route, the delay, or that a place is cut off entirely.
 
-**Field-report fusion works** (Phase 2, Tier 1): anyone can report a road as
-clear/slow/blocked, reports snap to the nearest segment, and a trust-weighted
-vote produces a live field-reported status per road. No personal data — the
-reporter id is an opaque device-scoped string. Reports are also checked
-against the ingested DRIMS hazard data, so reporter trust no longer rests on
-peer agreement alone, which a colluding group could manufacture. See
-`docs/decisions/0005-field-report-fusion.md` and `0006-corroboration.md`.
+**4 · Shows its work, and keeps a record.**
+Every forecast, road score and plan can be explained feature by feature, with
+contributions that sum exactly to the prediction. Saved plans are immutable
+snapshots; operator overrides are an append-only log of what was done
+instead, and why.
 
-**Ingestion is scheduled** (`0008`): a daily catch-up run asks what days are
-missing rather than blindly fetching yesterday, so a machine that was off for
-a week recovers that week. Setup for Windows, cron and Docker is in
-`scripts/scheduling/`. History now spans 312 report days from 1 May 2025.
+---
 
-**The live layers now reach the router** (`0007`): a scenario can start from
-`current_conditions` instead of a clean graph, deriving closures and
-slowdowns from field reports and hazard damage points, graded by how strong
-the evidence is. District-level data never closes a road.
+## How it works
 
-**Terrain is in** (`0009`): elevation and gradient sampled from the Copernicus
-DEM for 110,260 of 110,266 roads — the first genuinely per-road feature the
-project has. Sentinel-1 **coverage** is tracked too, but **flood extent is
-not built**: download needs Copernicus credentials and deriving polygons
-needs a real SAR pipeline, so Phase 2 is not complete and is not claimed as
-complete.
-
-**Supply planning works** (Phase 4, `0011`): demand comes from the people
-DRIMS reports in relief camps and at relief distribution centres, per
-revenue circle — not from "population affected", which overstates need about
-twentyfold. Circles are located from committed OpenStreetMap data with strict,
-reasoned matching. Every depot-to-circle pair gets a fastest and a
-lower-exposure route, and an OR-Tools linear programme allocates stock under a
-fleet-hours limit, lets the operator choose coverage-first or fairness-first,
-and states which resource is binding. Building it found two parser bugs: 5% of
-population totals were read from the wrong column, and the entire 2025 season
-had no population figures because that year's report labels the section
-differently. Both are fixed and the archive re-ingested. Depot stock and fleet
-are operator inputs; the example figures are labelled as such everywhere.
-
-**Everything explains itself** (Phase 6, `0012`): a district forecast breaks
-down into exact per-feature contributions that add up to the prediction; a
-road's accessibility splits into its evaluated district half and its stated
-terrain prior; a supply plan comes with a narrative in which every sentence
-carries the figures it came from. Sentences are templates filled with real
-values — no language model — so an explanation cannot contradict its number.
-Plans can be saved as immutable records with model versions, and operators
-log overrides with a required, categorised reason.
-
-**Ready to deploy** (`0013`, `docs/deployment.md`): writes that change what the
-system believes need an operator token, the API refuses an unsafe production
-configuration, `/api/v1/health/ready` names what is wrong with a deploy, and
-CI builds the production image on every push. Not deployed yet.
-
-**Not started:** Sentinel-1 flood extent (rest of Phase 2), which needs a
-Copernicus account and a SAR pipeline. Field reports still never write
-`current_accessibility`.
-
-## Repo layout
-
-apps/
-web/ Next.js frontend (App Router, TS, Tailwind, MapLibre/deck.gl)
-api/ FastAPI backend
-packages/ Shared TS types/UI, if/when needed across apps
-data/ raw / processed / samples (raw and processed are gitignored)
-ml/ datasets, features, training, evaluation, models
-geo/ OSM, DEM, rainfall, river, satellite processing
-optimization/ routing, allocation, scenario logic
-scripts/ ingestion, preprocessing, dev helpers, data-access-checks
-docs/ architecture, data, ml, api notes, and numbered decisions
-infra/ docker, migrations
-
-
-## Local development
-
-```bash
-# 1. Copy env files
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env
-
-# 2. Install
-pnpm install
-cd apps/api && pip install -r requirements.txt && cd ../..
-
-# 3. Bring up Postgres + PostGIS
-docker compose up postgres -d
-
-# 4. Run the API
-cd apps/api && uvicorn app.main:app --reload --port 8000
-
-# 5. Run the web app (separate terminal)
-cd apps/web && pnpm dev
+```mermaid
+flowchart LR
+  subgraph Sources
+    A[ASDMA DRIMS<br/>daily flood reports]
+    B[NASA GPM IMERG<br/>daily rainfall]
+    C[OpenStreetMap<br/>road graph]
+    D[Copernicus DEM<br/>terrain]
+    E[Field reports<br/>from the ground]
+  end
+  subgraph Pipeline
+    F[Polite ingestion<br/>robots.txt, crawl delay, run log]
+    G[(PostgreSQL 16<br/>+ PostGIS)]
+    H[District flood model<br/>+ terrain exposure]
+    I[Routing<br/>exposure-weighted Dijkstra]
+    J[Relief planner<br/>OR-Tools LP]
+  end
+  subgraph Delivery
+    K[FastAPI]
+    L[Next.js + MapLibre]
+  end
+  A --> F --> G
+  B --> F
+  E --> K
+  C --> G
+  D --> G
+  G --> H --> G
+  G --> I --> J --> K --> L
 ```
 
-API docs: http://localhost:8000/docs · Web app: http://localhost:3000
+**Forecast → road score.** The model is trained statewide (34 districts) because
+the four corridor districts alone have too few flood onsets to learn from.
+Per-road spread uses a *stated* terrain prior — height above the district's
+low ground — which is documented as an assumption, not a fitted result,
+because the corridor has only 25 geolocated damage reports to check it with.
 
-## Git strategy
+**Routing.** Costs combine travel time with "exposure-km" (distance weighted by
+how inaccessible each road is forecast to be), so a planner can pay a stated
+number of minutes to avoid risk. Shortest paths run on a compiled SciPy
+Dijkstra over a cached sparse matrix: ~10× faster than the previous
+NetworkX version and small enough for a 512 MB instance.
 
-`main` — stable/demo-ready. `develop` — integration. Feature branches:
-`feature/road-graph`, `feature/rainfall-ingestion`,
-`feature/accessibility-model`, `feature/scenario-engine`,
-`feature/logistics-optimizer`, `feature/map-dashboard`,
-`feature/field-report-fusion`. PRs into `develop`; protect `main` once the
-team's comfortable with the workflow.
+**Planning.** GLOP solves coverage first, then fairness, then truck-hours, so a
+plan cannot quietly trade away coverage for convenience.
 
-## Evaluation discipline
+---
 
-No fabricated numbers, ever. Every metric in a pitch or a doc comes from an
-actual experiment logged in `docs/ml/`.
+## Results, stated honestly
+
+Trained on the 2025 monsoon, tested once on the held-out 2026 season
+(4,585 district-days). Lower Brier is better; AUC 0.5 means no skill.
+
+| 1-day forecast | Brier | Overall AUC | Onset AUC |
+|---|---|---|---|
+| Climatology | 0.1072 | 0.500 | — |
+| Persistence ("same as today") | 0.0402 | 0.895 | 0.500 |
+| **Logistic regression (served)** | **0.0393** | **0.936** | **0.708** |
+
+The headline Brier is nearly a tie with persistence — because most district-days
+are quiet and persistence gets those right for free. The difference is
+**onset**: persistence is blind to a flood that has not started (AUC 0.500 by
+construction), and the model ranks new onsets meaningfully better.
+
+**Where it is not winning:**
+
+- **3 days out, persistence is served.** The logistic model did not beat it on
+  validation, so the baseline is what runs. That is the honest outcome, not a
+  bug to hide.
+- **The live track record is currently negative** (1-day skill −37% over 175
+  graded forecasts, during a quiet spell with only 5 positives). It is
+  published on the model page rather than hidden, and is the first thing the
+  post-season retrain must address.
+- **Rainfall is collected but not served.** A model using it was better on the
+  2026 test season (Brier 0.0388, onset AUC 0.756) but worse on the validation
+  folds the selection rule uses. Changing the rule after seeing the test would
+  make the test meaningless, so instead it runs as a **shadow test**: scored
+  daily beside the served model, graded only on days neither has seen, against
+  a promotion rule fixed in advance (`docs/decisions/0015`).
+
+---
+
+## Engineering
+
+| Area | What is in place |
+|---|---|
+| **Tests** | 301, covering label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants; CI runs API tests, both Docker builds and the web build on every push |
+| **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
+| **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
+| **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
+| **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token; a production config guard refuses to start with default credentials, wildcard CORS or no tokens |
+| **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
+| **Performance** | Map GeoJSON is built inside PostGIS and gzipped (28.7 MB → 3.2 MB, and no longer exhausts a 512 MB host); planning is bounded by a concurrency semaphore that returns 429 rather than dying |
+
+---
+
+## Repository layout
+
+```
+apps/
+  api/                 FastAPI service
+    app/
+      routers/         HTTP endpoints
+      services/
+        ingestion/     Government report pipeline (polite client, parsers, schedule)
+        weather/       NASA IMERG rainfall
+        model/         Dataset rules, training, scoring, shadow test
+        logistics/     Demand, routing, OR-Tools planner
+        explain/       Per-feature attribution, narratives, audit
+        scenario/      What-if engine
+      db/              Models, session, migration runner
+    tests/             301 tests
+  web/                 Next.js 14 + MapLibre
+geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
+ml/models/             Trained model artifacts (JSON, versioned)
+infra/migrations/      Idempotent SQL migrations
+scripts/               Scheduling, deployment, data-access checks
+docs/decisions/        Numbered decision records — why things are the way they are
+```
+
+---
+
+## Running it locally
+
+**Prerequisites:** Python 3.12, Node 20+, pnpm, PostgreSQL 16 with PostGIS
+(or Docker).
+
+```bash
+cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+pnpm install
+docker compose up -d postgres          # or point DATABASE_URL at your own
+cd apps/api && pip install -r requirements.txt
+python -m app.db.migrate               # extensions, tables, migrations
+uvicorn app.main:app --reload --port 8000
+```
+
+```bash
+pnpm --filter @setu_ner/web dev        # http://localhost:3000
+```
+
+The API serves interactive docs at http://localhost:8000/docs. A fresh
+database has the schema but no road graph; `geo/osm/` rebuilds it from
+OpenStreetMap, and `docs/deployment.md` covers restoring a dump instead.
+
+**Tests:**
+
+```bash
+cd apps/api && python -m pytest -q
+```
+
+---
+
+## Operating it
+
+| Task | Command |
+|---|---|
+| Daily update (ingest, rainfall, match damage, re-score) | `python -m app.jobs.daily` |
+| Train and evaluate the model | `python -m app.services.model.train` |
+| Check the rainfall source end to end | `python -m app.services.weather.check` |
+| Issue an operator token | `python -m app.security new-token` |
+| Apply migrations | `python -m app.db.migrate` |
+
+The daily job runs on a scheduled task in India, because the ASDMA portal does
+not answer requests from cloud regions outside it — found the hard way, on a
+hosted run that sat for 17 minutes and ingested nothing. Missed days are
+caught up automatically; see `scripts/scheduling/README.md` and
+`docs/retraining.md`.
+
+---
+
+## Design decisions
+
+Numbered records, never deleted — including the ones that record a failure:
+
+| | |
+|---|---|
+| [0001](docs/decisions/0001-gap-analysis-and-enhancements.md) | Gap analysis: what the original plan assumed, and what the data actually allows |
+| [0002](docs/decisions/0002-corridor-selection.md) | Why the Barak Valley corridor |
+| [0003](docs/decisions/0003-scenario-engine.md) | The what-if engine, and what its numbers do and do not mean |
+| [0004](docs/decisions/0004-live-hazard-ingestion.md) | Live ingestion, and the district rename that would have broken it silently |
+| [0005](docs/decisions/0005-field-report-fusion.md) · [0006](docs/decisions/0006-corroboration.md) | Field reports, reporter trust, and why evidence may support a report but never count against one |
+| [0007](docs/decisions/0007-current-conditions-routing.md) | Routing from current conditions |
+| [0008](docs/decisions/0008-scheduled-ingestion.md) | Scheduling, and why catch-up beats "fetch yesterday" |
+| [0009](docs/decisions/0009-terrain-and-satellite-coverage.md) | Terrain per road, and why Sentinel-1 flood extent is *not* built |
+| [0010](docs/decisions/0010-accessibility-model.md) | The forecasting model, its results, and why a baseline is served at 3 days |
+| [0011](docs/decisions/0011-demand-and-supply-planning.md) | Demand from relief-camp populations; the optimiser and its binding constraints |
+| [0012](docs/decisions/0012-explanations-and-audit-trail.md) | Explanations that reconstruct the prediction; immutable plans and overrides |
+| [0013](docs/decisions/0013-deployment-readiness.md) | What had to exist before a public URL |
+| [0014](docs/decisions/0014-rainfall-input.md) | Rainfall: sources checked, built, and why it is not served yet |
+| [0015](docs/decisions/0015-shadow-test.md) | The shadow test, with its promotion rule fixed in advance |
+
+---
+
+## Limitations
+
+Stated plainly, because a disaster tool that oversells itself is worse than none:
+
+- **No rainfall in the served model yet** — it is collected and on trial (above).
+- **The per-road terrain prior is an assumption**, not a fitted model. 25
+  geolocated damage reports is too few to validate it, and the interface says so.
+- **Depot stock and fleet are operator inputs.** The defaults are examples and
+  are labelled as such wherever a plan is shown.
+- **No alerting.** A failed run is visible in the API and the logs, but nothing
+  pages anyone.
+- **Sentinel-1 flood extent is not built** — it needs a Copernicus account and a
+  SAR pipeline, and a plausible-looking one would be worse than none.
+- **One corridor.** The schema and pipeline are hazard-agnostic and statewide,
+  but the road graph, terrain and gazetteer cover the Barak Valley.
+
+## Roadmap
+
+1. Post-season retrain (~November), including why live skill went negative.
+2. Shadow-test verdict on rainfall — expected during the 2027 monsoon.
+3. Alerting on stale data or failed runs.
+4. Vector tiles, so the map scales past one district at a time.
+
+---
+
+## Data sources and attribution
+
+| Source | Used for | Licence / terms |
+|---|---|---|
+| [ASDMA DRIMS](https://sdmassam.nic.in/) daily flood reports | District flood state, damage, relief-camp populations | Government of Assam public reports |
+| [NASA GPM IMERG](https://gpm.nasa.gov/data/imerg) Late Run V07 | Daily rainfall per district | NASA open data; free Earthdata account |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | Road graph, district boundaries, gazetteer | © OpenStreetMap contributors, ODbL |
+| [Copernicus DEM](https://dataspace.copernicus.eu/) | Road elevation and terrain exposure | Copernicus open data |
+| Sphere Handbook | Water and food norms per person per day | Cited in the interface at point of use |
+
+Every automated fetch respects the source's `robots.txt` and crawl delay, and
+identifies itself honestly. If a source asks us to stop, the correct response
+is to stop.

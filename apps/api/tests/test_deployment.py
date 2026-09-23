@@ -130,6 +130,25 @@ def test_a_development_config_is_not_production_safe():
     assert "DATABASE_URL" in text
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        DEV_DATABASE_URL,
+        "postgresql://someone:pw@localhost:5432/anything",
+        "postgresql://someone:pw@127.0.0.1:5432/anything",
+    ],
+)
+def test_a_local_database_is_refused_in_production_whatever_it_is_called(url):
+    """The guard used to match one exact string, so renaming the development
+    database silently switched it off."""
+    s = Settings(
+        environment="production", database_url=url,
+        operator_token_hashes=[security.token_hash(TOKEN)],
+        cors_allowed_origins=["https://setuner.example"],
+    )
+    assert any("DATABASE_URL" in p for p in s.production_problems())
+
+
 def test_raw_tokens_in_the_hash_list_are_rejected():
     s = Settings(
         environment="production", operator_token_hashes=[TOKEN],

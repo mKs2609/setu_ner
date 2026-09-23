@@ -66,7 +66,7 @@ That is expected, and it is why the model lags rain by one day.
 Register the task once, as the user who owns the database:
 
 ```powershell
-$Repo = "C:\Users\Mohit\OneDrive\Desktop\sih26002-scaffold\setuner"
+$Repo = "C:\path\to\setuner"   # this clone
 $Action = New-ScheduledTaskAction -Execute "powershell.exe" `
   -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$Repo\scripts\scheduling\run_ingestion.ps1`""
 $Trigger = New-ScheduledTaskTrigger -Daily -At 7:30am
