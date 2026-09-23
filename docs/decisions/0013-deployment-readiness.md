@@ -16,6 +16,15 @@
 | Compose `web` pointed at a Dockerfile that never existed | `docker compose up` failed |
 | `data/deploy/` not gitignored | A 21 MB database dump one `git add -A` from being committed |
 
+> **Update 24 Sep 2026 — limits on public endpoints.** Planning and scenario
+> simulation are public and do real work (shortest-path trees over 110k edges,
+> then an LP). They now share one concurrency slot and a per-address rate
+> limit (`app/limits.py`), scenario inputs are bounded like the planner's
+> already were, and the field-report token check moved into a dependency so an
+> unauthorised caller gets 401 rather than a 422 describing the schema. None
+> of this protects data -- the operator tokens do that -- it stops one caller
+> making the free instance useless for everyone else.
+
 ## What was built
 
 **Operator tokens** (`app/security.py`). Saving a plan, recording an override,

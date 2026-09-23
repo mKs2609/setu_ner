@@ -83,6 +83,23 @@ def require_operator(authorization: str | None = Header(default=None)) -> None:
         )
 
 
+def require_operator_unless_open(authorization: str | None = Header(default=None)) -> None:
+    """Field reports need a token unless this deployment opened them.
+
+    A dependency rather than a check inside the endpoint, so the refusal
+    happens before the body is parsed: an unauthorised caller should get 401,
+    not a 422 describing the fields it got wrong.
+    """
+    if field_reports_open():
+        return
+    if not is_authorised(authorization):
+        raise HTTPException(
+            status_code=401,
+            detail="Field reports on this deployment need an operator token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 def field_reports_open() -> bool:
     settings = get_settings()
     return settings.public_field_reports or (

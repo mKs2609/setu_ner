@@ -27,15 +27,14 @@ from app.db.session import get_db
 from app.services.explain import audit
 from app.services.explain import plan as plan_explain
 from app.services.logistics import demand as demand_mod
+from app import limits
 from app.services.logistics import optimize
 from app.services.logistics import plan as plan_mod
 
 router = APIRouter()
 
-# Each plan holds several shortest-path trees over the corridor in memory.
-# Past this many at once, new requests are turned away rather than queued
-# into an out-of-memory kill that would take every other request with them.
-_plan_slots = threading.BoundedSemaphore(get_settings().max_concurrent_plans)
+# Concurrency and per-address limits live in app/limits.py, shared with the
+# scenario engine: both compete for the same memory on the same instance.
 
 
 class StockIn(BaseModel):
@@ -109,7 +108,7 @@ def example_inputs():
     }
 
 
-@router.post("/plan")
+@router.post("/plan", dependencies=[Depends(limits.rate_limited)])
 def make_plan(
     body: PlanRequest,
     db: Session = Depends(get_db),
@@ -122,16 +121,8 @@ def make_plan(
             detail="Saving a plan as a record needs an operator token. Planning without saving does not.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not _plan_slots.acquire(blocking=False):
-        raise HTTPException(
-            status_code=429,
-            detail="The planner is busy with other requests; try again in a few seconds.",
-            headers={"Retry-After": "5"},
-        )
-    try:
+    with limits.heavy_slot():
         return _make_plan(body, db)
-    finally:
-        _plan_slots.release()
 
 
 def _make_plan(body: PlanRequest, db: Session) -> dict:

@@ -22,6 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app import limits
 from app.db.session import get_db
 from app.services.routing.graph import get_corridor_graph
 from app.services.routing.landmarks import LANDMARKS, resolve_place
@@ -32,12 +33,15 @@ router = APIRouter()
 
 
 class ScenarioRequest(BaseModel):
-    label: str = Field("untitled scenario", description="Name for this what-if")
-    origin: str = Field("silchar", description="Landmark key, or 'lon,lat'")
-    destination: str = Field("haflong", description="Landmark key, or 'lon,lat'")
+    label: str = Field("untitled scenario", max_length=120, description="Name for this what-if")
+    origin: str = Field("silchar", max_length=80, description="Landmark key, or 'lon,lat'")
+    destination: str = Field("haflong", max_length=80, description="Landmark key, or 'lon,lat'")
 
+    # Bounded: an unbounded list is a free way to make the server do
+    # arbitrary work. 2000 is far more than any real scenario -- the whole
+    # corridor has 110k edges and a plausible closure is a handful.
     close_road_ids: list[int] = Field(
-        default_factory=list, description="Road ids made impassable"
+        default_factory=list, max_length=2000, description="Road ids made impassable"
     )
     close_bridges_in_district: str | None = Field(
         None,
@@ -48,6 +52,7 @@ class ScenarioRequest(BaseModel):
     )
     degrade_road_ids: list[int] = Field(
         default_factory=list,
+        max_length=2000,
         description="Road ids that stay passable but slower (flooded, not severed)",
     )
     degrade_bridges_in_district: str | None = Field(
@@ -144,9 +149,14 @@ def baseline_route(
     return payload
 
 
-@router.post("/simulate")
+@router.post("/simulate", dependencies=[Depends(limits.rate_limited)])
 def simulate_scenario(request: ScenarioRequest, db: Session = Depends(get_db)):
     """Run a what-if: close or slow a set of roads, and report what it costs."""
+    with limits.heavy_slot():
+        return _simulate(request, db)
+
+
+def _simulate(request: ScenarioRequest, db: Session) -> dict:
     try:
         origin = resolve_place(request.origin)
         destination = resolve_place(request.destination)

@@ -145,8 +145,9 @@ construction), and the model ranks new onsets meaningfully better.
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
-| **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token; a production config guard refuses to start with default credentials, wildcard CORS or no tokens |
+| **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token, refused before the body is parsed; a production config guard refuses to start with default credentials, a local database, wildcard CORS or no tokens; every public input is bounded |
 | **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
+| **Abuse limits** | The heavy public endpoints (planning, scenarios) share one concurrency slot and a per-address rate limit, so one caller cannot hold the only worker while everyone else waits. Stated as a nuisance limit, not a security boundary |
 | **Performance** | Map GeoJSON is built inside PostGIS and gzipped (28.7 MB → 3.2 MB, and no longer exhausts a 512 MB host); planning is bounded by a concurrency semaphore that returns 429 rather than dying |
 
 ---
@@ -287,3 +288,8 @@ Stated plainly, because a disaster tool that oversells itself is worse than none
 Every automated fetch respects the source's `robots.txt` and crawl delay, and
 identifies itself honestly. If a source asks us to stop, the correct response
 is to stop.
+
+## Licence
+
+Source code: [MIT](LICENSE). The data keeps its own terms — in particular,
+anything derived from OpenStreetMap is ODbL 1.0.

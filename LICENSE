@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 Mohit Kumar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+The MIT licence above covers this project's own source code. It does not
+relicense the data it uses, which keeps its own terms:
+
+  * OpenStreetMap-derived data (road graph, district boundaries, gazetteer)
+    is © OpenStreetMap contributors, licensed under the Open Database License
+    (ODbL) 1.0. Derived databases distributed with this project carry that
+    licence: https://www.openstreetmap.org/copyright
+  * ASDMA DRIMS flood reports are public Government of Assam documents.
+  * NASA GPM IMERG precipitation is NASA open data.
+  * Copernicus DEM elevation is Copernicus open data.
+
+See the attribution table in README.md.

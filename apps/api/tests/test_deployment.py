@@ -101,20 +101,89 @@ def test_field_report_needs_a_token_when_not_public(enforced):
     assert r.status_code == 401
 
 
-def test_planner_turns_requests_away_when_busy():
-    from app.routers import logistics
+def test_an_unauthorised_report_is_refused_before_its_body_is_read(enforced):
+    """401, not a 422 listing the fields it got wrong: a caller with no token
+    has no business learning the shape of the endpoint."""
+    r = client.post("/api/v1/field-reports", json={})
+    assert r.status_code == 401
+    assert r.headers.get("www-authenticate") == "Bearer"
 
-    slots = []
-    while logistics._plan_slots.acquire(blocking=False):
-        slots.append(1)
+
+DEPOT = {"name": "Silchar", "place": "Silchar", "stock": {"water": 1, "food": 1}, "trucks": 1}
+
+
+def _hold_every_slot():
+    from app import limits
+
+    held = []
+    while limits._slots.acquire(blocking=False):
+        held.append(1)
+    return held
+
+
+def _release(held):
+    from app import limits
+
+    for _ in held:
+        limits._slots.release()
+
+
+def test_planner_turns_requests_away_when_busy():
+    held = _hold_every_slot()
     try:
-        depot = {"name": "Silchar", "place": "Silchar", "stock": {"water": 1, "food": 1}, "trucks": 1}
-        r = client.post("/api/v1/logistics/plan", json={"depots": [depot]})
+        r = client.post("/api/v1/logistics/plan", json={"depots": [DEPOT]})
         assert r.status_code == 429
         assert r.headers.get("retry-after")
     finally:
-        for _ in slots:
-            logistics._plan_slots.release()
+        _release(held)
+
+
+def test_scenarios_share_the_planners_limit():
+    """Both hold shortest-path trees over the same corridor in the same
+    process; separate limits would let them add up to an OOM kill."""
+    held = _hold_every_slot()
+    try:
+        r = client.post("/api/v1/scenarios/simulate", json={"close_road_ids": []})
+        assert r.status_code == 429
+    finally:
+        _release(held)
+
+
+def test_one_address_cannot_monopolise_the_heavy_endpoints():
+    from app import limits
+
+    limits.reset_for_tests()
+    try:
+        codes = [
+            client.post(
+                "/api/v1/logistics/plan",
+                json={"depots": [DEPOT]},
+                headers={"X-Forwarded-For": "203.0.113.9"},
+            ).status_code
+            for _ in range(limits.MAX_HEAVY_PER_WINDOW + 2)
+        ]
+        assert codes[-1] == 429
+        # A different address is unaffected by the first one's limit.
+        other = client.post(
+            "/api/v1/scenarios/simulate",
+            json={"close_road_ids": []},
+            headers={"X-Forwarded-For": "198.51.100.4"},
+        )
+        assert other.status_code != 429
+    finally:
+        limits.reset_for_tests()
+
+
+def test_a_scenario_cannot_ask_for_unbounded_work():
+    """An unbounded list is a free way to make the server do arbitrary work."""
+    limits_module = __import__("app.limits", fromlist=["limits"])
+    limits_module.reset_for_tests()
+    r = client.post(
+        "/api/v1/scenarios/simulate",
+        json={"close_road_ids": list(range(2001))},
+    )
+    assert r.status_code == 422
+    limits_module.reset_for_tests()
 
 
 # ---------------------------------------------------------------------------
