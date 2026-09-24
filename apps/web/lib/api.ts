@@ -470,6 +470,107 @@ export interface DistrictForecasts {
   note?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Readiness. The same endpoint a hosting platform gates traffic on, shown on
+// the console so a viewer can see what the system knows about itself rather
+// than being told "live" by a green dot that is always green.
+// ---------------------------------------------------------------------------
+
+export interface Readiness {
+  ready: boolean;
+  checks: Record<
+    string,
+    {
+      ok: boolean;
+      version?: string;
+      roads?: number;
+      latest_report?: string | null;
+      latest_day?: string | null;
+      age_days?: number | null;
+      stale?: boolean;
+      missing?: string[];
+      present?: Record<string, boolean>;
+    }
+  >;
+}
+
+export interface ForecastHistoryDay {
+  as_of: string;
+  target_date: string;
+  districts: {
+    district: string;
+    district_key: string;
+    probability: number;
+    persistence_probability: number;
+    affected_on_as_of: boolean;
+    // null when the target day has no published report yet: unknown, not "no flood".
+    affected_on_target: boolean | null;
+    model_kind: string;
+  }[];
+}
+
+export interface ForecastHistory {
+  horizon_days: number;
+  days: ForecastHistoryDay[];
+  caveat?: string;
+  note?: string;
+}
+
+export async function fetchForecastHistory(
+  days = 30,
+  horizonDays = 1,
+): Promise<ForecastHistory> {
+  const res = await fetch(
+    `${API_BASE}/api/v1/model/history?days=${days}&horizon_days=${horizonDays}`,
+  );
+  if (!res.ok) throw new Error(`Failed to load forecast history: ${res.status}`);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// The ingestion run log. Every fetch this system has attempted, with what it
+// got -- which is what makes "live" mean something more than a pulsing dot.
+// ---------------------------------------------------------------------------
+
+export interface IngestRun {
+  id: number;
+  source: string;
+  hazard_type: string | null;
+  target_date: string | null;
+  status: string; // running | success | no_data | failed
+  started_at: string;
+  rows_written: number;
+  error?: string | null;
+}
+
+export interface Freshness {
+  sources: {
+    source: string;
+    hazard_type: string | null;
+    latest_observed_at: string | null;
+    age_hours: number | null;
+    status: string;
+    observation_count: number;
+  }[];
+  recent_runs: IngestRun[];
+}
+
+export async function fetchFreshness(): Promise<Freshness> {
+  const res = await fetch(`${API_BASE}/api/v1/hazards/freshness`);
+  if (!res.ok) throw new Error(`Failed to load freshness: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchReadiness(): Promise<Readiness> {
+  // 503 is a real answer here ("not ready"), not a transport failure, so the
+  // body is read either way and only a genuinely broken response throws.
+  const res = await fetch(`${API_BASE}/api/v1/health/ready`);
+  if (res.status !== 200 && res.status !== 503) {
+    throw new Error(`Failed to load readiness: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function fetchModelStatus(): Promise<ModelStatus> {
   const res = await fetch(`${API_BASE}/api/v1/model/status`);
   if (!res.ok) throw new Error(`Failed to load model status: ${res.status}`);

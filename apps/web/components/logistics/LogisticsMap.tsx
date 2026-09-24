@@ -14,6 +14,8 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE } from "@/lib/basemap";
+
 import type { PlanResponse } from "@/lib/api";
 
 const CENTER: [number, number] = [92.75, 24.9];
@@ -45,7 +47,8 @@ export default function LogisticsMap({ plan }: { plan: PlanResponse | null }) {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      style: BASEMAP_STYLE,
+      attributionControl: { compact: true, customAttribution: BASEMAP_ATTRIBUTION },
       center: CENTER,
       zoom: ZOOM,
     });
@@ -165,39 +168,39 @@ export default function LogisticsMap({ plan }: { plan: PlanResponse | null }) {
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
-      <div className="pointer-events-none absolute bottom-4 left-4 rounded-md bg-white/95 px-3 py-2 text-xs shadow-md ring-1 ring-gray-200">
-        <div className="mb-1 font-semibold text-gray-700">Plan</div>
+      <div className="pointer-events-none absolute bottom-4 left-4 card px-4 py-3 text-caption">
+        <div className="mb-1 font-semibold text-ink">Plan</div>
         <div className="flex items-center gap-2">
           <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#1d4ed8" }} />
-          <span className="text-gray-600">Depot</span>
+          <span className="text-muted">Depot</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="inline-block h-3 w-3 rounded-full" style={{ background: "rgba(22,163,74,0.75)" }} />
-          <span className="text-gray-600">Circle fully supplied (size = people)</span>
+          <span className="text-muted">Circle fully supplied (size = people)</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="inline-block h-3 w-3 rounded-full" style={{ background: "rgba(220,38,38,0.75)" }} />
-          <span className="text-gray-600">Circle with a shortfall</span>
+          <span className="text-muted">Circle with a shortfall</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="inline-block h-3 w-3 rounded-full" style={{ background: "rgba(107,114,128,0.7)" }} />
-          <span className="text-gray-600">Not planned for (road graph does not reach it)</span>
+          <span className="text-muted">Not planned for (road graph does not reach it)</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="inline-block h-1 w-6 rounded" style={{ background: "#0f766e" }} />
-          <span className="text-gray-600">Route used</span>
+          <span className="text-muted">Route used</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span
             className="inline-block h-1 w-6 rounded"
             style={{ background: "repeating-linear-gradient(90deg,#6b7280 0 5px,transparent 5px 8px)" }}
           />
-          <span className="text-gray-600">The other route, where they differ</span>
+          <span className="text-muted">The other route, where they differ</span>
         </div>
       </div>
       {!plan && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="rounded-md bg-white/90 px-4 py-2 text-sm text-gray-600 shadow ring-1 ring-gray-200">
+          <p className="card-pill px-4 py-2 text-caption text-muted">
             Choose a report day and run a plan.
           </p>
         </div>

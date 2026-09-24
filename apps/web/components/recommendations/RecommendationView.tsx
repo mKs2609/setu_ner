@@ -71,8 +71,8 @@ export default function RecommendationView({ id }: { id: string }) {
     }
   }, [id, action, category, reason, target]);
 
-  if (error) return <p className="p-4 text-sm text-red-700">{error}</p>;
-  if (!rec || !why) return <p className="p-4 text-sm text-gray-500">Loading…</p>;
+  if (error) return <p className="p-4 text-sm text-alert">{error}</p>;
+  if (!rec || !why) return <p className="p-4 text-sm text-muted">Loading…</p>;
 
   const runs = rec.outputs.plan.runs ?? [];
 
@@ -82,19 +82,19 @@ export default function RecommendationView({ id }: { id: string }) {
         <section className="space-y-1">
           <h2 className="text-lg font-semibold">{rec.label || "Supply plan"}</h2>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded bg-gray-100 px-1.5 py-0.5">
+            <span className="rounded bg-surface px-1.5 py-0.5">
               Saved {new Date(rec.created_at).toLocaleString()}
             </span>
             <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-800">
               Demand from the {rec.data_as_of} report{rec.is_replay ? " (replay)" : ""}
             </span>
             {rec.example_inputs && (
-              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-800">
+              <span className="rounded bg-caution/10 px-1.5 py-0.5 text-caution">
                 Example stock — demonstration only
               </span>
             )}
           </div>
-          <p className="text-xs text-amber-800">{rec.note}</p>
+          <p className="text-xs text-caution">{rec.note}</p>
           <p>
             {rec.people_to_supply?.toLocaleString()} people · {pct(rec.coverage)} of need covered · worst circle{" "}
             {pct(rec.worst_shortfall_fraction)} short
@@ -112,7 +112,7 @@ export default function RecommendationView({ id }: { id: string }) {
           <h3 className="font-semibold">Runs as planned</h3>
           <table className="mt-1 w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-500">
+              <tr className="text-left text-muted">
                 <th className="font-normal">From → to</th>
                 <th className="font-normal">Water (L)</th>
                 <th className="font-normal">Food</th>
@@ -121,7 +121,7 @@ export default function RecommendationView({ id }: { id: string }) {
             </thead>
             <tbody>
               {runs.map((r) => (
-                <tr key={`${r.depot}-${r.circle}`} className="border-t border-gray-100">
+                <tr key={`${r.depot}-${r.circle}`} className="border-t border-line">
                   <td className="py-1">
                     {r.depot} → {r.circle}
                   </td>
@@ -136,7 +136,7 @@ export default function RecommendationView({ id }: { id: string }) {
 
         <section>
           <h3 className="font-semibold">Model and data versions</h3>
-          <ul className="mt-1 text-xs text-gray-600">
+          <ul className="mt-1 text-xs text-muted">
             {Object.entries(rec.model_versions).map(([k, v]) => (
               <li key={k}>
                 {k}: <span className="font-mono">{v ?? "—"}</span>
@@ -147,15 +147,15 @@ export default function RecommendationView({ id }: { id: string }) {
       </div>
 
       <aside className="space-y-4">
-        <section className="space-y-2 rounded border border-gray-200 p-3">
+        <section className="space-y-2 rounded border border-line p-3">
           <h3 className="font-semibold">Record an override</h3>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             What you did instead of the plan, and why. Appended to the record; nothing here edits the plan.
           </p>
           <select
             value={action}
             onChange={(e) => setAction(e.target.value as OverrideAction)}
-            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+            className="w-full rounded-pill border border-line bg-surface px-3 py-1.5 text-xs"
           >
             <option value="accepted">Accepted as planned</option>
             <option value="modified">Modified</option>
@@ -164,7 +164,7 @@ export default function RecommendationView({ id }: { id: string }) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+            className="w-full rounded-pill border border-line bg-surface px-3 py-1.5 text-xs"
           >
             {REASON_CATEGORIES.map(([k, l]) => (
               <option key={k} value={k}>
@@ -177,7 +177,7 @@ export default function RecommendationView({ id }: { id: string }) {
             onChange={(e) => setTarget(e.target.value)}
             maxLength={200}
             placeholder="Which run? e.g. run:Silchar->Sonai (optional)"
-            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+            className="w-full rounded-pill border border-line bg-surface px-3 py-1.5 text-xs"
           />
           <textarea
             value={reason}
@@ -185,14 +185,14 @@ export default function RecommendationView({ id }: { id: string }) {
             maxLength={1000}
             rows={3}
             placeholder="Reason (required)"
-            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+            className="w-full rounded-pill border border-line bg-surface px-3 py-1.5 text-xs"
           />
           <OperatorAccess compact />
-          {formError && <p className="text-xs text-red-700">{formError}</p>}
+          {formError && <p className="text-xs text-alert">{formError}</p>}
           <button
             onClick={submit}
             disabled={sending || reason.trim().length < 5}
-            className="w-full rounded bg-teal-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            className="w-full rounded-pill bg-accent px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
           >
             {sending ? "Recording…" : "Record override"}
           </button>
@@ -201,18 +201,18 @@ export default function RecommendationView({ id }: { id: string }) {
         <section>
           <h3 className="font-semibold">Overrides ({overrides.length})</h3>
           {overrides.length === 0 ? (
-            <p className="text-xs text-gray-500">None recorded.</p>
+            <p className="text-xs text-muted">None recorded.</p>
           ) : (
             <ul className="mt-1 space-y-2">
               {overrides.map((o) => (
-                <li key={o.id} className="rounded bg-gray-50 p-2 text-xs">
+                <li key={o.id} className="rounded bg-surface p-2 text-xs">
                   <p className="font-medium">
                     {o.action} ·{" "}
                     {REASON_CATEGORIES.find(([k]) => k === o.reason_category)?.[1] ?? o.reason_category}
                   </p>
-                  {o.target && <p className="text-gray-600">{o.target}</p>}
-                  <p className="text-gray-800">{o.reason}</p>
-                  <p className="text-[10px] text-gray-500">{new Date(o.created_at).toLocaleString()}</p>
+                  {o.target && <p className="text-muted">{o.target}</p>}
+                  <p className="text-ink">{o.reason}</p>
+                  <p className="text-[10px] text-muted">{new Date(o.created_at).toLocaleString()}</p>
                 </li>
               ))}
             </ul>

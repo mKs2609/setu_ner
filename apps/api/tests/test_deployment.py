@@ -152,10 +152,16 @@ def test_scenarios_share_the_planners_limit():
 def test_one_address_cannot_monopolise_the_heavy_endpoints():
     from app import limits
 
+    # The requests that get *past* the limiter go on to do real work, which
+    # needs a database this test does not require. raise_server_exceptions
+    # keeps that a status code rather than an exception, so the test measures
+    # the limiter and nothing else.
+    unguarded = TestClient(app, raise_server_exceptions=False)
+
     limits.reset_for_tests()
     try:
         codes = [
-            client.post(
+            unguarded.post(
                 "/api/v1/logistics/plan",
                 json={"depots": [DEPOT]},
                 headers={"X-Forwarded-For": "203.0.113.9"},
@@ -164,7 +170,7 @@ def test_one_address_cannot_monopolise_the_heavy_endpoints():
         ]
         assert codes[-1] == 429
         # A different address is unaffected by the first one's limit.
-        other = client.post(
+        other = unguarded.post(
             "/api/v1/scenarios/simulate",
             json={"close_road_ids": []},
             headers={"X-Forwarded-For": "198.51.100.4"},

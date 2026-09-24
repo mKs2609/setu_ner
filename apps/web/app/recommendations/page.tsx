@@ -10,12 +10,12 @@ export const metadata = {
 export default function RecommendationsPage() {
   return (
     <main className="min-h-screen w-full">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-gray-200 px-4 py-3">
+      <header className="wash flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-b border-line px-6 py-5">
         <div>
-          <h1 className="text-xl font-semibold">SetuNER — Saved plans</h1>
-          <p className="text-sm text-gray-600">An audit trail: what was planned, why, and what was done instead.</p>
+          <h1 className="text-[28px] font-extralight leading-tight tracking-[-0.02em]">Saved plans</h1>
+          <p className="mt-1 text-caption text-muted">An audit trail: what was planned, why, and what was done instead.</p>
         </div>
-        <Link href="/logistics" className="text-sm text-teal-700 underline underline-offset-2">
+        <Link href="/logistics" className="text-caption text-accent underline-grow">
           Supply planning
         </Link>
       </header>

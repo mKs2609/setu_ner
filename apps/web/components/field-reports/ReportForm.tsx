@@ -27,19 +27,19 @@ const STATUS_CHOICES: { value: ReportStatus; label: string; hint: string; classe
     value: "clear",
     label: "Clear",
     hint: "Passable as normal",
-    classes: "border-green-300 bg-green-50 text-green-900",
+    classes: "border-green-300 bg-accent-wash text-accent",
   },
   {
     value: "slow",
     label: "Slow",
     hint: "Passable but difficult",
-    classes: "border-amber-300 bg-amber-50 text-amber-900",
+    classes: "border-caution/40 bg-caution/10 text-caution",
   },
   {
     value: "blocked",
     label: "Blocked",
     hint: "Not passable at all",
-    classes: "border-red-300 bg-red-50 text-red-900",
+    classes: "border-alert/40 bg-alert/10 text-alert",
   },
 ];
 
@@ -110,7 +110,7 @@ export default function ReportForm({
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-gray-700">
+        <label className="mb-1.5 block text-xs font-medium text-ink">
           What is the road like here?
         </label>
         <div className="grid grid-cols-3 gap-1.5">
@@ -119,10 +119,10 @@ export default function ReportForm({
               key={choice.value}
               type="button"
               onClick={() => setStatus(choice.value)}
-              className={`rounded-md border px-2 py-2.5 text-center transition ${
+              className={`rounded border px-2 py-2.5 text-center transition ${
                 status === choice.value
                   ? `${choice.classes} font-semibold`
-                  : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                  : "border-line bg-surface text-muted hover:bg-accent-wash/60"
               }`}
             >
               <div className="text-sm">{choice.label}</div>
@@ -133,12 +133,12 @@ export default function ReportForm({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-gray-700">Where</label>
+        <label className="mb-1.5 block text-xs font-medium text-ink">Where</label>
         <button
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="w-full rounded-md border border-teal-300 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-800 transition hover:bg-teal-100 disabled:opacity-60"
+          className="w-full rounded border border-accent/40 bg-accent-wash px-3 py-2 text-sm font-medium text-accent transition hover:bg-teal-100 disabled:opacity-60"
         >
           {locating ? "Finding you..." : "Use my location"}
         </button>
@@ -148,32 +148,32 @@ export default function ReportForm({
             onChange={(e) => setLat(e.target.value)}
             placeholder="Latitude"
             inputMode="decimal"
-            className="rounded border border-gray-300 px-2 py-1.5 text-xs"
+            className="rounded-pill border border-line bg-surface px-3 py-1.5.5 text-xs"
           />
           <input
             value={lon}
             onChange={(e) => setLon(e.target.value)}
             placeholder="Longitude"
             inputMode="decimal"
-            className="rounded border border-gray-300 px-2 py-1.5 text-xs"
+            className="rounded-pill border border-line bg-surface px-3 py-1.5.5 text-xs"
           />
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-gray-500">
+        <p className="mt-1 text-[11px] leading-snug text-muted">
           GPS fails under tree cover and in steep terrain, and a control room relaying a
           report by phone has coordinates but no device fix — so they can be typed in.
         </p>
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-700">
-          Anything else? <span className="font-normal text-gray-500">(optional)</span>
+        <label className="mb-1 block text-xs font-medium text-ink">
+          Anything else? <span className="font-normal text-muted">(optional)</span>
         </label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, 500))}
           rows={2}
           placeholder="Water over the road, knee deep"
-          className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs"
+          className="w-full rounded-pill border border-line bg-surface px-3 py-1.5.5 text-xs"
         />
       </div>
 
@@ -183,13 +183,13 @@ export default function ReportForm({
         type="button"
         onClick={submit}
         disabled={sending}
-        className="w-full rounded-md bg-teal-700 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+        className="w-full rounded-pill bg-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-gray-400"
       >
         {sending ? "Sending..." : "Send report"}
       </button>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-2.5 text-xs leading-snug text-red-800 ring-1 ring-red-200">
+        <div className="rounded bg-alert/10 p-2.5 text-xs leading-snug text-alert ring-1 ring-alert/30">
           {error}
         </div>
       )}

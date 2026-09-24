@@ -81,32 +81,32 @@ function verdictTone(result: ScenarioResult) {
   if (result.delta.severed) {
     const kind = result.scenario_result.kind ?? "severed";
     return {
-      ring: "ring-red-200",
-      bg: "bg-red-50",
-      text: "text-red-800",
+      ring: "ring-alert/30",
+      bg: "bg-alert/10",
+      text: "text-alert",
       label: UNREACHABLE_LABELS[kind] ?? "No route",
     };
   }
-  if (!result.delta.added_minutes) return { ring: "ring-gray-200", bg: "bg-gray-50", text: "text-gray-700", label: "No change" };
-  return { ring: "ring-amber-200", bg: "bg-amber-50", text: "text-amber-900", label: "Delayed" };
+  if (!result.delta.added_minutes) return { ring: "ring-line", bg: "bg-surface", text: "text-ink", label: "No change" };
+  return { ring: "ring-caution/30", bg: "bg-caution/10", text: "text-caution", label: "Delayed" };
 }
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="text-sm font-semibold text-gray-900">{value}</div>
-      {sub && <div className="text-[11px] text-gray-500">{sub}</div>}
+      <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-sm font-semibold text-ink">{value}</div>
+      {sub && <div className="text-[11px] text-muted">{sub}</div>}
     </div>
   );
 }
 
 function RouteColumn({ title, stats, accent }: { title: string; stats: RouteStats; accent: string }) {
   return (
-    <div className="flex-1 rounded-md border border-gray-200 p-3">
+    <div className="flex-1 rounded border border-line p-3">
       <div className="mb-2 flex items-center gap-2">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: accent }} />
-        <span className="text-xs font-semibold text-gray-700">{title}</span>
+        <span className="text-xs font-semibold text-ink">{title}</span>
       </div>
       {stats.reachable ? (
         <div className="space-y-2">
@@ -115,7 +115,7 @@ function RouteColumn({ title, stats, accent }: { title: string; stats: RouteStat
           <Stat label="Segments" value={String(stats.segment_count)} sub={`${stats.bridges_crossed} bridges`} />
         </div>
       ) : (
-        <p className="text-xs leading-snug text-red-700">No route exists.</p>
+        <p className="text-xs leading-snug text-alert">No route exists.</p>
       )}
     </div>
   );
@@ -146,27 +146,27 @@ export default function ScenarioPanel({
     result && Math.max(result.origin.snapped_km_away, result.destination.snapped_km_away) > 2;
 
   return (
-    <div className="flex flex-col gap-4 border-b border-gray-200 bg-gray-50 p-4 md:h-full md:overflow-y-auto md:border-b-0 md:border-r">
+    <div className="flex flex-col gap-4 border-b border-line bg-surface p-4 md:h-full md:overflow-y-auto md:border-b-0 md:border-r">
       <div>
-        <h2 className="text-sm font-semibold text-gray-900">Build a scenario</h2>
-        <p className="mt-0.5 text-xs leading-snug text-gray-600">
+        <h2 className="text-sm font-semibold text-ink">Build a scenario</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted">
           Take out a set of roads and see what it does to the route.
         </p>
       </div>
 
       {/* ---------------- presets ---------------- */}
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-gray-700">Start from a preset</label>
+        <label className="mb-1.5 block text-xs font-medium text-ink">Start from a preset</label>
         <div className="grid gap-1.5">
           {PRESETS.map((p) => (
             <button
               key={p.name}
               type="button"
               onClick={() => setForm(p.form)}
-              className="rounded-md border border-gray-200 bg-white px-2.5 py-2 text-left text-xs transition hover:border-teal-400 hover:bg-teal-50"
+              className="card px-2.5 py-2 text-left text-xs transition hover:border-teal-400 hover:bg-teal-50"
             >
-              <div className="font-medium text-gray-800">{p.name}</div>
-              <div className="text-[11px] text-gray-500">{p.blurb}</div>
+              <div className="font-medium text-ink">{p.name}</div>
+              <div className="text-[11px] text-muted">{p.blurb}</div>
             </button>
           ))}
         </div>
@@ -174,7 +174,7 @@ export default function ScenarioPanel({
 
       {/* ---------------- starting network ---------------- */}
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-gray-700">
+        <label className="mb-1.5 block text-xs font-medium text-ink">
           Start from
         </label>
         <div className="flex gap-1.5">
@@ -183,8 +183,8 @@ export default function ScenarioPanel({
             onClick={() => set("startFrom", "clean")}
             className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
               form.startFrom === "clean"
-                ? "border-teal-300 bg-teal-50 font-medium text-teal-900"
-                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                ? "border-accent/40 bg-accent-wash font-medium text-accent"
+                : "border-line bg-surface text-muted hover:bg-accent-wash/60"
             }`}
           >
             Clean network
@@ -194,14 +194,14 @@ export default function ScenarioPanel({
             onClick={() => set("startFrom", "current_conditions")}
             className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
               form.startFrom === "current_conditions"
-                ? "border-teal-300 bg-teal-50 font-medium text-teal-900"
-                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                ? "border-accent/40 bg-accent-wash font-medium text-accent"
+                : "border-line bg-surface text-muted hover:bg-accent-wash/60"
             }`}
           >
             Conditions now
           </button>
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-gray-500">
+        <p className="mt-1 text-[11px] leading-snug text-muted">
           {form.startFrom === "clean"
             ? "A pure hypothetical on an undamaged network."
             : "Applies what is actually reported right now — field reports and hazard damage points — before your closures."}
@@ -211,11 +211,11 @@ export default function ScenarioPanel({
       {/* ---------------- route ---------------- */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">From</label>
+          <label className="mb-1 block text-xs font-medium text-ink">From</label>
           <select
             value={form.origin}
             onChange={(e) => set("origin", e.target.value)}
-            className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs"
+            className="w-full card px-2 py-1.5 text-xs"
           >
             {landmarks.map((l) => (
               <option key={l.key} value={l.key}>{l.display_name}</option>
@@ -223,11 +223,11 @@ export default function ScenarioPanel({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">To</label>
+          <label className="mb-1 block text-xs font-medium text-ink">To</label>
           <select
             value={form.destination}
             onChange={(e) => set("destination", e.target.value)}
-            className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs"
+            className="w-full card px-2 py-1.5 text-xs"
           >
             {landmarks.map((l) => (
               <option key={l.key} value={l.key}>{l.display_name}</option>
@@ -238,13 +238,13 @@ export default function ScenarioPanel({
 
       {/* ---------------- what happens ---------------- */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-700">
+        <label className="mb-1 block text-xs font-medium text-ink">
           What happens to the bridges in
         </label>
         <select
           value={form.district}
           onChange={(e) => set("district", e.target.value)}
-          className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs"
+          className="w-full card px-2 py-1.5 text-xs"
         >
           {DISTRICTS.map((d) => (
             <option key={d} value={d}>{d}</option>
@@ -257,8 +257,8 @@ export default function ScenarioPanel({
             onClick={() => set("effect", "close")}
             className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
               form.effect === "close"
-                ? "border-red-300 bg-red-50 font-medium text-red-800"
-                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                ? "border-alert/40 bg-alert/10 font-medium text-alert"
+                : "border-line bg-surface text-muted hover:bg-accent-wash/60"
             }`}
           >
             Collapsed
@@ -268,14 +268,14 @@ export default function ScenarioPanel({
             onClick={() => set("effect", "degrade")}
             className={`flex-1 rounded border px-2 py-1.5 text-xs transition ${
               form.effect === "degrade"
-                ? "border-amber-300 bg-amber-50 font-medium text-amber-900"
-                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                ? "border-caution/40 bg-caution/10 font-medium text-caution"
+                : "border-line bg-surface text-muted hover:bg-accent-wash/60"
             }`}
           >
             Flooded
           </button>
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-gray-500">
+        <p className="mt-1 text-[11px] leading-snug text-muted">
           {form.effect === "close"
             ? "Impassable — removed from the network entirely."
             : "Still passable, but slower."}
@@ -283,7 +283,7 @@ export default function ScenarioPanel({
 
         {form.effect === "degrade" && (
           <div className="mt-2">
-            <label className="mb-1 block text-xs font-medium text-gray-700">
+            <label className="mb-1 block text-xs font-medium text-ink">
               How much slower: {form.degradeFactor}x
             </label>
             <input
@@ -303,13 +303,13 @@ export default function ScenarioPanel({
         type="button"
         onClick={onRun}
         disabled={loading}
-        className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+        className="rounded-pill bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-gray-400"
       >
         {loading ? "Running..." : "Run scenario"}
       </button>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-2.5 text-xs leading-snug text-red-800 ring-1 ring-red-200">
+        <div className="rounded bg-alert/10 p-2.5 text-xs leading-snug text-alert ring-1 ring-alert/30">
           <div className="font-semibold">Could not run the scenario</div>
           <div className="mt-0.5">{error}</div>
         </div>
@@ -317,8 +317,8 @@ export default function ScenarioPanel({
 
       {/* ---------------- results ---------------- */}
       {result && tone && (
-        <div className="space-y-3 border-t border-gray-200 pt-3">
-          <div className={`rounded-md p-3 ring-1 ${tone.bg} ${tone.ring}`}>
+        <div className="space-y-3 border-t border-line pt-3">
+          <div className={`rounded p-3 ring-1 ${tone.bg} ${tone.ring}`}>
             <div className={`text-[11px] font-bold uppercase tracking-wide ${tone.text}`}>
               {tone.label}
             </div>
@@ -326,7 +326,7 @@ export default function ScenarioPanel({
           </div>
 
           {!result.delta.severed && result.delta.added_minutes !== undefined && (
-            <div className="grid grid-cols-3 gap-2 rounded-md border border-gray-200 bg-white p-3">
+            <div className="grid grid-cols-3 gap-2 card p-3">
               <Stat
                 label="Added time"
                 value={`${result.delta.added_minutes > 0 ? "+" : ""}${result.delta.added_minutes} min`}
@@ -345,18 +345,18 @@ export default function ScenarioPanel({
           </div>
 
           {result.starting_conditions && (
-            <div className="rounded-md border border-teal-200 bg-teal-50/60 p-3 text-xs">
-              <div className="mb-1 font-semibold text-teal-900">
+            <div className="rounded border border-teal-200 bg-accent/10/60 p-3 text-xs">
+              <div className="mb-1 font-semibold text-accent">
                 Already applied before your scenario
               </div>
               {result.starting_conditions.affected_roads.length === 0 ? (
-                <p className="leading-snug text-teal-900">
+                <p className="leading-snug text-accent">
                   Nothing is currently reported on the network, so this ran on a clean
                   graph anyway.
                 </p>
               ) : (
                 <>
-                  <p className="leading-snug text-teal-900">
+                  <p className="leading-snug text-accent">
                     <b>{result.starting_conditions.closed_count}</b> road
                     {result.starting_conditions.closed_count === 1 ? "" : "s"} closed and{" "}
                     <b>{result.starting_conditions.degraded_count}</b> slowed, from{" "}
@@ -366,7 +366,7 @@ export default function ScenarioPanel({
                   </p>
                   <ul className="mt-1.5 space-y-1">
                     {result.starting_conditions.affected_roads.slice(0, 5).map((r) => (
-                      <li key={`${r.road_id}-${r.effect}`} className="leading-snug text-teal-900">
+                      <li key={`${r.road_id}-${r.effect}`} className="leading-snug text-accent">
                         • Road {r.road_id} —{" "}
                         {r.effect === "closed" ? "closed" : `slowed ${r.travel_time_multiplier}x`}:{" "}
                         {r.reason}
@@ -375,16 +375,16 @@ export default function ScenarioPanel({
                   </ul>
                 </>
               )}
-              <p className="mt-1.5 text-[11px] leading-snug text-teal-800/80">
+              <p className="mt-1.5 text-[11px] leading-snug text-accent/80">
                 Reported conditions, not a forecast. Silence about a road means nobody
                 has reported it, not that it is known to be open.
               </p>
             </div>
           )}
 
-          <div className="rounded-md border border-gray-200 bg-white p-3 text-xs">
-            <div className="mb-1 font-semibold text-gray-700">Why</div>
-            <p className="leading-snug text-gray-600">
+          <div className="card p-3 text-xs">
+            <div className="mb-1 font-semibold text-ink">Why</div>
+            <p className="leading-snug text-muted">
               {result.explanation.roads_closed > 0 && (
                 <>
                   <b>{result.explanation.roads_closed}</b> road
@@ -402,14 +402,14 @@ export default function ScenarioPanel({
                 </>
               )}
             </p>
-            <p className="mt-1.5 text-[11px] leading-snug text-gray-500">
+            <p className="mt-1.5 text-[11px] leading-snug text-muted">
               Only roads on the baseline route can change it. A large count with none on the route
               means the scenario missed.
             </p>
           </div>
 
           {farSnap && (
-            <div className="rounded-md bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-900 ring-1 ring-amber-200">
+            <div className="rounded bg-caution/10 p-2.5 text-[11px] leading-snug text-caution ring-1 ring-caution/30">
               An endpoint snapped more than 2 km to the nearest junction, so this result should not
               be trusted. Check the place coordinates.
             </div>
@@ -419,16 +419,16 @@ export default function ScenarioPanel({
             <button
               type="button"
               onClick={() => setShowCaveats((v) => !v)}
-              className="text-[11px] font-medium text-teal-700 underline underline-offset-2"
+              className="text-[11px] font-medium text-accent underline underline-offset-2"
             >
               {showCaveats ? "Hide" : "What these numbers do and don't mean"}
             </button>
             {showCaveats && (
-              <div className="mt-1.5 space-y-1.5 rounded-md bg-white p-2.5 text-[11px] leading-snug text-gray-600 ring-1 ring-gray-200">
+              <div className="mt-1.5 space-y-1.5 rounded-lg border border-line bg-surface p-3 text-micro leading-snug text-muted">
                 <p>{result.caveats.travel_time}</p>
                 <p>{result.caveats.snapping}</p>
                 <p>{result.caveats.not_a_logistics_plan}</p>
-                <p className="text-gray-500">
+                <p className="text-muted">
                   Snapped {result.origin.snapped_km_away} km (origin) and{" "}
                   {result.destination.snapped_km_away} km (destination).
                 </p>

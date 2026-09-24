@@ -15,13 +15,13 @@ export default function RecommendationList() {
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load records"));
   }, []);
 
-  if (error) return <p className="p-4 text-sm text-red-700">{error}</p>;
-  if (!items) return <p className="p-4 text-sm text-gray-500">Loading…</p>;
+  if (error) return <p className="p-4 text-sm text-alert">{error}</p>;
+  if (!items) return <p className="p-4 text-sm text-muted">Loading…</p>;
   if (items.length === 0) {
     return (
-      <p className="p-4 text-sm text-gray-600">
+      <p className="p-4 text-sm text-muted">
         No saved plans yet. Tick &ldquo;Save this plan as a record&rdquo; on the{" "}
-        <Link href="/logistics" className="text-teal-700 underline underline-offset-2">
+        <Link href="/logistics" className="text-accent underline-grow">
           supply planning
         </Link>{" "}
         screen.
@@ -29,10 +29,10 @@ export default function RecommendationList() {
     );
   }
   return (
-    <div className="overflow-x-auto p-4">
-      <table className="w-full text-sm">
+    <div className="m-6 card overflow-hidden">
+      <table className="w-full text-ui">
         <thead>
-          <tr className="text-left text-xs text-gray-500">
+          <tr className="border-b border-line text-left font-mono text-micro uppercase tracking-[0.12em] text-muted [&>th]:px-4 [&>th]:py-3">
             <th className="font-normal">Plan</th>
             <th className="font-normal">Report day</th>
             <th className="font-normal">People</th>
@@ -43,12 +43,12 @@ export default function RecommendationList() {
         </thead>
         <tbody>
           {items.map((r) => (
-            <tr key={r.id} className="border-t border-gray-100">
-              <td className="py-1.5">
-                <Link href={`/recommendations/${r.id}`} className="text-teal-700 underline underline-offset-2">
+            <tr key={r.id} className="border-t border-line transition-colors hover:bg-accent-wash/40 [&>td]:px-4 [&>td]:py-3">
+              <td>
+                <Link href={`/recommendations/${r.id}`} className="text-accent underline-grow">
                   {r.label || r.id.slice(0, 8)}
                 </Link>
-                {r.example_inputs && <span className="ml-2 text-xs text-amber-700">example stock</span>}
+                {r.example_inputs && <span className="ml-2 text-xs text-caution">example stock</span>}
               </td>
               <td>
                 {r.data_as_of}
@@ -57,7 +57,7 @@ export default function RecommendationList() {
               <td className="tabular-nums">{r.people_to_supply?.toLocaleString() ?? "—"}</td>
               <td className="tabular-nums">{r.coverage == null ? "—" : `${Math.round(r.coverage * 100)}%`}</td>
               <td className="tabular-nums">{r.override_count ?? 0}</td>
-              <td className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString()}</td>
+              <td className="text-xs text-muted">{new Date(r.created_at).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

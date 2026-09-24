@@ -13,7 +13,7 @@ frozen at training time.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -197,6 +197,88 @@ def model_status(db: Session = Depends(get_db)):
             "check": _exposure_check(db),
         },
         "caveats": CAVEATS,
+    }
+
+
+MAX_HISTORY_DAYS = 60
+
+
+@router.get("/history")
+def forecast_history(
+    days: int = Query(30, ge=1, le=MAX_HISTORY_DAYS),
+    horizon_days: int = Query(1, ge=1, le=3),
+    corridor_only: bool = Query(True),
+    db: Session = Depends(get_db),
+):
+    """Stored forecasts day by day, for replaying how a flood developed.
+
+    WHAT THIS IS FOR
+    The map shows the latest forecast. This is what lets a reader drag back
+    through the record and watch a district go from quiet to affected -- and
+    see what the model said the day before it happened.
+
+    IT IS THE STORED RECORD, NOT A RECOMPUTATION
+    Every row is what was actually forecast and served on that day, with the
+    model version that produced it. Re-running today's model over past days
+    would produce prettier history and mean nothing: the model would be
+    scoring days it was trained on.
+
+    Each day carries the outcome once the target day's report exists, so the
+    replay can show where the forecast was right and where it was not.
+    """
+    since = date.today() - timedelta(days=days)
+    rows = db.execute(
+        select(DistrictFloodForecast)
+        .where(
+            shadow.served_only(),
+            DistrictFloodForecast.horizon_days == horizon_days,
+            DistrictFloodForecast.as_of_date >= since,
+            *([DistrictFloodForecast.in_corridor.is_(True)] if corridor_only else []),
+        )
+        .order_by(DistrictFloodForecast.as_of_date, DistrictFloodForecast.district_key)
+    ).scalars().all()
+
+    history = load_history(db)
+
+    # A day scored more than once (a retrain, a re-run) keeps its newest row.
+    newest: dict[tuple[date, str], DistrictFloodForecast] = {}
+    for r in rows:
+        key = (r.as_of_date, r.district_key)
+        if key not in newest or r.created_at > newest[key].created_at:
+            newest[key] = r
+
+    by_day: dict[date, list[dict]] = {}
+    for (as_of, district), r in sorted(newest.items()):
+        outcome = history.state(r.district_key, r.target_date)
+        by_day.setdefault(as_of, []).append(
+            {
+                "district": r.display_name or r.district_key,
+                "district_key": r.district_key,
+                "probability": r.probability,
+                "persistence_probability": r.persistence_probability,
+                "affected_on_as_of": r.affected_on_as_of,
+                # None when that day has no published report yet: unknown,
+                # never quietly "it did not flood".
+                "affected_on_target": None if outcome is None else bool(outcome.affected),
+                "model_kind": r.model_kind,
+            }
+        )
+
+    return {
+        "horizon_days": horizon_days,
+        "days": [
+            {
+                "as_of": day.isoformat(),
+                "target_date": (day + timedelta(days=horizon_days)).isoformat(),
+                "districts": items,
+            }
+            for day, items in sorted(by_day.items())
+        ],
+        "caveat": CAVEATS["what_is_predicted"],
+        "note": (
+            "Each entry is the forecast as it was served that morning, not a "
+            "recomputation with today's model."
+        ),
     }
 
 

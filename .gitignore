@@ -63,3 +63,4 @@ apps/web/next-env.d.ts
 
 # Generated handbook -- rebuild from the script rather than committing a binary
 docs/*.pdf
+.claude/

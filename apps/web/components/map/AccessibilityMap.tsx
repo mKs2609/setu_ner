@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE, RAMP } from "@/lib/basemap";
 import { fetchRoadsGeoJSON, KNOWN_DISTRICTS, type RoadsGeoJSON } from "@/lib/api";
 
 const INITIAL_CENTER: [number, number] = [92.7, 24.9];
@@ -25,8 +27,8 @@ function colorExpression(metric: AccessibilityMetric): maplibregl.ExpressionSpec
   return [
     "case",
     ["==", ["get", metric], null as unknown as maplibregl.ExpressionInputType],
-    "#999999",
-    ["interpolate", ["linear"], ["get", metric], 0, "#c62828", 0.5, "#f9d423", 1, "#2e7d32"],
+    RAMP.unknown,
+    ["interpolate", ["linear"], ["get", metric], 0, RAMP.cutOff, 0.5, RAMP.degraded, 1, RAMP.clear],
   ];
 }
 
@@ -59,7 +61,8 @@ export default function AccessibilityMap({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      style: BASEMAP_STYLE,
+      attributionControl: { compact: true, customAttribution: BASEMAP_ATTRIBUTION },
       center: INITIAL_CENTER,
       zoom: INITIAL_ZOOM,
     });
@@ -165,12 +168,12 @@ export default function AccessibilityMap({
 
   return (
     <div className="relative w-full h-full">
-      <div className="absolute top-3 left-3 z-10 bg-white rounded-md shadow-md p-3 text-sm space-y-2 max-w-xs">
-        <label className="block font-medium text-gray-700">District</label>
+      <div className="absolute top-3 left-3 z-10 bg-surface rounded shadow-md p-3 text-sm space-y-2 max-w-xs">
+        <label className="block font-medium text-ink">District</label>
         <select
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
-          className="border border-gray-300 rounded px-2 py-1 w-full"
+          className="border border-line rounded px-2 py-1 w-full"
         >
           {KNOWN_DISTRICTS.map((d) => (
             <option key={d} value={d}>
@@ -179,11 +182,11 @@ export default function AccessibilityMap({
           ))}
         </select>
 
-        <label className="block font-medium text-gray-700">Colour roads by</label>
+        <label className="block font-medium text-ink">Colour roads by</label>
         <select
           value={metric}
           onChange={(e) => setMetric(e.target.value as AccessibilityMetric)}
-          className="border border-gray-300 rounded px-2 py-1 w-full"
+          className="border border-line rounded px-2 py-1 w-full"
         >
           {(Object.keys(METRIC_LABELS) as AccessibilityMetric[]).map((m) => (
             <option key={m} value={m}>
@@ -192,20 +195,20 @@ export default function AccessibilityMap({
           ))}
         </select>
 
-        {loading && <p className="text-gray-500">Loading roads…</p>}
+        {loading && <p className="text-muted">Loading roads…</p>}
         {error && (
-          <p className="text-red-600">
+          <p className="text-alert">
             Couldn&apos;t reach the API ({error}). Is the backend running on port 8000?
           </p>
         )}
         {meta && !loading && !error && (
-          <p className="text-gray-600">
+          <p className="text-muted">
             {meta.count} road{meta.count === 1 ? "" : "s"} shown
             {meta.truncated ? " (capped — see note below)" : ""}
           </p>
         )}
-        {meta?.note && <p className="text-amber-700 text-xs">{meta.note}</p>}
-        <p className="text-xs text-gray-500">Red = worst, green = best, gray = not scored.</p>
+        {meta?.note && <p className="text-caution text-xs">{meta.note}</p>}
+        <p className="text-xs text-muted">Red = worst, green = best, gray = not scored.</p>
       </div>
 
       <div ref={mapContainerRef} className="w-full h-full" />

@@ -26,6 +26,7 @@ import {
   type ShadowTest,
 } from "@/lib/api";
 import ForecastWhy from "@/components/explain/ForecastWhy";
+import ForecastReplay from "@/components/model/ForecastReplay";
 
 function pct(p: number | null | undefined): string {
   return p == null ? "—" : `${Math.round(p * 100)}%`;
@@ -42,8 +43,8 @@ function skill(v: number | null | undefined): string {
 
 function MetricRow({ label, m }: { label: string; m: MetricScore | undefined }) {
   return (
-    <tr className="border-t border-gray-100">
-      <td className="py-1 pr-2 text-gray-700">{label}</td>
+    <tr className="border-t border-line">
+      <td className="py-1 pr-2 text-ink">{label}</td>
       <td className="py-1 pr-2 text-right tabular-nums">{num(m?.brier, 4)}</td>
       <td className="py-1 text-right tabular-nums">{num(m?.roc_auc)}</td>
     </tr>
@@ -53,27 +54,27 @@ function MetricRow({ label, m }: { label: string; m: MetricScore | undefined }) 
 function ArtifactCard({ a }: { a: ModelArtifact }) {
   const tm = a.test_metrics;
   return (
-    <div className="rounded border border-gray-200 p-3">
+    <div className="card p-4">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-medium">{a.horizon_days}-day horizon</h3>
         <span
           className={`rounded px-1.5 py-0.5 text-xs ${
-            a.served_kind === "logistic" ? "bg-teal-50 text-teal-800" : "bg-amber-50 text-amber-800"
+            a.served_kind === "logistic" ? "bg-accent-wash text-accent" : "bg-caution/10 text-caution"
           }`}
         >
           serving: {a.served_kind}
         </span>
       </div>
-      <p className="mt-1 text-xs text-gray-600">{a.verdict.summary}</p>
+      <p className="mt-1 text-xs text-muted">{a.verdict.summary}</p>
       {a.test_period && (
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted">
           Held-out season {a.test_period.from} → {a.test_period.to}, {a.test_period.examples}{" "}
           district-days. Trained on {a.train_period?.from} → {a.train_period?.to}.
         </p>
       )}
       <table className="mt-2 w-full text-xs">
         <thead>
-          <tr className="text-gray-500">
+          <tr className="text-muted">
             <th className="text-left font-normal">Test season</th>
             <th className="text-right font-normal">Brier ↓</th>
             <th className="text-right font-normal">AUC ↑</th>
@@ -85,7 +86,7 @@ function ArtifactCard({ a }: { a: ModelArtifact }) {
           <MetricRow label="Persistence" m={tm.persistence?.all} />
           <MetricRow label="Climatology" m={tm.climatology?.all} />
           <tr>
-            <td colSpan={3} className="pt-2 text-gray-500">
+            <td colSpan={3} className="pt-2 text-muted">
               Onset only (not affected today)
             </td>
           </tr>
@@ -93,7 +94,7 @@ function ArtifactCard({ a }: { a: ModelArtifact }) {
           <MetricRow label="Persistence" m={tm.persistence?.onset} />
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-gray-600">
+      <p className="mt-2 text-xs text-muted">
         Logistic skill vs persistence on test: {skill(a.verdict.logistic_test_skill_vs_persistence)}
       </p>
     </div>
@@ -117,13 +118,13 @@ function ShadowSection({ tests }: { tests: Record<string, ShadowTest> }) {
   return (
     <section>
       <h2 className="font-semibold">Shadow test: rainfall model</h2>
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-muted">
         A model that also uses daily rainfall runs every day beside the served one but is not
         shown on the map. It did better on the 2026 test season, but not on the data the model
         is chosen with, so it has to prove itself on days neither model has seen. The rule was
         fixed before the first graded day.
       </p>
-      <ul className="mt-2 space-y-1 text-xs text-gray-700">
+      <ul className="mt-2 space-y-1 text-xs text-ink">
         {active.map(([h, t]) => (
           <li key={h}>
             <span className="font-medium">{h}-day:</span>{" "}
@@ -132,11 +133,11 @@ function ShadowSection({ tests }: { tests: Record<string, ShadowTest> }) {
             {t.brier &&
               `Brier ${num(t.brier.challenger, 4)} with rain vs ${num(t.brier.served, 4)} served. `}
             {DECISION_TEXT[t.decision ?? "undecided"]}{" "}
-            <span className="text-gray-500">({t.reason})</span>
+            <span className="text-muted">({t.reason})</span>
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-[11px] text-gray-500">
+      <p className="mt-1 text-[11px] text-muted">
         Graded from reports dated {active[0][1].frozen_on} onward. Nothing is promoted
         automatically.
       </p>
@@ -161,13 +162,13 @@ export default function ModelPanel() {
 
   if (error) {
     return (
-      <p className="p-4 text-sm text-red-600">
+      <p className="p-4 text-sm text-alert">
         Couldn&apos;t reach the API ({error}). Is the backend running on port 8000?
       </p>
     );
   }
   if (!status || !forecasts) {
-    return <p className="p-4 text-sm text-gray-500">Loading model…</p>;
+    return <p className="p-4 text-sm text-muted">Loading model…</p>;
   }
 
   const artifacts = Object.values(status.artifacts).filter(Boolean) as ModelArtifact[];
@@ -177,38 +178,38 @@ export default function ModelPanel() {
       <section>
         <h2 className="font-semibold">District flood-state forecast</h2>
         {forecasts.as_of ? (
-          <p className={`text-xs ${forecasts.stale ? "text-red-700" : "text-gray-600"}`}>
+          <p className={`text-xs ${forecasts.stale ? "text-alert" : "text-muted"}`}>
             From the DRIMS report of {forecasts.as_of}
             {forecasts.stale
               ? ` — ${forecasts.age_days} days old. Stale: do not read as current.`
               : ` (${forecasts.age_days} day${forecasts.age_days === 1 ? "" : "s"} ago).`}
           </p>
         ) : (
-          <p className="text-xs text-amber-700">No forecasts stored yet. Run the scoring job.</p>
+          <p className="text-xs text-caution">No forecasts stored yet. Run the scoring job.</p>
         )}
         <div className="mt-2 grid grid-cols-1 gap-2">
           {forecasts.districts.map((d) => {
             const h1 = d.forecasts.find((f) => f.horizon_days === 1);
             const h3 = d.forecasts.find((f) => f.horizon_days === 3);
             return (
-              <div key={d.district} className="rounded border border-gray-200 p-2">
+              <div key={d.district} className="card p-3">
                 <div className="flex items-baseline justify-between">
                   <span className="font-medium">{d.district}</span>
-                  <span className={`text-xs ${d.affected_on_as_of ? "text-red-700" : "text-gray-500"}`}>
+                  <span className={`text-xs ${d.affected_on_as_of ? "text-alert" : "text-muted"}`}>
                     {d.affected_on_as_of ? "affected today" : "not listed today"}
                   </span>
                 </div>
                 <p className="mt-1 tabular-nums">
                   Tomorrow <strong>{pct(h1?.probability)}</strong>
-                  <span className="text-xs text-gray-500"> (persistence {pct(h1?.persistence_probability)})</span>
+                  <span className="text-xs text-muted"> (persistence {pct(h1?.persistence_probability)})</span>
                 </p>
                 <p className="tabular-nums">
                   In 3 days <strong>{pct(h3?.probability)}</strong>
-                  <span className="text-xs text-gray-500"> (persistence {pct(h3?.persistence_probability)})</span>
+                  <span className="text-xs text-muted"> (persistence {pct(h3?.persistence_probability)})</span>
                 </p>
                 <button
                   onClick={() => setWhy(why === d.district ? null : d.district)}
-                  className="mt-1 text-xs text-teal-700 underline underline-offset-2"
+                  className="mt-1 text-xs text-accent underline underline-offset-2"
                 >
                   {why === d.district ? "Hide why" : "Why?"}
                 </button>
@@ -217,12 +218,12 @@ export default function ModelPanel() {
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-gray-500">{status.caveats.what_is_predicted}</p>
+        <p className="mt-2 text-xs text-muted">{status.caveats.what_is_predicted}</p>
       </section>
 
       <section>
         <h2 className="font-semibold">How good is it?</h2>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted">
           Built from {status.data.published_report_days} daily reports across{" "}
           {status.data.districts_seen} Assam districts ({status.data.first_report} →{" "}
           {status.data.latest_report}). Every score is shown next to the baselines it has to beat.
@@ -231,10 +232,10 @@ export default function ModelPanel() {
           {artifacts.length ? (
             artifacts.map((a) => <ArtifactCard key={a.version} a={a} />)
           ) : (
-            <p className="text-xs text-amber-700">No trained model yet.</p>
+            <p className="text-xs text-caution">No trained model yet.</p>
           )}
         </div>
-        <p className="mt-2 text-xs text-gray-600">
+        <p className="mt-2 text-xs text-muted">
           Live track record:{" "}
           {Object.entries(status.live_track_record)
             .map(([h, r]) =>
@@ -246,18 +247,22 @@ export default function ModelPanel() {
         </p>
       </section>
 
+      <section>
+        <ForecastReplay />
+      </section>
+
       {status.shadow_test && <ShadowSection tests={status.shadow_test} />}
 
       <section>
         <h2 className="font-semibold">Per-road values</h2>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted">
           accessibility = 1 − P(district affected tomorrow) × terrain exposure.
         </p>
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-muted">
           Exposure prior (not fitted): {status.exposure_prior.formula}.
         </p>
-        <p className="mt-1 text-xs text-gray-600">Click any road on the map to see why it has its value.</p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted">Click any road on the map to see why it has its value.</p>
+        <p className="mt-1 text-xs text-muted">
           {status.exposure_prior.check.matched_damage_reports} DRIMS damage reports matched to corridor
           roads. {status.exposure_prior.check.note}
         </p>
@@ -265,7 +270,7 @@ export default function ModelPanel() {
 
       <section>
         <h2 className="font-semibold">Caveats</h2>
-        <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-gray-600">
+        <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted">
           {Object.entries(status.caveats)
             .filter(([k]) => k !== "what_is_predicted")
             .map(([k, v]) => (

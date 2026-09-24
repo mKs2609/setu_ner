@@ -17,6 +17,8 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE } from "@/lib/basemap";
+
 import type { ScenarioResult } from "@/lib/api";
 
 const FALLBACK_CENTER: [number, number] = [92.8, 24.95];
@@ -49,7 +51,8 @@ export default function ScenarioMap({ result }: { result: ScenarioResult | null 
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      style: BASEMAP_STYLE,
+      attributionControl: { compact: true, customAttribution: BASEMAP_ATTRIBUTION },
       center: FALLBACK_CENTER,
       zoom: FALLBACK_ZOOM,
     });
@@ -136,23 +139,23 @@ export default function ScenarioMap({ result }: { result: ScenarioResult | null 
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute bottom-4 left-4 rounded-md bg-white/95 px-3 py-2 text-xs shadow-md ring-1 ring-gray-200">
-        <div className="mb-1 font-semibold text-gray-700">Routes</div>
+      <div className="pointer-events-none absolute bottom-4 left-4 card px-4 py-3 text-caption">
+        <div className="mb-1 font-semibold text-ink">Routes</div>
         <div className="flex items-center gap-2">
           <span className="inline-block h-1 w-6 rounded" style={{ background: "#1d4ed8", opacity: 0.55 }} />
-          <span className="text-gray-600">Baseline (nothing closed)</span>
+          <span className="text-muted">Baseline (nothing closed)</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span
             className="inline-block h-1 w-6 rounded"
             style={{ background: "repeating-linear-gradient(90deg,#d97706 0 5px,transparent 5px 8px)" }}
           />
-          <span className="text-gray-600">
+          <span className="text-muted">
             {result?.delta.severed ? "Scenario — no route exists" : "Scenario route"}
           </span>
         </div>
         {result && !result.delta.severed && !result.delta.detour_taken && (
-          <div className="mt-1.5 max-w-[15rem] text-[11px] leading-snug text-gray-500">
+          <div className="mt-1.5 max-w-[15rem] text-[11px] leading-snug text-muted">
             The two routes are identical here, so only one line is visible.
           </div>
         )}
@@ -160,7 +163,7 @@ export default function ScenarioMap({ result }: { result: ScenarioResult | null 
 
       {!result && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="rounded-md bg-white/90 px-4 py-2 text-sm text-gray-600 shadow ring-1 ring-gray-200">
+          <p className="card-pill px-4 py-2 text-caption text-muted">
             Pick a scenario on the left and run it to see the routes.
           </p>
         </div>

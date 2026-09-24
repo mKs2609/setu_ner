@@ -26,9 +26,9 @@ export default function OperatorAccess({ compact = false }: { compact?: boolean 
 
   if (hasToken) {
     return (
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-muted">
         Operator token set for this tab.{" "}
-        <button onClick={() => setOperatorToken(null)} className="text-teal-700 underline underline-offset-2">
+        <button onClick={() => setOperatorToken(null)} className="text-accent underline-grow">
           Forget it
         </button>
       </p>
@@ -37,9 +37,9 @@ export default function OperatorAccess({ compact = false }: { compact?: boolean 
 
   if (compact && !open) {
     return (
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-muted">
         Deployed sites need an operator token for this.{" "}
-        <button onClick={() => setOpen(true)} className="text-teal-700 underline underline-offset-2">
+        <button onClick={() => setOpen(true)} className="text-accent underline-grow">
           Enter token
         </button>
       </p>
@@ -64,9 +64,9 @@ export default function OperatorAccess({ compact = false }: { compact?: boolean 
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder="Operator token"
-        className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-1 text-xs"
+        className="min-w-0 flex-1 rounded-pill border border-line bg-surface px-3 py-1.5 text-xs"
       />
-      <button type="submit" className="rounded bg-gray-800 px-2 py-1 text-xs text-white">
+      <button type="submit" className="rounded bg-canvas px-2 py-1 text-xs text-white">
         Use
       </button>
     </form>

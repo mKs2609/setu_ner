@@ -13,21 +13,21 @@ export default function AccessibilityPage() {
   // md up, stacked and scrolling below that.
   return (
     <main className="flex min-h-screen w-full flex-col md:h-screen md:overflow-hidden">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-gray-200 px-4 py-3">
+      <header className="wash flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-b border-line px-6 py-5">
         <div>
-          <h1 className="text-xl font-semibold">SetuNER — Accessibility model</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-[28px] font-extralight leading-tight tracking-[-0.02em]">Accessibility model</h1>
+          <p className="mt-1 text-caption text-muted">
             A forecast, with its evaluation and its limits on the same screen.
           </p>
         </div>
-        <nav className="flex gap-4 text-sm">
-          <Link href="/dashboard" className="text-teal-700 underline underline-offset-2">
+        <nav className="flex gap-5 text-caption">
+          <Link href="/dashboard" className="text-accent underline-grow">
             Baseline map
           </Link>
-          <Link href="/scenarios" className="text-teal-700 underline underline-offset-2">
+          <Link href="/scenarios" className="text-accent underline-grow">
             Scenarios
           </Link>
-          <Link href="/logistics" className="text-teal-700 underline underline-offset-2">
+          <Link href="/logistics" className="text-accent underline-grow">
             Supply planning
           </Link>
         </nav>

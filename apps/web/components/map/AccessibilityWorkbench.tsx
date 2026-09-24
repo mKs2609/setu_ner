@@ -16,7 +16,7 @@ export default function AccessibilityWorkbench() {
 
   return (
     <div className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
-      <aside className="w-full border-gray-200 md:w-[28rem] md:overflow-y-auto md:border-r">
+      <aside className="w-full border-line md:w-[28rem] md:overflow-y-auto md:border-r">
         <ModelPanel />
       </aside>
       <div className="relative h-[60vh] flex-1 md:h-auto">

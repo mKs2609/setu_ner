@@ -1,3 +1,259 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Near-monochrome light system with a single violet running through it.
+ *
+ * The canvas is a barely-tinted off-white; white cards sit on top of it and
+ * near-black does the structural work. Violet marks what needs attention and
+ * nothing else -- it never becomes a decorative wash. Headlines are
+ * whisper-thin against interface text at weight 500, and that contrast is
+ * the typographic idea rather than size alone.
+ *
+ * Numbers stay in JetBrains Mono. A console of probabilities and timestamps
+ * that reflows as digits change is worse than one that does not, and
+ * tabular figures are what stop it.
+ */
+
+:root {
+  --canvas: #fbfaff;
+  --surface: #ffffff;
+  --ink: #100f12;
+  --muted: #6f6b7a;
+  --line: #e7e3f0;
+  --accent: #8d6fde;
+  --accent-deep: #6f4fc9;
+  --accent-wash: #ebe5ff;
+  --accent-mist: #d9cffa;
+
+  /* Functional, not decorative: a flood map has to say three things. */
+  --ok: #2f7d5d;
+  --caution: #b06a15;
+  --alert: #c03a3a;
+}
+
+html {
+  color-scheme: light;
+}
+
+/*
+ * The canvas is a dawn sky: cool blue overhead, warming to peach at the
+ * horizon, painted in CSS rather than photographed. It is fixed, so content
+ * scrolls through the light instead of dragging it along.
+ *
+ * WHY IT IS THIS FAINT
+ * Every colour here is heavily desaturated and sits under white cards. The
+ * atmosphere belongs to the page; the data belongs to the cards, and a
+ * reading of 2.0% must never sit on a coloured wash that changes how it
+ * looks. If a value is hard to read, the background is wrong, not the value.
+ */
+:root {
+  --sky-high: #a9c8e8;   /* cool blue, top of the page */
+  --sky-mid: #eef0f7;    /* the band the content sits in */
+  --sky-low: #f6cfa8;    /* warm peach, horizon */
+}
+
+body {
+  background-color: var(--canvas);
+  background-image:
+    /* the violet the accent belongs to, kept as a top-corner glow */
+    radial-gradient(52rem 34rem at 88% 0%, rgba(141, 111, 222, 0.26), transparent 62%),
+    /* a soft break in the sky, standing in for cloud without a photograph */
+    radial-gradient(64rem 28rem at 16% 72%, rgba(255, 255, 255, 0.7), transparent 70%),
+    linear-gradient(180deg, var(--sky-high) 0%, var(--sky-mid) 42%, var(--sky-mid) 58%, var(--sky-low) 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Cards are frosted glass, not white paint.
+ *
+ * A solid white card on a coloured sky reads as a sticker. These let the sky
+ * through and blur it, so the card belongs to the page -- but the blur is
+ * what keeps the text legible, because the background behind any given card
+ * is then flat rather than a gradient running under the digits.
+ *
+ * The fallback matters: Firefox users with backdrop-filter disabled get a
+ * near-opaque surface instead of unreadable text on a gradient.
+ */
+.card {
+  background-color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 17px;
+  box-shadow:
+    0 1px 2px rgba(16, 15, 18, 0.04),
+    0 20px 48px -34px rgba(40, 30, 90, 0.45);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .card {
+    background-color: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    backdrop-filter: blur(18px) saturate(1.3);
+  }
+}
+
+/* The same glass, shaped as a pill: status strips and floating controls.
+   Written out rather than composed: `composes` is a CSS-Modules feature and
+   does nothing in a plain stylesheet. */
+.card-pill {
+  background-color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 9999px;
+  box-shadow:
+    0 1px 2px rgba(16, 15, 18, 0.04),
+    0 20px 48px -34px rgba(40, 30, 90, 0.45);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .card-pill {
+    background-color: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    backdrop-filter: blur(18px) saturate(1.3);
+  }
+}
+
+/*
+ * A hairline that fades at both ends. A full-width rule across a light page
+ * looks like a table border; this reads as a seam.
+ */
+.rule-soft {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent);
+}
+
+/*
+ * Cards lift slightly toward the pointer. The movement is small on purpose:
+ * this is an instrument panel, and a card that leaps is a card that distracts.
+ */
+.lift {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.lift:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-mist);
+  box-shadow: 0 1px 2px rgba(16, 15, 18, 0.04), 0 18px 40px -28px rgba(80, 55, 160, 0.45);
+}
+
+/* Links that draw their underline on hover rather than carrying it always. */
+.underline-grow {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 240ms ease;
+}
+
+.underline-grow:hover {
+  background-size: 100% 1px;
+}
+
+/* A violet wash behind a section that should feel like a held breath. */
+.wash {
+  background-image: radial-gradient(44rem 22rem at 50% 0%, rgba(255, 255, 255, 0.55), transparent 74%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lift,
+  .underline-grow {
+    transition: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+* {
+  scrollbar-color: var(--accent-mist) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-mist);
+  border-radius: 9999px;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.live-dot {
+  animation: pulse-dot 2.4s ease-in-out infinite;
+}
+
+@keyframes flash-in {
+  from { background-color: var(--accent-wash); }
+  to { background-color: transparent; }
+}
+
+.flash-in {
+  animation: flash-in 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .flash-in {
+    animation: none;
+  }
+}
+
+/* MapLibre's chrome, brought into the system. */
+.maplibregl-ctrl-group {
+  background: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(16, 15, 18, 0.06) !important;
+  overflow: hidden;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line) !important;
+}
+
+.maplibregl-popup-content {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px -16px rgba(16, 15, 18, 0.35) !important;
+  font-family: var(--font-jetbrains-mono), monospace !important;
+  font-size: 12px !important;
+  padding: 10px 12px !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--line) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: var(--muted) !important;
+  font-family: var(--font-jetbrains-mono), monospace !important;
+  font-size: 10px !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--muted) !important;
+}
