@@ -1,5 +1,5 @@
 """
-Phase 2: first-pass hazard context per road edge, via district spatial join.
+First-pass hazard context per road edge, via district spatial join.
 
 Takes the road graph (edges.geojson) and district boundaries
 (districts.geojson, now 6 districts -- see fetch_district_boundaries.py),
@@ -143,7 +143,7 @@ def main():
             continue
         severity = group["hist_flood_severity_2025"].iloc[0]
         if severity is not None and severity == severity:  # NaN-safe: NaN != NaN
-        
+
             print(f"  {district:20s}: {len(group):6d} edges, severity {severity:.2f} "
                   f"({severity*100:.0f}% of villages affected in 2025)")
         else:

@@ -8,7 +8,7 @@ WHY THIS EXISTS
 The DRIMS PDF wraps long table cells mid-word, so a report can print
 "Cacha r", "Hailakand i" or "Sribhu mi". Until districts.py compared letters
 only, those rows were stored with `district = NULL` -- invisible to
-corroboration, to current-conditions routing, and to the Phase 3 labels,
+corroboration, to current-conditions routing, and to the model labels,
 which would have counted a flooded Cachar day as a dry one. Found while
 building the model (docs/decisions/0010).
 

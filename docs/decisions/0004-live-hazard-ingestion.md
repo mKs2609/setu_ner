@@ -1,4 +1,4 @@
-# 0004 — Live Hazard Ingestion (Phase 2)
+# 0004 — Live Hazard Ingestion
 
 **Status:** BUILT — fetching, parsing and storing real live data, verified
 end to end on 8 Sep 2026.
@@ -6,8 +6,8 @@ end to end on 8 Sep 2026.
 ## The finding that changed the plan
 
 `0002` committed to ingesting CWC's Daily Flood Situation Report by its
-dated URL pattern, and `geo/river/fetch_cwc_bulletin.py` was written against
-it. **That pattern is dead.**
+dated URL pattern, and a fetcher was written against it. **That pattern is
+dead.**
 
 Checked 8 Sep 2026:
 
@@ -17,8 +17,9 @@ Checked 8 Sep 2026:
   "Name of Publication" table header, and has **no rows at all**.
 
 So the script could never have succeeded on any run since the pattern
-changed. It is kept in the tree with a header saying so, because the
-approach is still right if CWC resumes publishing.
+changed. It was kept in the tree for a while with a header saying so, and
+removed once it was clear CWC had not resumed publishing; this record is the
+remaining account of the approach, which is still the right one if they do.
 
 Worth noting for the record: the docstrings in `geo/river/` say government
 sites are unreachable from the dev sandbox. That is no longer true — cwc.gov.in,

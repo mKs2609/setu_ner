@@ -1,5 +1,5 @@
 """
-Demand estimation and supply planning (Phase 4, docs/decisions/0011).
+Demand estimation and supply planning (docs/decisions/0011).
 
     GET  /api/v1/logistics/supply-days       report days with people to supply
     GET  /api/v1/logistics/demand            demand per revenue circle
@@ -15,14 +15,12 @@ from __future__ import annotations
 
 from datetime import date
 
-import threading
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from app import security
-from app.config import get_settings
 from app.db.session import get_db
 from app.services.explain import audit
 from app.services.explain import plan as plan_explain

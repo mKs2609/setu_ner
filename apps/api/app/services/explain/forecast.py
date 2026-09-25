@@ -2,7 +2,7 @@
 Why the model gave a district the probability it did.
 
 EXACT, NOT APPROXIMATE
-`0001` Tier 2 item 8 asked for explanations "on top of SHAP/feature
+The gap analysis (`0001`) asked for explanations "on top of SHAP/feature
 importance". For a linear model that is unnecessary: logistic regression's
 log-odds are literally a sum, so each feature's contribution is
 

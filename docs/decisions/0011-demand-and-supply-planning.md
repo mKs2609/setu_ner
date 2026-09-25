@@ -1,4 +1,4 @@
-# 0011 — Demand Estimation and Supply Planning (Phase 4)
+# 0011 — Demand Estimation and Supply Planning
 
 **Status:** BUILT. `/logistics` plans water and food runs from depots to
 revenue circles, from real reported demand, on routes aware of the Phase 3

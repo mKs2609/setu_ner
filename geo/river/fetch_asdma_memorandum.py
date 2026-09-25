@@ -1,5 +1,5 @@
 """
-Phase 2: historical flood-impact data from ASDMA's annual Flood Memorandum.
+Historical flood-impact data from ASDMA's annual Flood Memorandum.
 
 The Assam Flood Memorandum is ASDMA's official annual report (submitted
 for central relief-fund purposes) covering district-wise flood impact --

@@ -6,7 +6,7 @@ Serves three things that must never be confused with one another:
   baseline_accessibility   2025 district flood severity x bridge factor, from
                            geo/osm/compute_baseline_accessibility.py. A
                            historical proxy.
-  current_accessibility    Phase 3: 1 - P(district affected tomorrow) x terrain
+  current_accessibility    1 - P(district affected tomorrow) x terrain
                            exposure, from app/services/model/score.py. Returned
                            with its model version, as-of date, staleness and
                            both of its components, never as a bare number.
@@ -80,9 +80,9 @@ def get_accessibility(road_id: int, db: Session = Depends(get_db)):
         "baseline_basis": road.baseline_accessibility_basis,
         "baseline_confidence": road.baseline_accessibility_confidence,
         "note": (
-            "baseline_accessibility is a 2025 historical proxy. `model` is the Phase 3 "
-            "forecast, or null when this road has not been scored (no elevation, or a "
-            "district outside Assam's daily reporting). See /api/v1/model/status for how "
+            "baseline_accessibility is a 2025 historical proxy. `model` is the district "
+            "flood forecast, or null when this road has not been scored (no elevation, "
+            "or a district outside Assam's daily reporting). See /api/v1/model/status for how "
             "good the forecast is."
         ),
         "caveats": {

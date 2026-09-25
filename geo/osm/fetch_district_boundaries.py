@@ -1,11 +1,11 @@
 """
-Phase 2: district boundaries for the Barak Valley corridor.
+District boundaries for the Barak Valley corridor.
 
 Fetches administrative boundary polygons for every district the corridor
 crosses, so road-graph edges can be spatially joined to a district.
 
 Includes East Jaintia Hills and West Jaintia Hills (Meghalaya) alongside
-the original four Assam districts -- the Phase 1 bounding box reaches
+the original four Assam districts -- the road-graph bounding box reaches
 into Meghalaya to capture the NH-6/Sonapur tunnel stretch, and those
 roads had no district match at all until now.
 

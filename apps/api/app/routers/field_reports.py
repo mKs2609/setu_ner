@@ -1,8 +1,7 @@
 """
 Field reports: the crowdsourced ground-truth layer.
 
-This answers the original brief's call for the platform to
-use real-time field inputs, not just satellite and telemetry (see
+Real-time field input, alongside satellite and telemetry (see
 docs/decisions/0001 section 4). Official telemetry across the NER is sparse,
 so human reports are how the data gap actually gets filled.
 
@@ -15,16 +14,16 @@ WHAT THE ENDPOINTS PROMISE
                                fused view of what they collectively say.
 
 WHAT THEY DO NOT DO
-Nothing here writes `roads.current_accessibility`. That column is reserved
-for the Phase 3 model and stays empty. The fused status is published as its
-own field with its own confidence, so a reader can always tell a crowd
-consensus from a model prediction. See services/fusion/reports.py.
+Nothing here writes `roads.current_accessibility`. That column belongs to the
+district flood model alone. The fused status is published as its own field
+with its own confidence, so a reader can always tell a crowd consensus from a
+model prediction. See services/fusion/reports.py.
 """
 
 from datetime import datetime, timezone
 from enum import Enum
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi import APIRouter, Depends, HTTPException, Query
 from geoalchemy2.shape import to_shape
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -248,7 +247,7 @@ def reports_for_road(road_id: int, db: Session = Depends(get_db)):
                 "ground reported in the last "
                 f"{fusion.FUSION_WINDOW_HOURS} hours. It is NOT a model output, "
                 "and it is deliberately not written into current_accessibility, "
-                "which stays empty until the Phase 3 model exists."
+                "which belongs to the district flood model alone."
             ),
             "collusion": (
                 "Peer agreement alone can be manufactured by a group reporting "

@@ -14,7 +14,7 @@ const SOURCE_ID = "roads";
 const LAYER_ID = "roads-line";
 
 // Two different things, never blended on one layer: a 2025 historical proxy,
-// and the Phase 3 forecast. The toggle switches which one colours the roads;
+// and the live forecast. The toggle switches which one colours the roads;
 // the popup always shows both so neither is mistaken for the other.
 export type AccessibilityMetric = "baseline_accessibility" | "current_accessibility";
 

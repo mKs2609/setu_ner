@@ -1,4 +1,4 @@
-# 0012 — Explanations and the Audit Trail (Phase 6)
+# 0012 — Explanations and the Audit Trail
 
 **Status:** BUILT. Every forecast, every road's accessibility and every supply
 plan can now say why it is what it is, in plain sentences tied to the numbers.

@@ -1,5 +1,5 @@
 """
-Tests for the Phase 5 scenario engine.
+Tests for the scenario engine.
 
 Split deliberately in two:
 

@@ -1,5 +1,5 @@
 """
-Phase 5: the what-if / scenario engine.
+The what-if / scenario engine.
 
 WHAT IT ANSWERS
 "If these roads become unusable, what happens to the corridor?" Concretely:
@@ -32,7 +32,7 @@ graph is directed and a genuine one-way closure is a legitimate scenario.
 The bidirectional option closes the reverse twin too, which is what a
 collapsed bridge actually does -- and is the default for that reason.
 
-CAUSAL EXPLANATION (early Phase 6 groundwork)
+CAUSAL EXPLANATION
 The engine reports which of the closed roads actually lay on the baseline
 route. That distinction matters: closing 400 bridges when only 3 of them
 are on the route is the difference between "this scenario caused the
@@ -43,7 +43,7 @@ such an explanation would have to be built from.
 NOT IN SCOPE HERE
 This engine recomputes ROUTES. It does not recompute accessibility scores
 under the scenario, and it does not decide what to ship where -- that is
-Phase 4, which needs population/vulnerability data nobody has sourced yet.
+supply planning, which needs population data nobody has sourced yet.
 Keeping the boundary explicit so this endpoint is not mistaken for a
 logistics plan.
 """
@@ -473,7 +473,7 @@ def simulate(
             ),
             "not_a_logistics_plan": (
                 "This is a routing what-if. It does not estimate demand or "
-                "allocate resources -- that is Phase 4, and it is not built."
+                "allocate resources -- that is supply planning, and it is not built."
             ),
         },
     }

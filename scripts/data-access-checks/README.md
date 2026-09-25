@@ -1,9 +1,8 @@
 # data-access-checks
 
-Throwaway scripts, not production ingestion code. Run these locally (this
-sandbox's own network is restricted and can't reach Indian government
-domains -- both scripts were verified for correctness here but return
-`host_not_allowed`/403 from this environment specifically).
+Diagnostics, not production ingestion code: they probe a government source and
+print what actually came back, so a claim about availability can be checked
+rather than assumed.
 
 ```bash
 pip install requests
@@ -11,6 +10,7 @@ python check_cwc_nwdp_access.py
 python check_asdma_access.py
 ```
 
-Paste the summary output into `docs/decisions/0002-corridor-selection.md`
-once you've run them, and use the decision guide each script prints to
-inform the ingestion design in `docs/decisions/0001` §1.
+`check_cwc_nwdp_access.py` is what found CWC's dated bulletin URLs returning
+404 for every date, which moved live ingestion to DRIMS
+(`docs/decisions/0004`). Re-running it is how you would find out if CWC
+resumed publishing.

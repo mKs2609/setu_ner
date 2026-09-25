@@ -41,7 +41,7 @@ export interface RoadFeatureProperties {
   is_bridge: boolean;
   district: string | null;
   baseline_accessibility: number | null;
-  // Phase 3. Null when unscored; the as-of date travels with the value so a
+  // Null when unscored; the as-of date travels with the value so a
   // stale forecast is never drawn as though it were current.
   current_accessibility?: number | null;
   hazard_exposure?: number | null;
@@ -85,7 +85,7 @@ export async function fetchRoadsGeoJSON(params: FetchRoadsParams = {}): Promise<
 // Meghalaya coverage gap closes and this list needs to grow.
 export const KNOWN_DISTRICTS = ["Cachar", "Hailakandi", "Karimganj", "Dima Hasao"] as const;
 // ---------------------------------------------------------------------------
-// Scenario engine (Phase 5). See docs/decisions/0003-scenario-engine.md.
+// Scenario engine. See docs/decisions/0003-scenario-engine.md.
 //
 // The shapes below mirror the API responses exactly, including the caveat
 // fields. Those are not decoration: travel times are modelled from an assumed
@@ -205,7 +205,7 @@ export async function simulateScenario(body: SimulateRequest): Promise<ScenarioR
 }
 
 // ---------------------------------------------------------------------------
-// Field reports (Phase 2, gap-analysis section 4).
+// Field reports. See docs/decisions/0005-field-report-fusion.md.
 //
 // The reporter id is device-scoped and generated in the browser -- no account,
 // no name, no phone number. People best placed to report a washed-out road are
@@ -339,15 +339,8 @@ export async function fetchRoadReports(roadId: number): Promise<RoadReportView> 
   return res.json();
 }
 
-/** What the live layers currently say about the network, on its own. */
-export async function fetchCurrentConditions(): Promise<StartingConditions> {
-  const res = await fetch(`${API_BASE}/api/v1/scenarios/current-conditions`);
-  if (!res.ok) throw new Error(`Failed to load current conditions: ${res.status}`);
-  return res.json();
-}
-
 // ---------------------------------------------------------------------------
-// Phase 3 accessibility model. See docs/decisions/0010-accessibility-model.md.
+// The accessibility model. See docs/decisions/0010-accessibility-model.md.
 //
 // Every metric arrives next to the persistence baseline it has to beat, and
 // the UI is expected to show both: a probability with no reference point
@@ -584,7 +577,7 @@ export async function fetchDistrictForecasts(): Promise<DistrictForecasts> {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4: demand and supply planning. See docs/decisions/0011.
+// Demand and supply planning. See docs/decisions/0011.
 //
 // Stock and fleet are operator inputs the system cannot know. The API echoes
 // `example_inputs` so a plan built on the example figures says so on screen.
@@ -779,7 +772,7 @@ export async function requestPlan(body: PlanRequest): Promise<PlanResponse> {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 6: explanations and the audit trail. See docs/decisions/0012.
+// Explanations and the audit trail. See docs/decisions/0012.
 //
 // Every explanation is filled in from the figures it explains; statements
 // carry their evidence so the UI can show the numbers behind a sentence.
@@ -926,7 +919,7 @@ export async function fetchOverrides(id: string): Promise<OverrideRecord[]> {
 const OPERATOR_KEY = "setuner.operator_id";
 
 /** Opaque, device-scoped operator id, same approach as the reporter id. */
-export function getOperatorId(): string {
+function getOperatorId(): string {
   if (typeof window === "undefined") return "server";
   try {
     const existing = window.localStorage.getItem(OPERATOR_KEY);

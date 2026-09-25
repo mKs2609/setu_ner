@@ -1,4 +1,4 @@
-# 0010 — The Accessibility Model (Phase 3)
+# 0010 — The Accessibility Model
 
 **Status:** BUILT, and honest about what won. `current_accessibility` is
 populated for the first time: 71,520 corridor roads, every value carrying a

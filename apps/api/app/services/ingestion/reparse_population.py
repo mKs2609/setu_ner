@@ -9,7 +9,7 @@ The population section used to be read by column index. pdfplumber inserts
 empty cells that shift columns on some rows, so 31 of 613 stored
 `population_affected` values were a component count rather than the total --
 Nagaon recorded as 2,534 people instead of 13,463. Found while building
-Phase 4 demand estimation (docs/decisions/0011), where the figure is the
+demand estimation (docs/decisions/0011), where the figure is the
 quantity being planned for.
 
 HOW

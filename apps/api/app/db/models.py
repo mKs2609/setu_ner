@@ -7,7 +7,7 @@ exactly what build_road_graph.py, assign_district_hazard_context.py, and
 compute_baseline_accessibility.py actually output today.
 
 current_accessibility, predicted_accessibility, hazard_exposure, and
-confidence are for live/forecast data, written only by the Phase 3 scoring
+confidence are for live/forecast data, written only by the daily scoring
 job (docs/decisions/0010) and always with a model version and as-of date --
 genuinely different from the historical baseline columns
 here. Keeping them separate columns, not overloading baseline_accessibility
@@ -75,7 +75,7 @@ class Road(Base):
     baseline_accessibility_basis = Column(String, nullable=True)
     baseline_accessibility_confidence = Column(String, nullable=True)
 
-    # from app/services/model/score.py (Phase 3 -- see docs/decisions/0010)
+    # from app/services/model/score.py (see docs/decisions/0010)
     #
     # Written ONLY by the scoring job, and never without the two provenance
     # columns below. A value with no model version and no as-of date is
@@ -137,7 +137,7 @@ class HazardObservation(Base):
     One measured or reported fact about a hazard, from one source, at one time.
 
     HAZARD-AGNOSTIC ON PURPOSE (docs/decisions/0001 section 3)
-    The original spec promised extensibility to landslides and other hazards
+    An earlier design promised extensibility to landslides and other hazards
     while every table was flood-specific. This one is not: `hazard_type` and
     `metric` carry the meaning, so a landslide or rainfall row lands in the
     same table with the same provenance columns. The DRIMS source already
@@ -228,8 +228,7 @@ class FieldReport(Base):
     One person's report that a specific place is clear, slow, or blocked.
 
     WHY THIS TABLE EXISTS AT ALL (docs/decisions/0001 section 4)
-    The original brief asked for real-time field inputs alongside AI/ML and
-    GIS. Official telemetry across the NER is genuinely sparse, so human
+    Official telemetry across the NER is genuinely sparse, so human
     reports are not a UX nicety -- they are how the data gap actually gets
     filled. In the 2022 Bethukandi dyke breach an on-site engineer reported it
     by radio before it appeared in any feed.
@@ -270,7 +269,7 @@ class SatelliteAcquisition(Base):
     A radar pass that actually covered the corridor.
 
     WHY THIS EXISTS AND FLOOD EXTENT DOES NOT
-    Phase 2 wanted Sentinel-1 flood-extent polygons. Two things stand in the
+    Sentinel-1 flood-extent polygons were the plan. Two things stand in the
     way, and neither is solved by writing more code here:
 
       Download needs credentials. The Copernicus catalogue answers search

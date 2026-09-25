@@ -264,7 +264,7 @@ def test_fused_status_is_published_separately_from_the_baseline():
 
 @needs_db
 def test_field_reports_never_write_current_accessibility():
-    """current_accessibility belongs to the Phase 3 model. A crowd vote must
+    """current_accessibility belongs to the flood model. A crowd vote must
     not be smuggled into it: submitting a report leaves the road's value,
     model version and as-of date exactly as they were."""
     from app.db.models import Road

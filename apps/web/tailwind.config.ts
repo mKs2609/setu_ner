@@ -4,11 +4,11 @@ import type { Config } from "tailwindcss";
  * The design system, in Tailwind's vocabulary. Tokens mirror app/globals.css,
  * which stays the source of truth.
  *
- * A near-monochrome light system with one violet running through it: an
- * almost-white canvas, crisp white cards, near-black doing the structural
- * work, and violet reserved for the thing that needs attention. Headlines are
- * whisper-thin (weight 200) against body and interface text at 500; the
- * contrast between them is the typographic idea.
+ * A near-monochrome light system with one violet running through it. Content
+ * sits on a dawn sky painted in CSS, on frosted-glass cards (globals.css),
+ * with near-black doing the structural work and violet reserved for the thing
+ * that needs attention. Headlines are whisper-thin against body and interface
+ * text at 500; the contrast between them is the typographic idea.
  *
  * Risk colours are the exception to "one accent". A flood map needs to say
  * safe, caution and cut-off at a glance, and violet cannot carry three
@@ -50,7 +50,6 @@ const config: Config = {
       },
       borderRadius: {
         DEFAULT: "12px",
-        card: "17px",
         pill: "9999px",
       },
       maxWidth: {

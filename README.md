@@ -11,7 +11,7 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-301%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-308%20passing-brightgreen)
 
 | | |
 |---|---|
@@ -110,8 +110,8 @@ Trained on the 2025 monsoon, tested once on the held-out 2026 season
 
 | 1-day forecast | Brier | Overall AUC | Onset AUC |
 |---|---|---|---|
-| Climatology | 0.1072 | 0.500 | — |
-| Persistence ("same as today") | 0.0402 | 0.895 | 0.500 |
+| Climatology | 0.1050 | 0.500 | 0.500 |
+| Persistence ("same as today") | 0.0394 | 0.895 | 0.500 |
 | **Logistic regression (served)** | **0.0393** | **0.936** | **0.708** |
 
 The headline Brier is nearly a tie with persistence — because most district-days
@@ -124,10 +124,12 @@ construction), and the model ranks new onsets meaningfully better.
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is currently negative** (1-day skill −37% over 175
-  graded forecasts, during a quiet spell with only 5 positives). It is
+- **The live track record is currently negative** (1-day skill −1.8% over 243
+  graded forecasts, with only 7 positives in a quiet post-monsoon spell). It is
   published on the model page rather than hidden, and is the first thing the
-  post-season retrain must address.
+  post-season retrain must address. It has moved the way the small-sample
+  hypothesis in `docs/retraining.md` predicted — −37% at 175 graded forecasts,
+  −4.7% at 209, −1.8% at 243 — which is evidence, not a verdict.
 - **Rainfall is collected but not served.** A model using it was better on the
   2026 test season (Brier 0.0388, onset AUC 0.756) but worse on the validation
   folds the selection rule uses. Changing the rule after seeing the test would
@@ -141,7 +143,7 @@ construction), and the model ranks new onsets meaningfully better.
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 301, covering label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants; CI runs API tests, both Docker builds and the web build on every push |
+| **Tests** | 308, covering label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants; CI runs API tests, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
@@ -167,7 +169,7 @@ apps/
         explain/       Per-feature attribution, narratives, audit
         scenario/      What-if engine
       db/              Models, session, migration runner
-    tests/             301 tests
+    tests/             308 tests
   web/                 Next.js 14 + MapLibre
 geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
 ml/models/             Trained model artifacts (JSON, versioned)

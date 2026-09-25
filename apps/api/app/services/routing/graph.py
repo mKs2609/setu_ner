@@ -2,8 +2,7 @@
 Routable graph for the corridor, built from the roads table in PostGIS.
 
 WHY THIS IS ITS OWN LAYER
-The scenario engine (Phase 5) and, later, the logistics optimizer (Phase 4)
-both need to answer "how long from A to B, given these roads are unusable".
+The scenario engine and the logistics optimizer both need to answer "how long from A to B, given these roads are unusable".
 That needs a routable graph, not a table of edges. Both callers share this
 module rather than each growing their own copy.
 
@@ -173,9 +172,3 @@ def get_corridor_graph(db: Session, *, rebuild: bool = False) -> CorridorGraph:
             _cache = build_corridor_graph(db)
     return _cache
 
-
-def reset_corridor_graph() -> None:
-    """Drop the cache -- for tests, and for after a data reload."""
-    global _cache
-    with _lock:
-        _cache = None

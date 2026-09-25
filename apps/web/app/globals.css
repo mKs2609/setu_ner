@@ -118,15 +118,6 @@ body {
 }
 
 /*
- * A hairline that fades at both ends. A full-width rule across a light page
- * looks like a table border; this reads as a seam.
- */
-.rule-soft {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent);
-}
-
-/*
  * Cards lift slightly toward the pointer. The movement is small on purpose:
  * this is an instrument panel, and a card that leaps is a card that distracts.
  */

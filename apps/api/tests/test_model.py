@@ -1,5 +1,5 @@
 """
-Tests for the Phase 3 accessibility model.
+Tests for the accessibility model.
 
 Most of what could go wrong here is silent: a day with no report quietly
 becoming a "not flooded" label, a validation split leaking tomorrow into
@@ -384,7 +384,7 @@ def _db_available() -> bool:
 
 
 needs_db = pytest.mark.skipif(
-    not _db_available(), reason="no corridor database with the Phase 3 schema (expected in CI)"
+    not _db_available(), reason="no corridor database with the forecast schema (expected in CI)"
 )
 
 

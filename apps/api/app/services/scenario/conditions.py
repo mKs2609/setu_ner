@@ -17,7 +17,7 @@ WHAT IT IS NOT
 This is not a prediction and not a model. Every road it marks is marked
 because somebody reported it or a bulletin recorded damage near it. The
 output is labelled "reported conditions" throughout, and each affected road
-carries the reason it was included. When Phase 3 exists, a model prediction
+carries the reason it was included. A model prediction
 becomes a fourth input here rather than a replacement for these.
 
 A GRADUATED RESPONSE, NOT A SWITCH

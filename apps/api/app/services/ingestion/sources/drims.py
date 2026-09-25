@@ -6,8 +6,8 @@ WHY THIS SOURCE, AND WHY IT REPLACED THE CWC PLAN
 `0002` planned to ingest CWC's Daily Flood Situation Report by its dated URL
 pattern. That pattern is dead: every date across a week of checks returns
 404, and the listing page at cwc.gov.in/en/fmo/dfsra renders its publication
-table with no rows at all. `geo/river/fetch_cwc_bulletin.py` would fail on
-every run it ever made.
+table with no rows at all. The script written against that pattern could not
+have succeeded on any run.
 
 DRIMS is a better source in every respect that matters here:
 
@@ -208,7 +208,7 @@ POPULATION_SECTION = "populationandcropareasubmerged"
 # alias meant the whole 2025 season stored no population figures at all.
 POPULATION_SECTIONS = {POPULATION_SECTION, "populationandcropareaaffected"}
 
-# People actually being supplied, which is what Phase 4 demand is built on
+# People actually being supplied, which is what supply demand is built on
 # (docs/decisions/0011). "Affected" is an upper bound on need; camp inmates
 # and people drawing from relief distribution centres are the population a
 # supply plan has to reach.

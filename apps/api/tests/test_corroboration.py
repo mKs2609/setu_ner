@@ -11,7 +11,6 @@ The second is the entire anti-collusion mechanism, so it is tested from every
 direction rather than once.
 """
 
-from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient

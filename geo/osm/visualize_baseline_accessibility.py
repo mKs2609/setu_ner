@@ -60,7 +60,7 @@ def main():
         unscored.plot(ax=ax, color="#cccccc", linewidth=0.5, zorder=2, label="No district match (outside coverage)")
 
     if len(scored) > 0:
-        plot = scored.plot(
+        scored.plot(
             ax=ax,
             column="baseline_accessibility",
             cmap="RdYlGn",
@@ -88,4 +88,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()  
+    main()

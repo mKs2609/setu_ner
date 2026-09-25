@@ -23,7 +23,6 @@ scikit-learn==1.7.2
 # dependency, but a direct import belongs here, pinned to a version with a
 # Linux cp312 wheel.
 scipy==1.17.1
-# xgboost==2.1.1
 requests==2.32.3
 # Hazard ingestion parses the DRIMS daily report, which is published
 # as a PDF -- there is no structured feed. See services/ingestion/.

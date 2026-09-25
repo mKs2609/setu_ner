@@ -1,4 +1,4 @@
-# 0005 — Field-Report Fusion Layer (Phase 2, Tier 1)
+# 0005 — Field-Report Fusion Layer
 
 **Status:** BUILT — submission, snapping, trust scoring and fusion working
 end to end, with a UI. Verified 9 Sep 2026.

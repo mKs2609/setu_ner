@@ -14,7 +14,7 @@ third-party service and the coordinates are reviewable in a diff.
 Fetched through the polite client from the overpass.kumi.systems mirror.
 The main overpass-api.de instance disallows /api/ in robots.txt; the mirror
 publishes no robots.txt, which the client treats as allow-all (the same
-mirror the Phase 1 road build used). One request, not a crawl.
+mirror the road-graph build used). One request, not a crawl.
 
     Data (c) OpenStreetMap contributors, ODbL 1.0.
 

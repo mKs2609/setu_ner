@@ -70,7 +70,3 @@ def _squash(name: str) -> str:
 
 _SQUASHED_ALIASES: dict[str, str] = {_squash(k): v for k, v in ALIASES.items()}
 
-
-def is_corridor_district(name: str | None) -> bool:
-    """True when the district is one the road graph actually covers."""
-    return name in CORRIDOR_DISTRICTS

@@ -23,7 +23,7 @@ def road_to_dict(road: Road) -> dict:
         "district": road.district,
         "baseline_accessibility": road.baseline_accessibility,
         "hist_flood_severity_2025": road.hist_flood_severity_2025,
-        # Phase 3 forecast -- see /api/v1/accessibility/{id} for its components
+        # Forecast score -- see /api/v1/accessibility/{id} for its components
         "current_accessibility": road.current_accessibility,
         "current_accessibility_as_of": (
             road.current_accessibility_as_of.isoformat()

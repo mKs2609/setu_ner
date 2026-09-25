@@ -1,5 +1,5 @@
 """
-Scenario / what-if endpoints (Phase 5).
+Scenario / what-if endpoints.
 
 Three endpoints, deliberately small:
 
@@ -12,7 +12,7 @@ the normal route before anyone builds a scenario on top of it, and asking
 for a simulation with an empty closure set to get that would be a confusing
 way to express it.
 
-Historical replay (gap-analysis section 7, Tier 2) is not a separate mode:
+Historical replay is not a separate mode:
 replaying the 2025 Silchar-Kalain bridge collapse is just a /simulate call
 with those bridge road_ids closed. Keeping one code path means the replay
 and the live what-if cannot silently diverge.

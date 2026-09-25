@@ -1,5 +1,5 @@
 """
-Saved recommendations, their explanations, and operator overrides (Phase 6).
+Saved recommendations, their explanations, and operator overrides.
 
     GET  /api/v1/recommendations                     recent saved plans
     GET  /api/v1/recommendations/{id}                the frozen record

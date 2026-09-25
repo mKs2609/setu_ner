@@ -1,5 +1,5 @@
 """
-Phase 2: terrain. Samples elevation and gradient for every road in the
+Terrain: samples elevation and gradient for every road in the
 corridor from the Copernicus DEM.
 
 WHY TERRAIN MATTERS HERE

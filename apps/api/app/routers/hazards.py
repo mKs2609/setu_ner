@@ -19,7 +19,7 @@ carries the freshness of what it just returned, and a caller that ignores it
 has to do so deliberately.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
@@ -184,7 +184,7 @@ def satellite_coverage(db: Session = Depends(get_db)):
     """When radar last looked at the corridor, and how often it does.
 
     WHY THIS IS COVERAGE AND NOT FLOOD EXTENT
-    Phase 2 wanted Sentinel-1 flood polygons. Download needs a Copernicus
+    Sentinel-1 flood polygons were the plan. Download needs a Copernicus
     account, and turning a 1.7 GB scene into flood boundaries needs a real
     SAR processing pipeline -- see services/ingestion/sources/copernicus.py.
     Producing polygons from a rushed threshold would put flood boundaries on

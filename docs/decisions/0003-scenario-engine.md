@@ -1,4 +1,4 @@
-# 0003 — Scenario Engine (Phase 5)
+# 0003 — Scenario Engine
 
 **Status:** BUILT — routing + what-if working end to end, measured below.
 

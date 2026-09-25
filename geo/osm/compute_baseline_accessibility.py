@@ -1,5 +1,5 @@
 """
-Phase 2/3 boundary: a first BASELINE accessibility score per edge.
+A first BASELINE accessibility score per edge.
 
 Deliberately simple and rule-based, not ML -- this is the thing a future
 trained model (Model A) has to actually beat, matching the "establish a

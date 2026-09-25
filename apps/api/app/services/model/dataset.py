@@ -1,5 +1,5 @@
 """
-The district-day table the Phase 3 model learns from.
+The district-day table the flood model learns from.
 
 WHAT IS BEING PREDICTED, AND WHY NOT ROAD DAMAGE
 The obvious target is "will this road be damaged". It is not usable, for two

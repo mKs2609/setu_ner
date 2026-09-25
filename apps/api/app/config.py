@@ -72,18 +72,10 @@ class Settings(BaseSettings):
     # requests than this get a 429 rather than exhausting memory.
     max_concurrent_plans: int = 2
 
-    # data source config -- filled in once §1 access checks confirm the real shape
-    cwc_nwdp_base_url: str | None = None
-    asdma_base_url: str | None = None
-
     @field_validator("cors_allowed_origins", "operator_token_hashes", mode="before")
     @classmethod
     def _parse_list(cls, value):
         return _as_list(value)
-
-    # object storage (satellite scenes, DEM tiles) -- stub for now
-    object_storage_endpoint: str | None = None
-    object_storage_bucket: str | None = None
 
     @property
     def is_production(self) -> bool:

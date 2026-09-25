@@ -2,14 +2,14 @@
 Routes from depots to demand, aware of how much of each route is at risk.
 
 TWO ROUTES, ALWAYS BOTH
-`0001` Tier 1 item 3 asked for the fastest route and the safer one side by
-side whenever they differ. Every depot-to-circle pair gets:
+The gap analysis (`0001`) asked for the fastest route and the safer one side
+by side whenever they differ. Every depot-to-circle pair gets:
 
   fastest         least travel time, under live closures and slowdowns
   lower-exposure  least of  travel time + penalty x exposure-km
 
-`exposure-km` is kilometres driven weighted by how inaccessible the Phase 3
-model says each road is: a kilometre at accessibility 0.26 counts 0.74, a
+`exposure-km` is kilometres driven weighted by how inaccessible the district
+flood model says each road is: a kilometre at accessibility 0.26 counts 0.74, a
 kilometre at 0.98 counts 0.02. The penalty (minutes per exposure-km) is the
 operator's stated trade-off -- how many minutes of detour they would accept
 to avoid one kilometre of fully at-risk road. It is a preference, not a
@@ -23,7 +23,7 @@ makes no independence claim, and the route's weakest link is reported beside
 it.
 
 WHAT ACCESSIBILITY IS USED
-The Phase 3 forecast made from the plan's report day:
+The forecast made from the plan's report day:
 1 - P(district affected next day) x terrain exposure. For today's report that
 is the stored value; for a past report day it is recomputed from that day's
 features with the same model artifacts, so a replay of 1 June 2025 plans
@@ -89,7 +89,7 @@ def risk_context(db, cgraph: CorridorGraph, as_of: date, latest: date) -> RiskCo
             select(Road.id, Road.current_accessibility).where(Road.current_accessibility.isnot(None))
         ).all()
         acc = {int(i): float(a) for i, a in rows}
-        source = f"stored Phase 3 scores as of {as_of}"
+        source = f"stored forecast scores as of {as_of}"
     elif district_p:
         rows = db.execute(
             select(Road.id, Road.district, Road.hazard_exposure).where(
@@ -101,7 +101,7 @@ def risk_context(db, cgraph: CorridorGraph, as_of: date, latest: date) -> RiskCo
             for i, d, e in rows
             if d in district_p
         }
-        source = f"Phase 3 model recomputed from the {as_of} report"
+        source = f"forecast model recomputed from the {as_of} report"
     else:
         acc, source = {}, "no model available; exposure not scored"
 

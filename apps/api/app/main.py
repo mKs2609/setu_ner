@@ -1,9 +1,9 @@
 """
 SetuNER API entrypoint.
 
-This is a real, runnable FastAPI app -- not a mockup. Every router below is
-currently a stub that returns placeholder data, but the app boots, the
-health check works, and the shape is what the rest of the build fills in.
+Every router below is mounted under /api/v1 and backed by real data: the
+daily government report, satellite rainfall, the road graph in PostGIS, and
+the forecasts the scoring job writes each morning.
 
 Run locally:
     cd apps/api
@@ -20,7 +20,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.config import get_settings
 from app.routers import (
     health,
-    regions,
     roads,
     hazards,
     accessibility,
@@ -28,7 +27,6 @@ from app.routers import (
     scenarios,
     recommendations,
     field_reports,
-    public,
     roads_geojson,
     model,
 )
@@ -66,7 +64,6 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
-app.include_router(regions.router, prefix="/api/v1/regions", tags=["regions"])
 app.include_router(roads_geojson.router, prefix="/api/v1/roads", tags=["roads"])
 app.include_router(roads.router, prefix="/api/v1/roads", tags=["roads"])
 app.include_router(hazards.router, prefix="/api/v1/hazards", tags=["hazards"])
@@ -76,7 +73,6 @@ app.include_router(scenarios.router, prefix="/api/v1/scenarios", tags=["scenario
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
 app.include_router(field_reports.router, prefix="/api/v1/field-reports", tags=["field-reports"])
 app.include_router(model.router, prefix="/api/v1/model", tags=["model"])
-app.include_router(public.router, prefix="/api/v1/public", tags=["public"])
 
 
 @app.get("/")

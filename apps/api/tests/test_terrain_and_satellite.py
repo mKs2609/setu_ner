@@ -1,5 +1,5 @@
 """
-Tests for the two Phase 2 additions: terrain sampling and satellite coverage.
+Tests for terrain sampling and satellite coverage.
 
 The parsing half runs without network or database. The terrain half checks
 the data actually landed and is physically sensible -- elevation is one of
@@ -7,7 +7,6 @@ the few things in this project where a wrong answer is obvious if you look,
 and completely invisible if you don't.
 """
 
-from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient

@@ -1,5 +1,5 @@
 """
-Tests for Phase 6: explanations and the audit trail.
+Tests for explanations and the audit trail.
 
 An explanation that disagrees with the number it explains is worse than none,
 so the central test is arithmetic: the per-feature contributions must add up

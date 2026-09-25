@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The Phase 3 model, explained next to its own numbers.
+ * The district flood model, explained next to its own numbers.
  *
  * Three things stay on screen that a slicker panel would drop:
  *

@@ -20,14 +20,9 @@ venv/
 .env.local
 .env.*.local
 
-# data (never commit real datasets)
-data/raw/*
-data/processed/*
 # database exports for deployment (scripts/deploy/export_data.ps1)
 data/deploy/
 *.dump
-!data/raw/README.md
-!data/processed/README.md
 
 # ml artifacts
 ml/models/*.pkl
@@ -61,6 +56,8 @@ apps/web/next-env.d.ts
 .turbo/
 *.tsbuildinfo
 
-# Generated handbook -- rebuild from the script rather than committing a binary
+# The handbook is a personal reference, kept local: the PDF is a binary and
+# the source is a long document nobody reviews in a pull request.
 docs/*.pdf
+docs/handbook/
 .claude/

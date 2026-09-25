@@ -5,15 +5,14 @@ much each reporter's word is worth.
 WHAT THIS IS AND IS NOT
 This produces a **field-reported status**: what people on the ground are
 currently saying about a road, with a confidence. It is deliberately kept
-separate from `roads.current_accessibility`, which stays empty until there is
-a real model (Phase 3). Writing a crowd consensus into the column reserved
-for a model prediction would blur the observed/derived line this project has
-held everywhere else -- and an operator reading "accessibility 0.2" cannot
-tell whether that came from a trained model or from two people with phones.
+separate from `roads.current_accessibility`, which belongs to the district
+flood model alone. Writing a crowd consensus into the column reserved for a
+model prediction would blur the observed/derived line this project has held
+everywhere else -- and an operator reading "accessibility 0.2" cannot tell
+whether that came from a trained model or from two people with phones.
 
-When Model A exists, fusion becomes model prediction updated by these
-reports. Until then the honest thing is to publish both side by side and let
-the reader see which is which.
+So the two are published side by side, each with its own confidence, and the
+reader can always see which is which.
 
 HOW THE BELIEF IS COMPUTED
 Each recent report votes for its status, weighted by two things:
@@ -43,12 +42,12 @@ is silenced completely -- a reporter who has been wrong before may be the
 first to see something real.
 
 HONEST LIMITS
-This is a heuristic, not a Bayesian model, and it is gameable: several
-colluding reporters agreeing with each other will corroborate each other
-upward. Mitigating that properly needs corroboration against independent
-evidence -- satellite extent, the DRIMS damage rows -- rather than against
-other reports, and that is Phase 3 work. The MVP is honest about being a
-weighted vote.
+This is a heuristic, not a Bayesian model. On its own it is gameable:
+several colluding reporters agreeing with each other would corroborate each
+other upward. That is why trust is also checked against independent evidence
+nobody submitting reports controls -- the DRIMS damage rows -- in
+`corroboration.py` (docs/decisions/0006). What is left here is honest about
+being a weighted vote.
 """
 
 from __future__ import annotations

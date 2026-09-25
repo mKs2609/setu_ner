@@ -1,5 +1,5 @@
 """
-What the Phase 3 model is, how good it is, and whether that is still true.
+What the district flood model is, how good it is, and whether that is still true.
 
     GET /api/v1/model/status      evaluation, live track record, caveats
     GET /api/v1/model/districts   the latest district forecasts

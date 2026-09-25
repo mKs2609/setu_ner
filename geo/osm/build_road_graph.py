@@ -1,5 +1,5 @@
 """
-Phase 1: static road graph for the Barak Valley corridor.
+Static road graph for the Barak Valley corridor.
 
 Pulls the real OSM drivable road network and shapes it into the edge
 schema the rest of the pipeline expects: road class, bridge flag,
@@ -33,22 +33,12 @@ from pathlib import Path
 
 try:
     import osmnx as ox
-    import geopandas as gpd
-    import networkx as nx
     import pandas as pd
 except ImportError:
     print("Missing dependencies. Run: pip install -r requirements.txt")
     sys.exit(1)
 
-# --- Bounding box ------------------------------------------------------
-# Currently the SMALL test box (central Silchar) so we confirm the
-# pipeline works end to end before spending minutes on the full corridor.
-# Once this succeeds, swap in the real corridor box (commented below)
-# and re-run.
-# NORTH, SOUTH, EAST, WEST = 24.85, 24.80, 92.80, 92.75
-
-# Real corridor box -- Cachar + Dima Hasao + the NH-6 stretch through
-# Meghalaya. Swap to this once the small box has proven the pipeline works:
+# The corridor: Cachar + Dima Hasao + the NH-6 stretch through Meghalaya.
 NORTH, SOUTH, EAST, WEST = 25.60, 24.60, 93.30, 92.00
 
 OUTPUT_DIR = Path(__file__).parent

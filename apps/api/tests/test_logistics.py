@@ -1,5 +1,5 @@
 """
-Tests for Phase 4: demand, gazetteer, routing exposure, and the optimiser.
+Tests for demand, gazetteer, routing exposure, and the optimiser.
 
 The optimiser tests use small problems whose right answer can be worked out
 by hand, because an LP that is subtly mis-specified still returns "optimal".

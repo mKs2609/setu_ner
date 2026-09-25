@@ -133,7 +133,7 @@ def main():
 
     unreachable = [r for r in results if r.get("status_code") != 200]
     if unreachable:
-        print(f"\nNot reachable / non-200:")
+        print("\nNot reachable / non-200:")
         for r in unreachable:
             print(f"  - {r['name']}: status={r.get('status_code')}, {r.get('shape')}")
 
