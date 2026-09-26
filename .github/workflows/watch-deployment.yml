@@ -1,0 +1,55 @@
+# Watches the deployed API and complains when it is not healthy.
+#
+# WHAT THE ALERT ACTUALLY IS
+# GitHub emails the repository owner when a scheduled workflow fails. So the
+# alert is this job failing: no third-party service, no webhook, no secret.
+# The run page carries a summary naming the checks that failed.
+#
+# WHY IT RUNS HERE AND NOT ON THE INGESTION MACHINE
+# The failure worth catching is the quiet one -- the machine in India is off,
+# or a credential expired, so nothing fails because nothing runs, and the site
+# keeps serving last week's forecast as though it were today's. A watcher on
+# that machine would be off at exactly the moment it was needed. This only
+# calls the project's own API, so the India-only restriction on the ASDMA
+# portal (app/jobs/daily.py) does not apply.
+#
+# TIMING
+# The daily job runs 07:30 IST (02:00 UTC). The first check is 09:00 IST, once
+# ingestion, damage matching and scoring have had an hour and a half. The
+# second is twelve hours later, so a failure appearing during the day is found
+# the same day rather than the next morning. GitHub runs cron on a best-effort
+# basis and can be late by several minutes; nothing here depends on the exact
+# minute.
+#
+# GitHub disables scheduled workflows in repositories with no activity for 60
+# days. If the alerts go quiet, check the Actions tab and re-enable it.
+
+name: Watch deployment
+
+on:
+  schedule:
+    - cron: "30 3 * * *"    # 09:00 IST, after the daily job
+    - cron: "30 15 * * *"   # 21:00 IST
+  workflow_dispatch: {}
+
+# Read-only: it fetches one public URL and needs nothing from the repository.
+permissions: {}
+
+# A slow cold start must not collide with the next scheduled run.
+concurrency:
+  group: watch-deployment
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # No dependency install on purpose: the check is standard library only,
+      # so the whole job is a checkout and one request.
+      - name: Check readiness
+        run: python scripts/monitoring/check_deployment.py

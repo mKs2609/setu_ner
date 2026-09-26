@@ -149,6 +149,7 @@ construction), and the model ranks new onsets meaningfully better.
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
 | **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token, refused before the body is parsed; a production config guard refuses to start with default credentials, a local database, wildcard CORS or no tokens; every public input is bounded |
 | **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
+| **Alerting** | A scheduled workflow calls readiness twice a day and fails when anything is wrong, which emails the owner. It runs on GitHub rather than the ingestion machine, because "that machine is off" is the failure being watched for |
 | **Abuse limits** | The heavy public endpoints (planning, scenarios) share one concurrency slot and a per-address rate limit, so one caller cannot hold the only worker while everyone else waits. Stated as a nuisance limit, not a security boundary |
 | **Performance** | Map GeoJSON is built inside PostGIS and gzipped (28.7 MB → 3.2 MB, and no longer exhausts a 512 MB host); planning is bounded by a concurrency semaphore that returns 429 rather than dying |
 
@@ -220,6 +221,7 @@ cd apps/api && python -m pytest -q
 | Check the rainfall source end to end | `python -m app.services.weather.check` |
 | Issue an operator token | `python -m app.security new-token` |
 | Apply migrations | `python -m app.db.migrate` |
+| Check the deployment is healthy | `python scripts/monitoring/check_deployment.py` |
 
 The daily job runs on a scheduled task in India, because the ASDMA portal does
 not answer requests from cloud regions outside it — found the hard way, on a
@@ -249,6 +251,7 @@ Numbered records, never deleted — including the ones that record a failure:
 | [0013](docs/decisions/0013-deployment-readiness.md) | What had to exist before a public URL |
 | [0014](docs/decisions/0014-rainfall-input.md) | Rainfall: sources checked, built, and why it is not served yet |
 | [0015](docs/decisions/0015-shadow-test.md) | The shadow test, with its promotion rule fixed in advance |
+| [0016](docs/decisions/0016-alerting.md) | Alerting: watching the deployment from outside it |
 
 ---
 
@@ -261,8 +264,9 @@ Stated plainly, because a disaster tool that oversells itself is worse than none
   geolocated damage reports is too few to validate it, and the interface says so.
 - **Depot stock and fleet are operator inputs.** The defaults are examples and
   are labelled as such wherever a plan is shown.
-- **No alerting.** A failed run is visible in the API and the logs, but nothing
-  pages anyone.
+- **Alerting is email-only, twice a day.** A scheduled workflow fails when
+  readiness does, which emails the repository owner — enough for a project run
+  by one person, and nowhere near paging an on-call rota.
 - **Sentinel-1 flood extent is not built** — it needs a Copernicus account and a
   SAR pipeline, and a plausible-looking one would be worse than none.
 - **One corridor.** The schema and pipeline are hazard-agnostic and statewide,
@@ -272,8 +276,7 @@ Stated plainly, because a disaster tool that oversells itself is worse than none
 
 1. Post-season retrain (~November), including why live skill went negative.
 2. Shadow-test verdict on rainfall — expected during the 2027 monsoon.
-3. Alerting on stale data or failed runs.
-4. Vector tiles, so the map scales past one district at a time.
+3. Vector tiles, so the map scales past one district at a time.
 
 ---
 

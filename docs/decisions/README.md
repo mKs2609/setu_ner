@@ -22,6 +22,7 @@ to its baseline are kept for the same reason as the ones that worked.
 | `0013-deployment-readiness.md` | What had to exist before a public URL: tokens, config guard, readiness, migrations, image |
 | `0014-rainfall-input.md` | Rainfall: every source re-checked, IMERG built, and why the model using it is not served |
 | `0015-shadow-test.md` | Testing the rainfall model on days neither model has seen, under a rule fixed in advance |
+| `0016-alerting.md` | Watching the deployment from outside it, because the failure worth catching is the one where nothing runs at all |
 
 Operational procedures live one level up: `docs/deployment.md`,
 `docs/retraining.md`, `scripts/scheduling/README.md`.

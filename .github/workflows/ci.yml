@@ -67,6 +67,19 @@ jobs:
           print("space artifacts ok")
           PY
 
+  # The deployment watcher's own logic: that a "not ready" answer is believed
+  # at once while no answer is retried. Standard library only, so this job is
+  # a checkout and a handful of fake HTTP servers.
+  monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Deployment check behaves correctly
+        run: python scripts/monitoring/test_check_deployment.py
+
   web-build:
     runs-on: ubuntu-latest
     steps:
