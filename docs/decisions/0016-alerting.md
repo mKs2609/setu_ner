@@ -70,12 +70,21 @@ reported, as is any failure in the last 36 hours. `no_data` is not reported: a
 day with no landslide anywhere is a correct answer, and alerting on it would
 teach the reader to ignore alerts.
 
-Both reports are bounded to the same 36-hour window, for a reason worth
-stating. Nothing ever closes a row left at `running` -- the scheduler treats
-that day as still owed and inserts a *new* run for it
-(`services/ingestion/schedule.py`). So the data recovers by itself, and an
-unbounded check would keep firing on a row that is now only history. The
-alert exists to say the machine had a problem, not to say data was lost.
+Nothing ever closes a row left at `running` -- the scheduler treats that day
+as still owed and inserts a *new* run for it
+(`services/ingestion/schedule.py`). The data therefore recovers by itself,
+which shapes when a problem stops being one:
+
+- **Superseded.** A later `success` or `no_data` on the same feed clears it.
+  That is the real signal that the incident is over, and it arrives as soon as
+  the next run lands rather than on a timer.
+- **Aged out.** Failing that, both reports stop after 36 hours.
+
+Without the first rule a single killed job would email every few hours for a
+day and a half after it had already been recovered — and an alert that keeps
+firing about something already fixed is one the reader learns to delete
+unread. The alert exists to say the machine still has a problem, not to
+recount one it already got over.
 
 ## The alert is the workflow failing
 

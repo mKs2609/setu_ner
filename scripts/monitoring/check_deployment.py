@@ -104,29 +104,66 @@ def fetch(url: str) -> dict:
     raise Unreachable(last)
 
 
+def started_at(run: dict) -> datetime | None:
+    """When a run began, as an aware datetime, or None if unreadable."""
+    try:
+        moment = datetime.fromisoformat(str(run.get("started_at", "")).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
 def age_hours(iso: str) -> float | None:
     """Hours since an ISO timestamp, or None if it cannot be read."""
-    try:
-        started = datetime.fromisoformat(iso.replace("Z", "+00:00"))
-    except (AttributeError, ValueError):
+    moment = started_at({"started_at": iso})
+    if moment is None:
         return None
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - started).total_seconds() / 3600
+    return (datetime.now(timezone.utc) - moment).total_seconds() / 3600
+
+
+SETTLED = {"success", "no_data"}
+
+
+def superseded(run: dict, runs: list[dict]) -> bool:
+    """True when a later run of the same feed has since settled.
+
+    Nothing ever rewrites a row left at `running`, and a failed day is simply
+    re-owed: the scheduler inserts a *new* run for it
+    (services/ingestion/schedule.py). So a later success or no_data on the
+    same source means the problem is over, and saying otherwise every few
+    hours until the row ages out would teach the reader to ignore the alert.
+    """
+    when = started_at(run)
+    if when is None:
+        return False
+    key = (run.get("source"), run.get("hazard_type"))
+    for other in runs:
+        if other is run or other.get("status") not in SETTLED:
+            continue
+        if (other.get("source"), other.get("hazard_type")) != key:
+            continue
+        later = started_at(other)
+        if later is not None and later > when:
+            return True
+    return False
 
 
 def run_problems(body: dict) -> list[str]:
     """Ingestion runs that a person should be told about.
 
-    `no_data` is not one of them: a day with no landslide anywhere is a
-    correct, successful answer, and alerting on it would train the reader to
-    ignore the alert.
+    Only unresolved ones. `no_data` is never a problem to begin with: a day
+    with no landslide anywhere is a correct, successful answer, and alerting
+    on it would train the reader to ignore the alert.
     """
     problems = []
-    for run in body.get("recent_runs", []):
+    runs = body.get("recent_runs", [])
+    for run in runs:
         label = f"{run.get('source')} {run.get('hazard_type') or ''}".strip()
         hours = age_hours(run.get("started_at", ""))
         status = run.get("status")
+
+        if status not in ("running", "failed") or superseded(run, runs):
+            continue
 
         if status == "running" and hours is not None and STUCK_AFTER_HOURS < hours <= FAILURE_WINDOW_HOURS:
             problems.append(f"{label}: started {hours:.1f}h ago and never finished")

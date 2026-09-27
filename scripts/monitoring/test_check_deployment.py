@@ -138,6 +138,37 @@ def main() -> int:
         ],
     })
 
+    # The incident is over once the feed has run again: the scheduler re-owes
+    # the day and inserts a new run, so a later success means recovered.
+    case("a stuck run a later success has already recovered", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "success", "started_at": hours_ago(1)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS + 1)},
+        ],
+    })
+
+    # ...but a success on a *different* feed recovers nothing.
+    case("another feed succeeding does not clear it", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "status": "success", "started_at": hours_ago(1)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS + 1)},
+        ],
+    })
+
+    # Nor does a success from *before* the failure.
+    case("an earlier success does not clear a later failure", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "failed", "started_at": hours_ago(2)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "success", "started_at": hours_ago(26)},
+        ],
+    })
+
     case("a recent failure", 1, 200, HEALTHY, {
         "recent_runs": [
             {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
@@ -164,7 +195,7 @@ def main() -> int:
     # --- the happy path -----------------------------------------------------
     case("healthy", 0, 200, HEALTHY)
 
-    print("\nall eleven cases behave correctly")
+    print("\nall fourteen cases behave correctly")
     return 0
 
 
