@@ -1,5 +1,5 @@
 """
-The failure paths of check_deployment.py, against fake servers.
+The judgement calls in check_deployment.py, against fake servers.
 
     python scripts/monitoring/test_check_deployment.py
 
@@ -8,11 +8,21 @@ in apps/api/tests because it tests a monitoring script, not the API, and
 reaching across the repo to import it would be worse than a second entrypoint.
 
 WHAT IS WORTH TESTING HERE
-One distinction, and it is the whole design: an answer that says "not ready"
-must be believed immediately, while no answer at all must be retried, because
-the API sleeps and a cold start looks exactly like an outage for about a
-minute. Getting that backwards either delays every real alert by minutes or
-pages the owner every time the instance wakes up.
+Three decisions, each of which is wrong in both directions:
+
+  retrying    An answer saying "not ready" must be believed at once, while no
+              answer at all must be retried -- the API sleeps, and a cold
+              start looks exactly like an outage for about a minute. Backwards
+              and you either delay every real alert or page on every wake-up.
+
+  staleness   Readiness reports `stale` without failing on it, on purpose
+              (render.yaml gates traffic on that endpoint). The watcher has to
+              fail on it anyway, or the quiet failure it exists for is invisible.
+
+  runs        A hung run must be reported, a recent failure must be reported,
+              and `no_data` must NOT be -- a day with no landslide anywhere is
+              a correct answer, and alerting on it teaches the reader to
+              ignore alerts.
 """
 
 from __future__ import annotations
@@ -20,6 +30,7 @@ from __future__ import annotations
 import json
 import sys
 import threading
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -29,30 +40,26 @@ import check_deployment as cd  # noqa: E402
 cd.BACKOFF_S = 0
 cd.TIMEOUT_S = 5
 
-NOT_READY = {
-    "ready": False,
-    "checks": {
-        "database": {"ok": True},
-        "data_freshness": {
-            "ok": False,
-            "latest_report": "2026-09-18",
-            "age_days": 8,
-            "stale": True,
-        },
-    },
-}
+HEALTHY = {"ready": True, "checks": {"database": {"ok": True}}}
+NO_RUN_PROBLEMS: dict = {"recent_runs": []}
 
 
-def serve(status: int, body: dict | None):
-    """A one-response server on a free port, plus a counter of requests seen."""
+def hours_ago(hours: float) -> str:
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+
+
+def serve(ready_status: int, ready_body: dict | None, runs_body: dict | None = None):
+    """A server answering both paths the script asks for, counting requests."""
     seen = [0]
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            seen[0] += 1
-            payload = (
-                json.dumps(body).encode() if body is not None else b"<html>bad gateway</html>"
-            )
+            if self.path.endswith(cd.RUNS_PATH):
+                status, body = 200, (runs_body if runs_body is not None else NO_RUN_PROBLEMS)
+            else:
+                seen[0] += 1
+                status, body = ready_status, ready_body
+            payload = json.dumps(body).encode() if body is not None else b"<html>oops</html>"
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
@@ -67,44 +74,97 @@ def serve(status: int, body: dict | None):
     return server, seen
 
 
-def run(base: str) -> int:
-    sys.argv = ["check_deployment", "--base", base]
+def run(server) -> int:
+    sys.argv = ["check_deployment", "--base", f"http://127.0.0.1:{server.server_address[1]}"]
     return cd.main()
 
 
+def case(name: str, expect: int, *args, requests: int | None = None):
+    print(f"\n=== {name} ===")
+    server, seen = serve(*args)
+    try:
+        code = run(server)
+    finally:
+        server.shutdown()
+    assert code == expect, f"{name}: expected exit {expect}, got {code}"
+    if requests is not None:
+        assert seen[0] == requests, f"{name}: expected {requests} requests, got {seen[0]}"
+
+
 def main() -> int:
-    # A 503 carrying a readiness body is a verdict, not a hiccup: believed at
-    # once, so the alert is not delayed by a minute of pointless retries.
-    server, seen = serve(503, NOT_READY)
-    code = run(f"http://127.0.0.1:{server.server_address[1]}")
-    assert code == 1, f"expected NOT READY (1), got {code}"
-    assert seen[0] == 1, f"a real verdict must not be retried; {seen[0]} requests made"
-    server.shutdown()
+    # --- retrying -----------------------------------------------------------
+    # A 503 carrying a readiness body is a verdict, not a hiccup.
+    case("503 with a body is believed immediately", 1, 503,
+         {"ready": False, "checks": {"database": {"ok": False}}}, requests=1)
 
-    # A gateway error with no readiness body is the platform, not the app --
-    # which is what a cold start looks like. Retried, then reported.
-    server, seen = serve(502, None)
-    code = run(f"http://127.0.0.1:{server.server_address[1]}")
-    assert code == 2, f"expected UNREACHABLE (2), got {code}"
-    assert seen[0] == cd.ATTEMPTS, f"expected {cd.ATTEMPTS} attempts, got {seen[0]}"
-    server.shutdown()
+    # A gateway error with no body is the platform, not the app: cold start.
+    case("502 with no body is retried, then reported", 2, 502, None,
+         requests=cd.ATTEMPTS)
 
-    # Nothing listening at all.
-    assert run("http://127.0.0.1:59999") == 2
+    print("\n=== nothing listening ===")
+    sys.argv = ["check_deployment", "--base", "http://127.0.0.1:59999"]
+    assert cd.main() == 2
 
-    # Ready can be false on a 200 as well; the body decides, not the status.
-    server, _ = serve(200, {"ready": False, "checks": {"database": {"ok": False}}})
-    code = run(f"http://127.0.0.1:{server.server_address[1]}")
-    assert code == 1, f"expected NOT READY (1), got {code}"
-    server.shutdown()
+    # --- staleness ----------------------------------------------------------
+    # The whole point: ready is true, every check is ok, and the data is old.
+    # Readiness passes this on purpose; the watcher must not.
+    case("ready but a feed is stale", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-18", "age_days": 8, "stale": True},
+        },
+    })
 
-    # And the happy path.
-    server, _ = serve(200, {"ready": True, "checks": {"database": {"ok": True}}})
-    code = run(f"http://127.0.0.1:{server.server_address[1]}")
-    assert code == 0, f"expected READY (0), got {code}"
-    server.shutdown()
+    # --- runs ---------------------------------------------------------------
+    case("a run that started and never finished", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS + 1)},
+        ],
+    })
 
-    print("\nall five paths behave correctly")
+    case("a run still going, inside the window", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS - 1)},
+        ],
+    })
+
+    case("a run stuck for days stops alerting once the day is recovered", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "running", "started_at": hours_ago(cd.FAILURE_WINDOW_HOURS + 12)},
+        ],
+    })
+
+    case("a recent failure", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "status": "failed", "started_at": hours_ago(2)},
+        ],
+    })
+
+    case("an old failure is history, not an alert", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "status": "failed", "started_at": hours_ago(cd.FAILURE_WINDOW_HOURS + 24)},
+        ],
+    })
+
+    case("no_data is a correct answer, not a problem", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "landslide",
+             "status": "no_data", "started_at": hours_ago(1)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "success", "started_at": hours_ago(1)},
+        ],
+    })
+
+    # --- the happy path -----------------------------------------------------
+    case("healthy", 0, 200, HEALTHY)
+
+    print("\nall eleven cases behave correctly")
     return 0
 
 

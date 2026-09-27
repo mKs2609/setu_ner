@@ -149,7 +149,7 @@ construction), and the model ranks new onsets meaningfully better.
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
 | **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token, refused before the body is parsed; a production config guard refuses to start with default credentials, a local database, wildcard CORS or no tokens; every public input is bounded |
 | **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
-| **Alerting** | A scheduled workflow calls readiness twice a day and fails when anything is wrong, which emails the owner. It runs on GitHub rather than the ingestion machine, because "that machine is off" is the failure being watched for |
+| **Alerting** | A scheduled workflow asks three questions four times a day — can the API serve, is any feed stale, did ingestion run and finish — and fails when any answer is wrong, which emails the owner. It runs on GitHub rather than the ingestion machine, because "that machine is off" is the failure being watched for |
 | **Abuse limits** | The heavy public endpoints (planning, scenarios) share one concurrency slot and a per-address rate limit, so one caller cannot hold the only worker while everyone else waits. Stated as a nuisance limit, not a security boundary |
 | **Performance** | Map GeoJSON is built inside PostGIS and gzipped (28.7 MB → 3.2 MB, and no longer exhausts a 512 MB host); planning is bounded by a concurrency semaphore that returns 429 rather than dying |
 
@@ -264,9 +264,11 @@ Stated plainly, because a disaster tool that oversells itself is worse than none
   geolocated damage reports is too few to validate it, and the interface says so.
 - **Depot stock and fleet are operator inputs.** The defaults are examples and
   are labelled as such wherever a plan is shown.
-- **Alerting is email-only, twice a day.** A scheduled workflow fails when
-  readiness does, which emails the repository owner — enough for a project run
-  by one person, and nowhere near paging an on-call rota.
+- **Alerting is email-only, four times a day, best-effort.** A scheduled
+  workflow emails the repository owner when a check fails — enough for a
+  project run by one person, and nowhere near paging an on-call rota. GitHub's
+  scheduler is shared: an observed run was nearly six hours late, so the
+  slots are spaced to tolerate that rather than to promise a response time.
 - **Sentinel-1 flood extent is not built** — it needs a Copernicus account and a
   SAR pipeline, and a plausible-looking one would be worse than none.
 - **One corridor.** The schema and pipeline are hazard-agnostic and statewide,

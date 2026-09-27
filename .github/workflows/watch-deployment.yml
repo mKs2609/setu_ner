@@ -13,13 +13,16 @@
 # calls the project's own API, so the India-only restriction on the ASDMA
 # portal (app/jobs/daily.py) does not apply.
 #
-# TIMING
-# The daily job runs 07:30 IST (02:00 UTC). The first check is 09:00 IST, once
-# ingestion, damage matching and scoring have had an hour and a half. The
-# second is twelve hours later, so a failure appearing during the day is found
-# the same day rather than the next morning. GitHub runs cron on a best-effort
-# basis and can be late by several minutes; nothing here depends on the exact
-# minute.
+# TIMING, AND WHY THERE ARE FOUR SLOTS
+# The daily job runs 07:30 IST (02:00 UTC), so the first check is 09:00 IST,
+# once ingestion, damage matching and scoring have had an hour and a half.
+#
+# GitHub's scheduler is best-effort and shared: the first scheduled run of
+# this workflow was queued for 03:30 UTC and started at 09:26 UTC, almost six
+# hours late. Runs can also be dropped entirely under load. So the schedule is
+# four slots rather than two -- not because the data changes that often, but
+# so that one badly delayed or dropped slot does not leave a broken pipeline
+# unreported all day. Nothing here depends on the exact minute.
 #
 # GitHub disables scheduled workflows in repositories with no activity for 60
 # days. If the alerts go quiet, check the Actions tab and re-enable it.
@@ -29,10 +32,12 @@ name: Watch deployment
 on:
   schedule:
     - cron: "30 3 * * *"    # 09:00 IST, after the daily job
+    - cron: "30 9 * * *"    # 15:00 IST
     - cron: "30 15 * * *"   # 21:00 IST
+    - cron: "30 21 * * *"   # 03:00 IST
   workflow_dispatch: {}
 
-# Read-only: it fetches one public URL and needs nothing from the repository.
+# Read-only: it fetches two public URLs and needs nothing from the repository.
 permissions: {}
 
 # A slow cold start must not collide with the next scheduled run.
@@ -50,6 +55,6 @@ jobs:
         with:
           python-version: "3.12"
       # No dependency install on purpose: the check is standard library only,
-      # so the whole job is a checkout and one request.
+      # so the whole job is a checkout and two requests.
       - name: Check readiness
         run: python scripts/monitoring/check_deployment.py

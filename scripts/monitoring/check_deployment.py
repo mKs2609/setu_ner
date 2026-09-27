@@ -38,9 +38,24 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 
 DEFAULT_BASE = "https://setuner-api.onrender.com"
-PATH = "/api/v1/health/ready"
+READY_PATH = "/api/v1/health/ready"
+RUNS_PATH = "/api/v1/hazards/freshness"
+
+# A daily job step times out at 45 minutes and catch-up can run several. Past
+# three hours a run is not slow, it is gone: the process was killed, the
+# machine slept, or the network dropped mid-fetch.
+STUCK_AFTER_HOURS = 3
+
+# The run log keeps everything, and nothing ever closes a row left at
+# `running` -- the scheduler simply re-owes that day and inserts a new run
+# (services/ingestion/schedule.py). So both a hung run and a failed one are
+# only worth reporting while they are recent: after this, the data has
+# already been recovered by a later run and the row is history, not an alert
+# that would fire every day forever.
+FAILURE_WINDOW_HOURS = 36
 
 # Generous: a sleeping free instance has to cold-start before it can answer.
 TIMEOUT_S = 90
@@ -89,6 +104,38 @@ def fetch(url: str) -> dict:
     raise Unreachable(last)
 
 
+def age_hours(iso: str) -> float | None:
+    """Hours since an ISO timestamp, or None if it cannot be read."""
+    try:
+        started = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        return None
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - started).total_seconds() / 3600
+
+
+def run_problems(body: dict) -> list[str]:
+    """Ingestion runs that a person should be told about.
+
+    `no_data` is not one of them: a day with no landslide anywhere is a
+    correct, successful answer, and alerting on it would train the reader to
+    ignore the alert.
+    """
+    problems = []
+    for run in body.get("recent_runs", []):
+        label = f"{run.get('source')} {run.get('hazard_type') or ''}".strip()
+        hours = age_hours(run.get("started_at", ""))
+        status = run.get("status")
+
+        if status == "running" and hours is not None and STUCK_AFTER_HOURS < hours <= FAILURE_WINDOW_HOURS:
+            problems.append(f"{label}: started {hours:.1f}h ago and never finished")
+        elif status == "failed" and (hours is None or hours <= FAILURE_WINDOW_HOURS):
+            when = f"{hours:.1f}h ago" if hours is not None else "recently"
+            problems.append(f"{label}: run failed {when}")
+    return problems
+
+
 def describe(name: str, check: dict) -> str:
     """One line per check, with the detail that makes it actionable."""
     detail = {k: v for k, v in check.items() if k != "ok"}
@@ -104,29 +151,51 @@ def main() -> int:
         help="API origin to check (default: the deployed API)",
     )
     args = parser.parse_args()
-    url = args.base.rstrip("/") + PATH
+    base = args.base.rstrip("/")
 
-    print(f"Checking {url}")
+    print(f"Checking {base}{READY_PATH}")
     try:
-        body = fetch(url)
+        body = fetch(base + READY_PATH)
     except Unreachable as exc:
-        headline = f"UNREACHABLE: no readiness answer from {args.base} ({exc})"
+        headline = f"UNREACHABLE: no readiness answer from {base} ({exc})"
         print(headline)
         summarise(headline, [])
         return 2
 
     checks = body.get("checks", {})
     lines = [describe(name, check) for name, check in checks.items()]
-    print("\n".join(lines))
 
     failed = [name for name, check in checks.items() if not check.get("ok")]
-    if body.get("ready") and not failed:
-        headline = f"READY: all {len(checks)} checks passing"
+    # Reported by readiness, never failed by it -- see the module docstring.
+    stale = [name for name, check in checks.items() if check.get("stale")]
+
+    # The run log answers a question readiness cannot: did the job run at all,
+    # and did it finish? Its absence is itself worth reporting, since we have
+    # just established the API is up.
+    try:
+        runs = run_problems(fetch(base + RUNS_PATH))
+    except Unreachable as exc:
+        runs = [f"could not read the run log ({exc})"]
+
+    for problem in runs:
+        lines.append(f"  FAIL  {problem}")
+    print("\n".join(lines))
+
+    trouble = []
+    if failed:
+        trouble.append("not ready: " + ", ".join(failed))
+    if stale:
+        trouble.append("stale: " + ", ".join(stale))
+    if runs:
+        trouble.append("runs: " + "; ".join(runs))
+
+    if not trouble:
+        headline = f"HEALTHY: {len(checks)} checks passing, nothing stale, ingestion running"
         print(headline)
         summarise(headline, lines)
         return 0
 
-    headline = f"NOT READY: {', '.join(failed) if failed else 'ready=false'}"
+    headline = "PROBLEM -- " + " | ".join(trouble)
     print(headline)
     summarise(headline, lines)
     return 1

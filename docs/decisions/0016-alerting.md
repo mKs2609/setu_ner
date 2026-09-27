@@ -31,18 +31,51 @@ reaches back 14 days.
 
 ## What runs
 
-`scripts/monitoring/check_deployment.py` asks `/api/v1/health/ready`, prints
-every check, and exits:
+`scripts/monitoring/check_deployment.py` asks three questions and exits 0 only
+if all three are satisfied:
+
+| | Question | Source |
+|---|---|---|
+| 1 | Can the service serve at all? | `ready` and the ten checks |
+| 2 | Is any feed older than its threshold? | the `stale` flags in the same response |
+| 3 | Did ingestion run, and finish? | `/api/v1/hazards/freshness` run log |
 
 | Exit | Meaning |
 |---|---|
-| 0 | ready, all ten checks passing |
-| 1 | answered, and not ready — the failing checks are named |
+| 0 | healthy: serving, nothing stale, ingestion running |
+| 1 | a problem, named — not ready, or stale, or a bad run |
 | 2 | no readiness answer at all, after four attempts |
 
-`.github/workflows/watch-deployment.yml` runs it at 03:30 and 15:30 UTC
-(09:00 and 21:00 IST) and on demand. Standard library only, so the job is a
-checkout and one request.
+`.github/workflows/watch-deployment.yml` runs it four times a day and on
+demand. Standard library only, so the job is a checkout and two requests.
+
+### Question 2 is the one that is easy to get wrong
+
+Readiness reports staleness and **deliberately does not fail on it**. Its own
+docstring says why, and `render.yaml` is the reason: `healthCheckPath` points
+at that endpoint, so failing it over old data would have Render pull a working
+service out of rotation for a problem no restart can fix. The endpoint says as
+much — "surfaced here so monitoring can alert on it".
+
+The first version of this watcher only read `ready`, which meant it would have
+stayed green through exactly the outage it was built for. Readiness hands
+monitoring the signal; monitoring has to actually read it.
+
+### Question 3 catches what readiness cannot see
+
+`ingest_runs` rows are written *before* a fetch and updated when it ends
+(`0008`), so a killed or hung job survives as `running` rather than vanishing.
+Nothing was looking at that either. A run still `running` after three hours is
+reported, as is any failure in the last 36 hours. `no_data` is not reported: a
+day with no landslide anywhere is a correct answer, and alerting on it would
+teach the reader to ignore alerts.
+
+Both reports are bounded to the same 36-hour window, for a reason worth
+stating. Nothing ever closes a row left at `running` -- the scheduler treats
+that day as still owed and inserts a *new* run for it
+(`services/ingestion/schedule.py`). So the data recovers by itself, and an
+unbounded check would keep firing on a row that is now only history. The
+alert exists to say the machine had a problem, not to say data was lost.
 
 ## The alert is the workflow failing
 
@@ -83,3 +116,9 @@ under Limitations rather than implying more.
 GitHub disables scheduled workflows in repositories with no activity for 60
 days. If the alerts go quiet, that is the first thing to check — the Actions
 tab will say so, and re-enabling is one button.
+
+The scheduler is also best-effort and shared. The first scheduled run here was
+queued for 03:30 UTC and started at 09:26 UTC, and GitHub documents that runs
+can be dropped under load. Hence four slots a day: not because the data moves
+that fast, but so one late or missing slot does not hide a broken pipeline
+until tomorrow.
