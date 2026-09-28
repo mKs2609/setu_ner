@@ -25,11 +25,14 @@ The fitted model is a scaler and a dozen coefficients. Saving it as JSON
 rather than a pickle means loading it cannot execute code, the numbers are
 readable in a code review, and the API can serve it with numpy alone.
 
-WHAT IS HONESTLY MISSING
-Rainfall. Every free daily source tried (NASA POWER, Open-Meteo, CHIRPS)
-disallows automated access in robots.txt, and this project respects that.
-Without rainfall the model sees a flood only once it is reported, so onset
-skill is expected to be weak. See docs/decisions/0010.
+WHAT THE SERVED MODEL DOES NOT SEE
+Rainfall. It is collected daily (NASA IMERG, docs/decisions/0014) and a model
+using it exists, but that model lost on the validation folds the selection
+rule uses while winning on the held-out season -- so it runs as a frozen
+challenger under a pre-registered promotion rule (0015) rather than being
+served on the strength of a test it was not allowed to be chosen by. Until
+that resolves, the served model sees a flood only once it is reported, and
+onset skill is weaker than it could be. See docs/decisions/0010.
 """
 
 from __future__ import annotations
@@ -188,6 +191,89 @@ def score(y: np.ndarray, p: np.ndarray) -> dict:
         "log_loss": round(float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))), 5),
         "roc_auc": None if (v := _auc(y, p)) is None else round(v, 4),
         "average_precision": None if (v := _average_precision(y, p)) is None else round(v, 4),
+    }
+
+
+# Bin edges for calibration. Not uniform, on purpose: roughly nine out of ten
+# district-days are quiet and predicted under 5%, so ten equal bins would put
+# almost everything in the first one and say nothing. These are fine where the
+# predictions actually live and coarse where they are sparse.
+CALIBRATION_EDGES = (0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.35, 0.50, 0.75, 1.0)
+
+
+def calibration(y: np.ndarray, p: np.ndarray, edges=CALIBRATION_EDGES) -> dict:
+    """Do the probabilities mean what they say?
+
+    Brier and AUC answer "is it close" and "does it rank". Neither answers
+    the question somebody routing a truck is actually asking: when this says
+    12%, does it happen 12% of the time? That is calibration, and a model can
+    be excellent on both other measures while being reliably overconfident.
+
+    Returns a bucket per band -- what was predicted, what happened, how many
+    -- plus Murphy's decomposition of the Brier score:
+
+        brier ~= reliability - resolution + uncertainty
+
+      reliability   how far the buckets sit from the diagonal. Lower is
+                    better; 0 is perfect calibration.
+      resolution    how far the buckets separate from the base rate. Higher
+                    is better; 0 means every day gets the same answer.
+      uncertainty   how hard the problem is, o(1-o). Nothing to do with the
+                    model -- it is a property of the weather.
+
+    The identity is exact for the *binned* forecasts and therefore only
+    approximate for the continuous ones underneath; binning is what makes
+    reliability measurable at all. `residual` reports that gap rather than
+    asking anyone to assume it is small.
+    """
+    y = np.asarray(y, dtype=float)
+    if len(y) == 0:
+        return {"n": 0, "bins": [], "decomposition": None}
+
+    p = np.clip(np.asarray(p, dtype=float), EPS, 1 - EPS)
+    base = float(y.mean())
+    n = len(y)
+
+    buckets, reliability, resolution = [], 0.0, 0.0
+    for lo, hi in zip(edges, edges[1:]):
+        # Half-open bands, with the last one closed so 1.0 has a home.
+        in_band = (p >= lo) & (p < hi) if hi < edges[-1] else (p >= lo) & (p <= hi)
+        count = int(in_band.sum())
+        if count == 0:
+            buckets.append({"from": lo, "to": hi, "n": 0, "predicted": None, "observed": None})
+            continue
+        predicted = float(p[in_band].mean())
+        observed = float(y[in_band].mean())
+        buckets.append(
+            {
+                "from": lo,
+                "to": hi,
+                "n": count,
+                "positives": int(y[in_band].sum()),
+                "predicted": round(predicted, 5),
+                "observed": round(observed, 5),
+            }
+        )
+        reliability += count * (predicted - observed) ** 2
+        resolution += count * (observed - base) ** 2
+
+    reliability /= n
+    resolution /= n
+    uncertainty = base * (1 - base)
+    brier = float(np.mean((p - y) ** 2))
+
+    return {
+        "n": n,
+        "positives": int(y.sum()),
+        "base_rate": round(base, 5),
+        "bins": buckets,
+        "decomposition": {
+            "brier": round(brier, 5),
+            "reliability": round(reliability, 6),
+            "resolution": round(resolution, 6),
+            "uncertainty": round(uncertainty, 5),
+            "residual": round(brier - (reliability - resolution + uncertainty), 6),
+        },
     }
 
 

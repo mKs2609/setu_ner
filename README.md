@@ -124,12 +124,15 @@ construction), and the model ranks new onsets meaningfully better.
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is currently negative** (1-day skill −1.8% over 243
-  graded forecasts, with only 7 positives in a quiet post-monsoon spell). It is
-  published on the model page rather than hidden, and is the first thing the
-  post-season retrain must address. It has moved the way the small-sample
-  hypothesis in `docs/retraining.md` predicted — −37% at 175 graded forecasts,
-  −4.7% at 209, −1.8% at 243 — which is evidence, not a verdict.
+- **The live track record is negative** — 1-day skill −15.6% over 311 graded
+  forecasts (29 Sep 2026), with only 7 positives in a quiet post-monsoon spell.
+  It is published on the model page rather than hidden, and is the first thing
+  the post-season retrain must address. It has not moved cleanly: −37% at 175
+  graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311, so
+  the small-sample explanation in `docs/retraining.md` is not settled.
+  Calibration (`0017`) offers a testable alternative: the model says 3.2% on
+  days where 2.6% happens, and persistence says 1.9% — which loses on exactly
+  the quiet days this stretch is made of.
 - **Rainfall is collected but not served.** A model using it was better on the
   2026 test season (Brier 0.0388, onset AUC 0.756) but worse on the validation
   folds the selection rule uses. Changing the rule after seeing the test would
@@ -149,6 +152,8 @@ construction), and the model ranks new onsets meaningfully better.
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
 | **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token, refused before the body is parsed; a production config guard refuses to start with default credentials, a local database, wildcard CORS or no tokens; every public input is bounded |
 | **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
+| **Calibration** | Reliability measured per band on the same held-out season the headline numbers come from, with Murphy's decomposition of the Brier score. The live curve is withheld below 500 graded forecasts and 20 positives rather than drawn from noise |
+| **Accessibility** | Road status is carried by brightness and a dash pattern as well as hue, so the map reads in greyscale and for colour-blind users; the previous palette separated cut off from clear by a contrast ratio of 1.08 |
 | **Alerting** | A scheduled workflow asks three questions four times a day — can the API serve, is any feed stale, did ingestion run and finish — and fails when any answer is wrong, which emails the owner. It runs on GitHub rather than the ingestion machine, because "that machine is off" is the failure being watched for |
 | **Abuse limits** | The heavy public endpoints (planning, scenarios) share one concurrency slot and a per-address rate limit, so one caller cannot hold the only worker while everyone else waits. Stated as a nuisance limit, not a security boundary |
 | **Performance** | Map GeoJSON is built inside PostGIS and gzipped (28.7 MB → 3.2 MB, and no longer exhausts a 512 MB host); planning is bounded by a concurrency semaphore that returns 429 rather than dying |
@@ -222,6 +227,7 @@ cd apps/api && python -m pytest -q
 | Issue an operator token | `python -m app.security new-token` |
 | Apply migrations | `python -m app.db.migrate` |
 | Check the deployment is healthy | `python scripts/monitoring/check_deployment.py` |
+| Measure the served model's calibration | `python -m app.services.model.calibrate` |
 
 The daily job runs on a scheduled task in India, because the ASDMA portal does
 not answer requests from cloud regions outside it — found the hard way, on a
@@ -252,6 +258,8 @@ Numbered records, never deleted — including the ones that record a failure:
 | [0014](docs/decisions/0014-rainfall-input.md) | Rainfall: sources checked, built, and why it is not served yet |
 | [0015](docs/decisions/0015-shadow-test.md) | The shadow test, with its promotion rule fixed in advance |
 | [0016](docs/decisions/0016-alerting.md) | Alerting: watching the deployment from outside it |
+| [0017](docs/decisions/0017-calibration.md) | Calibration: does 12% mean 12%? |
+| [0018](docs/decisions/0018-map-without-colour.md) | Making the map readable without colour |
 
 ---
 

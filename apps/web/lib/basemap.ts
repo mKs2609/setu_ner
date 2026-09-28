@@ -22,10 +22,50 @@ export const BASEMAP_STYLE =
 export const BASEMAP_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
 
-/** Road colour ramp, worst to best, from the design tokens. */
+/**
+ * Road colour ramp, worst to best.
+ *
+ * WHY THESE ARE NOT THE --ok / --caution / --alert TEXT TOKENS
+ * They used to be, and it made the map unreadable for a lot of people. Those
+ * tokens are tuned for *text on white*, which happens to put all three at
+ * nearly the same brightness: measured relative luminance was 0.145 for cut
+ * off, 0.161 for clear and 0.196 for degraded. The contrast ratio between a
+ * cut-off road and a clear road was 1.08 -- essentially nothing.
+ *
+ * So the only thing separating "impassable" from "fine" was hue, red against
+ * green. Roughly one man in twelve cannot reliably tell those apart, and in
+ * greyscale or on a projector nobody can. For a flood map whose whole job is
+ * to say three things at a glance, that is a defect, not a style preference.
+ *
+ * These keep the same meanings and pull the brightness apart:
+ *
+ *     cut off   #8a1f1f   luminance 0.065
+ *     clear     #3f9c74   luminance 0.261    ratio to cut off  2.71
+ *     degraded  #d4901c   luminance 0.340    ratio to cut off  3.40
+ *
+ * Dark-to-light now tracks bad-to-good on its own, with no hue involved.
+ *
+ * WHAT IS STILL ONLY HUE
+ * Degraded against clear is 1.26 -- weak. A light basemap leaves little room
+ * above mid-grey before a line stops being visible at all, so the brightness
+ * budget went to the distinction that matters: passable or not. Cut-off roads
+ * are also drawn dashed (AccessibilityMap), a channel colour vision cannot
+ * affect. Mistaking "slow" for "clear" costs a delay; mistaking "impassable"
+ * for "clear" sends a truck into water.
+ */
 export const RAMP = {
-  cutOff: "#c03a3a", // alert
-  degraded: "#b06a15", // caution
-  clear: "#2f7d5d", // ok
-  unknown: "#c9c5d4", // unscored: visible, but clearly not a judgement
+  cutOff: "#8a1f1f",
+  degraded: "#d4901c",
+  clear: "#3f9c74",
+  unknown: "#b9b6c4", // unscored: visible, but clearly not a judgement
 } as const;
+
+/**
+ * Band edges on the 0-1 accessibility scale, in even thirds.
+ *
+ * Only the lower one changes what is drawn -- roads below it get the dashed
+ * treatment -- but both are quoted in the legend, so the colours are never
+ * the only statement of what a band means.
+ */
+export const CUT_OFF_BELOW = 0.34;
+export const DEGRADED_BELOW = 0.67;

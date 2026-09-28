@@ -405,6 +405,52 @@ export interface ShadowTest {
   rule?: { min_pairs: number; min_flood_onsets: number };
 }
 
+/**
+ * Whether the probabilities mean what they say: what the model said in each
+ * band, against what actually happened. Optional because an API deployed
+ * before this existed does not send it, and because measuring it needs a
+ * database the deployment may not have had at build time.
+ */
+export interface CalibrationBin {
+  from: number;
+  to: number;
+  n: number;
+  positives?: number;
+  predicted: number | null;
+  observed: number | null;
+}
+
+export interface Calibration {
+  n: number;
+  positives: number;
+  base_rate: number;
+  bins: CalibrationBin[];
+  decomposition: {
+    brier: number;
+    reliability: number;
+    resolution: number;
+    uncertainty: number;
+    residual: number;
+  } | null;
+  horizon_days?: number;
+  model_version?: string;
+  served_kind?: string;
+  period?: { from: string; to: string };
+  measured_at?: string;
+  rows?: { now: number; at_training: number | null; note: string | null };
+}
+
+/** Live calibration is withheld until there is enough of it to mean anything. */
+export type LiveCalibration =
+  | ({ enough: true } & Calibration)
+  | {
+      enough: false;
+      n: number;
+      positives: number;
+      needs: { pairs: number; positives: number };
+      note: string;
+    };
+
 export interface ModelStatus {
   artifacts: Record<string, ModelArtifact | null>;
   data: {
@@ -422,8 +468,15 @@ export interface ModelStatus {
   } | null;
   live_track_record: Record<
     string,
-    { n: number; note?: string; skill_vs_persistence?: number | null }
+    {
+      n: number;
+      note?: string;
+      skill_vs_persistence?: number | null;
+      calibration?: LiveCalibration;
+    }
   >;
+  // Optional: absent until `python -m app.services.model.calibrate` has run.
+  calibration?: Record<string, Calibration | null>;
   // Optional: an API deployed before the shadow test does not send it.
   shadow_test?: Record<string, ShadowTest>;
   exposure_prior: {

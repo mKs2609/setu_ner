@@ -1,0 +1,104 @@
+{
+  "n": 4386,
+  "positives": 534,
+  "base_rate": 0.12175,
+  "bins": [
+    {
+      "from": 0.0,
+      "to": 0.01,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.01,
+      "to": 0.02,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.02,
+      "to": 0.05,
+      "n": 3858,
+      "positives": 179,
+      "predicted": 0.04019,
+      "observed": 0.0464
+    },
+    {
+      "from": 0.05,
+      "to": 0.1,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.1,
+      "to": 0.2,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.2,
+      "to": 0.35,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.35,
+      "to": 0.5,
+      "n": 528,
+      "positives": 355,
+      "predicted": 0.48235,
+      "observed": 0.67235
+    },
+    {
+      "from": 0.5,
+      "to": 0.75,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    },
+    {
+      "from": 0.75,
+      "to": 1.0,
+      "n": 0,
+      "predicted": null,
+      "observed": null
+    }
+  ],
+  "decomposition": {
+    "brier": 0.06982,
+    "reliability": 0.00438,
+    "resolution": 0.04149,
+    "uncertainty": 0.10693,
+    "residual": 0.0
+  },
+  "horizon_days": 3,
+  "model_version": "dfs-h3-2026-09-14-45463be1",
+  "served_kind": "persistence",
+  "period": {
+    "from": "2026-05-01",
+    "to": "2026-09-10"
+  },
+  "edges": [
+    0.0,
+    0.01,
+    0.02,
+    0.05,
+    0.1,
+    0.2,
+    0.35,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "measured_at": "2026-09-28",
+  "rows": {
+    "now": 4386,
+    "at_training": 4515,
+    "note": "4386 rows rebuilt from current history against 4515 at training time; the report record has been repaired since (see services/ingestion/renormalise_districts.py)."
+  }
+}

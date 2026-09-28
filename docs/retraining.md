@@ -24,15 +24,33 @@ is true.
 
 ## Before retraining: explain the negative live skill
 
-As of 24 Sep 2026 the served 1-day model scores **−37% skill against
-persistence** on 175 graded live forecasts (5 positives). That is the first
-thing to understand, because a retrain that ignores it just re-learns the
-same mistake. Work through, in order:
+The served 1-day model has been losing to persistence on live forecasts all
+season, and the number has not settled:
 
-1. **Is it real, or small numbers?** 5 positives is very few. Recompute after
-   the season; a difference built on a handful of days is noise.
-2. **Calibration.** Are live probabilities systematically too high? Compare
-   mean forecast probability against the observed rate, live vs test season.
+| date | graded | positives | skill vs persistence |
+|---|---|---|---|
+| 24 Sep 2026 | 175 | 5 | −37% |
+| 26 Sep 2026 | 209 | 6 | −4.7% |
+| 27 Sep 2026 | 243 | 7 | −1.8% |
+| 29 Sep 2026 | 311 | 7 | **−15.6%** |
+
+That is the first thing to understand, because a retrain that ignores it just
+re-learns the same mistake. Note the last row: 68 more forecasts, no new
+positives, and the skill got *worse* — so whatever is happening is happening
+on quiet days, not on floods. Work through, in order:
+
+1. **Is it real, or small numbers?** 7 positives is very few, and the series
+   above moves too much to read a trend into. Recompute after the season.
+2. **Calibration.** Measured now, and it points somewhere specific:
+
+       cd apps/api && python -m app.services.model.calibrate
+
+   On the held-out season the model says **3.2%** in the band where **2.6%**
+   actually happens, while persistence gives an unaffected district 1.9%
+   flat. On a long quiet stretch that difference is exactly the kind of loss
+   the live record is showing. Check whether the live rows reproduce it
+   (`0017`), and if they do, the fix is a threshold or regularisation
+   question rather than a feature one — which is item 3.
 3. **Which rows lose?** Group graded forecasts by district and by
    affected-today state. Persistence wins the quiet rows for free; if the
    model is losing *there*, it is over-forecasting quiet districts, which is

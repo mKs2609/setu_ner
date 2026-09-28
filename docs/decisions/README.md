@@ -23,6 +23,8 @@ to its baseline are kept for the same reason as the ones that worked.
 | `0014-rainfall-input.md` | Rainfall: every source re-checked, IMERG built, and why the model using it is not served |
 | `0015-shadow-test.md` | Testing the rainfall model on days neither model has seen, under a rule fixed in advance |
 | `0016-alerting.md` | Watching the deployment from outside it, because the failure worth catching is the one where nothing runs at all |
+| `0017-calibration.md` | Whether a probability can be taken at face value — the question Brier and AUC do not answer |
+| `0018-map-without-colour.md` | The map said impassable and fine in two colours of the same brightness |
 
 Operational procedures live one level up: `docs/deployment.md`,
 `docs/retraining.md`, `scripts/scheduling/README.md`.

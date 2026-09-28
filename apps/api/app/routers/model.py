@@ -13,6 +13,7 @@ frozen at training time.
 
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 
 import numpy as np
@@ -25,6 +26,7 @@ from app.services.explain import forecast as forecast_explain
 from app.services.ingestion.districts import normalise_district
 from app.services.model.dataset import district_key, features_for
 from app.db.session import get_db
+from app.services.model import calibrate
 from app.services.model import district_model as dm
 from app.services.model import score as scoring
 from app.services.model import shadow
@@ -79,6 +81,48 @@ def _artifact_summary(payload: dict | None) -> dict | None:
     }
 
 
+# Below this, a reliability curve is a picture of noise: seven positives
+# spread over nine bands says nothing about calibration, and drawing it
+# anyway invites a reader to conclude something. Written down here rather
+# than judged case by case later, for the same reason the shadow test's rule
+# is (docs/decisions/0015).
+MIN_LIVE_CALIBRATION_PAIRS = 500
+MIN_LIVE_CALIBRATION_POSITIVES = 20
+
+
+def _stored_calibration(horizon_days: int) -> dict | None:
+    """The held-out reliability curve, measured by services/model/calibrate.
+
+    Absent until that command has been run, which is the normal state of a
+    fresh clone -- it needs a database. A missing optional measurement must
+    not turn the status endpoint into a 500.
+    """
+    try:
+        return json.loads(calibrate.calibration_path(horizon_days).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _live_calibration(y: np.ndarray, p: np.ndarray) -> dict:
+    """Calibration of live forecasts, or an honest refusal to draw one."""
+    positives = int(y.sum())
+    if len(y) < MIN_LIVE_CALIBRATION_PAIRS or positives < MIN_LIVE_CALIBRATION_POSITIVES:
+        return {
+            "enough": False,
+            "n": int(len(y)),
+            "positives": positives,
+            "needs": {
+                "pairs": MIN_LIVE_CALIBRATION_PAIRS,
+                "positives": MIN_LIVE_CALIBRATION_POSITIVES,
+            },
+            "note": (
+                f"{len(y)} graded forecasts with {positives} positives is too few to say "
+                "anything about calibration; the held-out curve is the one to read."
+            ),
+        }
+    return {"enough": True, **dm.calibration(y, p)}
+
+
 def _live_track_record(db: Session, history) -> dict:
     """Score stored forecasts whose target day now has a published report."""
     published = set(history.published)
@@ -102,7 +146,8 @@ def _live_track_record(db: Session, history) -> dict:
             out[str(h)] = {"n": 0, "note": "no live forecast has reached its target day yet"}
             continue
         y = np.asarray([i[0] for i in items])
-        served = dm.score(y, np.asarray([i[1] for i in items]))
+        p = np.asarray([i[1] for i in items])
+        served = dm.score(y, p)
         pers = dm.score(y, np.asarray([i[2] for i in items]))
         out[str(h)] = {
             "n": served["n"],
@@ -111,6 +156,7 @@ def _live_track_record(db: Session, history) -> dict:
             "skill_vs_persistence": (
                 round(1 - served["brier"] / pers["brier"], 4) if pers.get("brier") else None
             ),
+            "calibration": _live_calibration(y, p),
         }
     return out
 
@@ -183,6 +229,11 @@ def model_status(db: Session = Depends(get_db)):
             "latest_report": latest_report.isoformat() if latest_report else None,
         },
         "scoring": scoring_state,
+        # Does 12% mean 12%? Brier says "close" and AUC says "well ranked";
+        # neither answers the question an operator acts on. Measured on the
+        # same held-out season the artifact reports, by services/model/
+        # calibrate, without retraining anything.
+        "calibration": {str(h): _stored_calibration(h) for h in dm.HORIZONS},
         "live_track_record": _live_track_record(db, history),
         # A challenger graded on days neither model has seen; see
         # docs/decisions/0015. Informational: nothing is promoted automatically.

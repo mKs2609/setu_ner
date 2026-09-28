@@ -152,6 +152,52 @@ def test_every_result_is_reported_against_baselines():
     assert "skill_vs_persistence" in payload["verdict"]
 
 
+def test_a_perfectly_calibrated_forecaster_has_no_reliability_penalty():
+    """Outcomes drawn with exactly the stated probability must score ~0."""
+    rng = np.random.default_rng(0)
+    p = rng.uniform(0, 1, 40_000)
+    y = (rng.uniform(0, 1, 40_000) < p).astype(float)
+    assert dm.calibration(y, p)["decomposition"]["reliability"] < 1e-3
+
+
+def test_systematic_overconfidence_is_caught():
+    """Halving every probability is a real miscalibration, and must show."""
+    rng = np.random.default_rng(0)
+    p = rng.uniform(0, 1, 40_000)
+    y = (rng.uniform(0, 1, 40_000) < p).astype(float)
+    honest = dm.calibration(y, p)["decomposition"]["reliability"]
+    lying = dm.calibration(y, p / 2)["decomposition"]["reliability"]
+    assert lying > honest * 100
+
+
+def test_the_decomposition_adds_back_up_to_the_brier_score():
+    """brier ~= reliability - resolution + uncertainty, within binning error."""
+    rng = np.random.default_rng(1)
+    p = rng.beta(1, 12, 20_000)  # rare-event shaped, like this problem
+    y = (rng.uniform(0, 1, 20_000) < p).astype(float)
+    d = dm.calibration(y, p)["decomposition"]
+    assert abs(d["residual"]) < 0.001
+    assert d["brier"] == pytest.approx(
+        d["reliability"] - d["resolution"] + d["uncertainty"], abs=0.001
+    )
+
+
+def test_calibration_bins_account_for_every_forecast():
+    rng = np.random.default_rng(2)
+    p = rng.uniform(0, 1, 5_000)
+    y = (rng.uniform(0, 1, 5_000) < p).astype(float)
+    result = dm.calibration(y, p)
+    assert sum(b["n"] for b in result["bins"]) == len(y)
+    assert result["n"] == len(y)
+
+
+def test_calibration_survives_no_data_and_no_positives():
+    assert dm.calibration(np.array([]), np.array([]))["n"] == 0
+    quiet = dm.calibration(np.zeros(50), np.full(50, 0.02))
+    assert quiet["base_rate"] == 0.0
+    assert quiet["decomposition"]["uncertainty"] == 0.0
+
+
 def test_persistence_is_blind_to_onset_by_construction():
     """If this ever fails, the onset metric is not measuring what the docs say."""
     examples = build_examples(_synthetic(days=120), 1)

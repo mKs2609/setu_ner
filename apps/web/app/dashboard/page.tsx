@@ -6,7 +6,8 @@ export default function DashboardPage() {
       <header className="wash border-b border-line px-6 py-5">
         <h1 className="text-[28px] font-extralight leading-tight tracking-[-0.02em]">Barak Valley Corridor</h1>
         <p className="mt-1 text-caption text-muted">
-          Roads colored by baseline accessibility. Red = worst, green = best, gray = not yet scored.
+          Every road segment in the corridor, scored for tomorrow. Dark and dashed means cut
+          off, amber degraded, green clear; grey is not scored at all. The legend is bottom left.
         </p>
       </header>
       <div className="flex-1">

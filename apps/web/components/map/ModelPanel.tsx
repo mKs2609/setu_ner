@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import ForecastWhy from "@/components/explain/ForecastWhy";
 import ForecastReplay from "@/components/model/ForecastReplay";
+import ReliabilityChart from "@/components/model/ReliabilityChart";
 
 function pct(p: number | null | undefined): string {
   return p == null ? "—" : `${Math.round(p * 100)}%`;
@@ -145,6 +146,46 @@ function ShadowSection({ tests }: { tests: Record<string, ShadowTest> }) {
   );
 }
 
+/**
+ * Calibration, which none of the other numbers on this page can tell you.
+ *
+ * The live record's own calibration is deliberately withheld until there is
+ * enough of it to mean anything -- and the API decides that, not this
+ * component, so the threshold lives beside the rule rather than the
+ * rendering.
+ */
+function CalibrationSection({ status }: { status: ModelStatus }) {
+  const stored = status.calibration;
+  if (!stored) return null;
+  const present = Object.entries(stored).filter(([, c]) => c && c.bins?.length);
+  if (!present.length) return null;
+
+  return (
+    <section>
+      <h2 className="font-semibold">Does 12% mean 12%?</h2>
+      <p className="text-xs text-muted">
+        Brier says the numbers are close on average, and AUC says the risky days are ranked
+        above the quiet ones. Neither says whether a probability can be taken at face value,
+        which is the only thing that matters if you are about to act on one.
+      </p>
+      <div className="mt-2 space-y-3">
+        {present.map(([h, c]) => {
+          const live = status.live_track_record?.[h]?.calibration;
+          return (
+            <div key={h}>
+              <p className="mb-1 text-xs font-medium">{h}-day horizon</p>
+              <ReliabilityChart calibration={c as NonNullable<typeof c>} />
+              {live && !live.enough && (
+                <p className="mt-1 text-xs text-muted">Live: {live.note}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function ModelPanel() {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   const [forecasts, setForecasts] = useState<DistrictForecasts | null>(null);
@@ -246,6 +287,8 @@ export default function ModelPanel() {
             .join(" · ")}
         </p>
       </section>
+
+      <CalibrationSection status={status} />
 
       <section>
         <ForecastReplay />
