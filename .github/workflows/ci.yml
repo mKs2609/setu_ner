@@ -98,5 +98,10 @@ jobs:
         run: pnpm --filter @setu_ner/web lint
       - name: Type check
         run: pnpm --filter @setu_ner/web type-check
+      # Guards the properties nothing else would catch: the map's colour
+      # contrast (docs/decisions/0018), the committed flood record, and the
+      # two server-rendered charts.
+      - name: Test
+        run: pnpm --filter @setu_ner/web test
       - name: Build
         run: pnpm --filter @setu_ner/web build

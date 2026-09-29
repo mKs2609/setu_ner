@@ -72,13 +72,16 @@ function Legend({ metric }: { metric: AccessibilityMetric }) {
     { label: "Not scored", color: RAMP.unknown, dashed: false },
   ];
   return (
-    <div className="card absolute bottom-8 left-3 z-10 p-3">
+    // Clear of the attribution bar, which wraps to two lines on a narrow
+    // screen and has to stay readable -- CARTO's and OpenStreetMap's terms
+    // are not satisfied by a credit a legend is sitting on top of.
+    <div className="card absolute bottom-14 left-2 z-10 p-2.5 md:bottom-8 md:left-3 md:p-3">
       <p className="font-mono text-micro uppercase tracking-[0.14em] text-muted">
         {METRIC_LABELS[metric]}
       </p>
-      <ul className="mt-2 space-y-1.5">
+      <ul className="mt-2 space-y-1 md:space-y-1.5">
         {bands.map((band) => (
-          <li key={band.label} className="flex items-center gap-2 text-caption">
+          <li key={band.label} className="flex items-center gap-2 text-micro md:text-caption">
             <svg width="26" height="8" aria-hidden="true" className="shrink-0">
               <line
                 x1="1"
@@ -94,7 +97,8 @@ function Legend({ metric }: { metric: AccessibilityMetric }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 max-w-[13rem] text-micro text-muted">
+      {/* The reasoning behind the dash, for a screen with room to say it. */}
+      <p className="mt-2 hidden max-w-[13rem] text-micro text-muted md:block">
         Cut-off roads are dashed as well as dark, so the map still reads without colour.
       </p>
     </div>
@@ -250,33 +254,42 @@ export default function AccessibilityMap({
   }, [district]);
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute top-3 left-3 z-10 bg-surface rounded shadow-md p-3 text-sm space-y-2 max-w-xs">
-        <label className="block font-medium text-ink">District</label>
-        <select
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          className="border border-line rounded px-2 py-1 w-full"
-        >
-          {KNOWN_DISTRICTS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+    // On a phone the controls sit above the map in normal flow: floating them
+    // over a 375px-wide screen leaves a strip of map and a panel covering the
+    // thing it is describing. From md up they float, where there is room.
+    <div className="relative flex h-full w-full flex-col">
+      <div className="card z-10 space-y-2 p-3 text-sm md:absolute md:left-3 md:top-3 md:max-w-xs">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
+          <label className="block">
+            <span className="block font-medium text-ink">District</span>
+            <select
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              className="mt-1 w-full rounded border border-line bg-surface px-2 py-1"
+            >
+              {KNOWN_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="block font-medium text-ink">Colour roads by</label>
-        <select
-          value={metric}
-          onChange={(e) => setMetric(e.target.value as AccessibilityMetric)}
-          className="border border-line rounded px-2 py-1 w-full"
-        >
-          {(Object.keys(METRIC_LABELS) as AccessibilityMetric[]).map((m) => (
-            <option key={m} value={m}>
-              {METRIC_LABELS[m]}
-            </option>
-          ))}
-        </select>
+          <label className="block">
+            <span className="block font-medium text-ink">Colour roads by</span>
+            <select
+              value={metric}
+              onChange={(e) => setMetric(e.target.value as AccessibilityMetric)}
+              className="mt-1 w-full rounded border border-line bg-surface px-2 py-1"
+            >
+              {(Object.keys(METRIC_LABELS) as AccessibilityMetric[]).map((m) => (
+                <option key={m} value={m}>
+                  {METRIC_LABELS[m]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {loading && <p className="text-muted">Loading roads…</p>}
         {error && (
@@ -293,9 +306,18 @@ export default function AccessibilityMap({
         {meta?.note && <p className="text-caution text-xs">{meta.note}</p>}
       </div>
 
-      <Legend metric={metric} />
-
-      <div ref={mapContainerRef} className="w-full h-full" />
+      {/* The legend is positioned against this, not the whole page, so it
+          cannot drift over the controls when they are in the flow. */}
+      <div className="relative min-h-[60vh] flex-1">
+        {/* Inline, and not a utility class, for two stacked reasons. This
+            parent takes its height from flex, so `height` stays `auto` and a
+            percentage height here resolves to zero -- a blank map with the
+            data loaded behind it. And MapLibre's own stylesheet sets
+            `position: relative` on this element once it initialises, which
+            beats `absolute` from a class; an inline style beats both. */}
+        <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }} />
+        <Legend metric={metric} />
+      </div>
     </div>
   );
 }

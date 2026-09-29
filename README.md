@@ -11,7 +11,7 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-308%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-313%20api%20%2B%2015%20web-brightgreen)
 
 | | |
 |---|---|
@@ -22,6 +22,9 @@ field reports, with every number traceable to its source.
 
 > The API runs on a free instance that sleeps when idle. The first request
 > after a quiet spell can take up to a minute.
+
+![The Barak Valley corridor, imaged by MODIS Terra, behind the question the
+project exists to answer](docs/images/home.jpg)
 
 ---
 
@@ -46,6 +49,13 @@ LP's own dual values.
 **3 · Answers "what if this bridge closes?"**
 Close or flood any set of roads and get the routing consequence: the new
 route, the delay, or that a place is cut off entirely.
+
+![Every road in Cachar coloured by accessibility, with a legend that also
+works in greyscale](docs/images/map.jpg)
+
+*51,839 road segments in Cachar, coloured by accessibility. Cut-off roads are
+dark **and** dashed, so the map still reads for colour-blind users and in
+greyscale ([0018](docs/decisions/0018-map-without-colour.md)).*
 
 **4 · Shows its work, and keeps a record.**
 Every forecast, road score and plan can be explained feature by feature, with
@@ -119,6 +129,22 @@ are quiet and persistence gets those right for free. The difference is
 **onset**: persistence is blind to a flood that has not started (AUC 0.500 by
 construction), and the model ranks new onsets meaningfully better.
 
+**And the probabilities are checked for honesty, not just accuracy.** Brier and
+AUC say nothing about whether 12% means 12%, which is the only property that
+matters if somebody routes a truck on one:
+
+<p align="center">
+  <img src="docs/images/calibration.jpg" width="620"
+       alt="Reliability diagram: predicted probability against observed
+            frequency, with the Brier score decomposed into reliability,
+            resolution and uncertainty">
+</p>
+
+Reliability **0.00065** where 0 is perfect — but the middle bands lean: when it
+says 20–35%, the rate is nearer 45%, and it runs slightly hot on quiet days
+(3.2% said, 2.6% happened). That second line is the leading suspect for the
+negative live skill below ([0017](docs/decisions/0017-calibration.md)).
+
 **Where it is not winning:**
 
 - **3 days out, persistence is served.** The logistic model did not beat it on
@@ -146,7 +172,7 @@ construction), and the model ranks new onsets meaningfully better.
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 308, covering label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants; CI runs API tests, both Docker builds and the web build on every push |
+| **Tests** | 313 on the API — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
@@ -175,8 +201,9 @@ apps/
         explain/       Per-feature attribution, narratives, audit
         scenario/      What-if engine
       db/              Models, session, migration runner
-    tests/             308 tests
+    tests/             313 tests
   web/                 Next.js 14 + MapLibre
+    tests/             15 tests (colour contrast, committed data, charts)
 geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
 ml/models/             Trained model artifacts (JSON, versioned)
 infra/migrations/      Idempotent SQL migrations
@@ -212,7 +239,8 @@ OpenStreetMap, and `docs/deployment.md` covers restoring a dump instead.
 **Tests:**
 
 ```bash
-cd apps/api && python -m pytest -q
+cd apps/api && python -m pytest -q          # 313 API tests
+pnpm --filter @setu_ner/web test            # 15 web tests
 ```
 
 ---

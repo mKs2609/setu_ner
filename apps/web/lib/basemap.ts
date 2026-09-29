@@ -14,10 +14,18 @@ export const BASEMAP_STYLE =
   "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 /**
- * Required credit. The style's own JSON carries no `attribution` field, so
- * MapLibre cannot derive it -- without this the map would render CARTO's
- * tiles and OpenStreetMap's data with no credit at all, which their terms
- * (and ours, see the footer) do not allow.
+ * Required credit. The style's own JSON carries no `attribution` field --
+ * re-checked 30 Sep 2026, still null at both the top level and on the
+ * `carto` source -- so MapLibre cannot derive it from there. Without this
+ * the map could render CARTO's tiles and OpenStreetMap's data with no credit
+ * at all, which their terms (and ours, see the footer) do not allow.
+ *
+ * WHY THE CREDIT APPEARS TWICE
+ * The TileJSON the source resolves to at runtime does carry an attribution,
+ * so MapLibre shows that one as well as this. Deliberately left duplicated:
+ * stripping ours would make the credit depend on a remote document that has
+ * already changed once, and over-crediting breaks nobody's terms while
+ * under-crediting breaks both.
  */
 export const BASEMAP_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
