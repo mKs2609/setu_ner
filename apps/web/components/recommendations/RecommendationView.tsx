@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import OperatorAccess from "@/components/auth/OperatorAccess";
 import PlanWhy from "@/components/explain/PlanWhy";
+import { LoadingNote, SkeletonCard } from "@/components/chrome/Loading";
 import {
   fetchOverrides,
   fetchRecommendation,
@@ -72,7 +73,14 @@ export default function RecommendationView({ id }: { id: string }) {
   }, [id, action, category, reason, target]);
 
   if (error) return <p className="p-4 text-sm text-alert">{error}</p>;
-  if (!rec || !why) return <p className="p-4 text-sm text-muted">Loading…</p>;
+  if (!rec || !why) {
+    return (
+      <div className="space-y-3 p-4">
+        <LoadingNote active what="Loading the saved plan and its explanation" />
+        <SkeletonCard rows={5} />
+      </div>
+    );
+  }
 
   const runs = rec.outputs.plan.runs ?? [];
 

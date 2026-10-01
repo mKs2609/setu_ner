@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchForecastHistory, type ForecastHistory } from "@/lib/api";
+import { LoadingNote, SkeletonCard } from "@/components/chrome/Loading";
 
 const STEP_MS = 900;
 
@@ -87,7 +88,12 @@ export default function ForecastReplay({ horizonDays = 1 }: { horizonDays?: numb
     return <p className="text-caption text-alert">{error}</p>;
   }
   if (!history) {
-    return <p className="text-caption text-muted">Loading the record…</p>;
+    return (
+      <div className="space-y-3">
+        <LoadingNote active what="Loading the stored forecasts" />
+        <SkeletonCard rows={4} />
+      </div>
+    );
   }
   if (total === 0) {
     return (

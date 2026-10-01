@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchRoadExplanation, type RoadExplanation } from "@/lib/api";
+import { LoadingNote } from "@/components/chrome/Loading";
 
 export default function RoadWhy({ roadId, onClose }: { roadId: number; onClose: () => void }) {
   const [data, setData] = useState<RoadExplanation | null>(null);
@@ -30,7 +31,9 @@ export default function RoadWhy({ roadId, onClose }: { roadId: number; onClose: 
         </button>
       </div>
       {error && <p className="mt-1 text-alert">{error}</p>}
-      {!data && !error && <p className="mt-1 text-muted">Loading…</p>}
+      {!data && !error && (
+        <LoadingNote active what="Working out why" className="mt-1" />
+      )}
       {data && (
         <div className="mt-1 space-y-2">
           <p className="text-ink">{data.headline}</p>

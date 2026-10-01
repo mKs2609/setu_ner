@@ -12,6 +12,7 @@ import {
   RAMP,
 } from "@/lib/basemap";
 import { fetchRoadsGeoJSON, KNOWN_DISTRICTS, type RoadsGeoJSON } from "@/lib/api";
+import { LoadingNote, Skeleton } from "@/components/chrome/Loading";
 
 const INITIAL_CENTER: [number, number] = [92.7, 24.9];
 const INITIAL_ZOOM = 9;
@@ -291,7 +292,15 @@ export default function AccessibilityMap({
           </label>
         </div>
 
-        {loading && <p className="text-muted">Loading roads…</p>}
+        <LoadingNote
+          active={loading}
+          what={`Fetching road segments for ${district}`}
+          slowNote={
+            "Every road in the district comes down at once — tens of thousands of " +
+            "segments — so this is a slow request by design. If the API had also gone " +
+            "to sleep, add up to a minute for it to wake."
+          }
+        />
         {error && (
           <p className="text-alert">
             Couldn&apos;t reach the API ({error}). Is the backend running on port 8000?
@@ -316,6 +325,23 @@ export default function AccessibilityMap({
             `position: relative` on this element once it initialises, which
             beats `absolute` from a class; an inline style beats both. */}
         <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }} />
+        {loading && !error && (
+          // Over the basemap, which arrives long before the roads do, so the
+          // wait looks like roads-being-drawn rather than a broken page.
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <div className="card w-64 max-w-[70%] p-4">
+              <Skeleton className="h-2 w-2/3" />
+              <div className="mt-3 space-y-2">
+                <Skeleton className="h-1.5 w-full" />
+                <Skeleton className="h-1.5 w-5/6" />
+                <Skeleton className="h-1.5 w-3/4" />
+              </div>
+            </div>
+          </div>
+        )}
         <Legend metric={metric} />
       </div>
     </div>

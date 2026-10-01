@@ -26,8 +26,11 @@ const REDUCED = "(prefers-reduced-motion: reduce)";
  * the query before it has settled disables them permanently for that page
  * load -- which is exactly what happened in testing, with motion silently
  * dead on a page that had asked for it.
+ *
+ * Exported because the loading states need the same answer, and two
+ * subscriptions that could disagree would be worse than one shared one.
  */
-function useReducedMotion(): boolean {
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import ForecastWhy from "@/components/explain/ForecastWhy";
 import ForecastReplay from "@/components/model/ForecastReplay";
+import { LoadingNote, SkeletonCard } from "@/components/chrome/Loading";
 import ReliabilityChart from "@/components/model/ReliabilityChart";
 
 function pct(p: number | null | undefined): string {
@@ -209,7 +210,13 @@ export default function ModelPanel() {
     );
   }
   if (!status || !forecasts) {
-    return <p className="p-4 text-sm text-muted">Loading model…</p>;
+    return (
+      <div className="space-y-3 p-4">
+        <LoadingNote active what="Loading the model's evaluation" />
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={5} />
+      </div>
+    );
   }
 
   const artifacts = Object.values(status.artifacts).filter(Boolean) as ModelArtifact[];

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { fetchRecommendations, type RecommendationSummary } from "@/lib/api";
+import { LoadingNote, SkeletonCard } from "@/components/chrome/Loading";
 
 export default function RecommendationList() {
   const [items, setItems] = useState<RecommendationSummary[] | null>(null);
@@ -16,7 +17,15 @@ export default function RecommendationList() {
   }, []);
 
   if (error) return <p className="p-4 text-sm text-alert">{error}</p>;
-  if (!items) return <p className="p-4 text-sm text-muted">Loading…</p>;
+  if (!items) {
+    return (
+      <div className="space-y-3 p-4">
+        <LoadingNote active what="Loading saved plans" />
+        <SkeletonCard rows={2} />
+        <SkeletonCard rows={2} />
+      </div>
+    );
+  }
   if (items.length === 0) {
     return (
       <p className="p-4 text-sm text-muted">

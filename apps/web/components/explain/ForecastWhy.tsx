@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchDistrictExplanation, type ForecastExplanation } from "@/lib/api";
+import { LoadingNote } from "@/components/chrome/Loading";
 
 function Bars({ e }: { e: ForecastExplanation }) {
   const shown = e.contributions.filter((c) => Math.abs(c.log_odds) >= 0.01).slice(0, 6);
@@ -50,7 +51,9 @@ export default function ForecastWhy({ district }: { district: string }) {
   }, [district]);
 
   if (error) return <p className="mt-2 text-xs text-alert">{error}</p>;
-  if (!data) return <p className="mt-2 text-xs text-muted">Loading explanation…</p>;
+  if (!data) {
+    return <LoadingNote active what="Working out why" className="mt-2" />;
+  }
 
   return (
     <div className="mt-2 space-y-2 border-t border-line pt-2">

@@ -193,6 +193,36 @@ body {
   animation: pulse-dot 2.4s ease-in-out infinite;
 }
 
+/*
+ * Skeletons, for waits that are genuinely long: the road GeoJSON is a
+ * 14-second fetch, and the API sleeps between visitors so the first request
+ * of the day can take most of a minute. A bare "Loading..." over that span
+ * reads as broken, so the shape of what is coming is drawn instead.
+ *
+ * The sweep is a background-position animation on a gradient -- no layout,
+ * no repaint of anything else. Under reduced motion the sweep stops and the
+ * block stays as a flat tint, which still communicates "something goes
+ * here" without moving.
+ */
+.skeleton {
+  background-color: var(--accent-wash);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  border-radius: 6px;
+  animation: skeleton-sweep 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
 @keyframes flash-in {
   from { background-color: var(--accent-wash); }
   to { background-color: transparent; }
@@ -206,6 +236,10 @@ body {
   .live-dot,
   .flash-in {
     animation: none;
+  }
+  .skeleton {
+    animation: none;
+    background-image: none;
   }
 }
 
