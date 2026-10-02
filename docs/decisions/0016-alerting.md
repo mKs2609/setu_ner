@@ -86,6 +86,29 @@ firing about something already fixed is one the reader learns to delete
 unread. The alert exists to say the machine still has a problem, not to
 recount one it already got over.
 
+### Superseded means *that day*, not that feed
+
+Corrected 3 Oct 2026, by a real failure the rule had hidden. Catch-up works
+newest day first, so one job wrote both of these four seconds apart:
+
+    02:00:43  rainfall  target 2026-10-01  failed
+    02:00:47  rainfall  target 2026-09-30  success
+
+The rule compared only (source, hazard), saw a later success on the same
+feed, and suppressed the failure. But those are different days: 1 October's
+rainfall was still missing, and the watcher stayed green through it.
+
+The key is now (source, hazard, **target day**). A day is only recovered by a
+run for that day. A run with no target day is never treated as superseded,
+because reporting something already fixed is a smaller mistake than silently
+dropping something that is not.
+
+The failure it had been hiding, for the record, was a month boundary: at
+02:00 UTC on 2 October NASA had not yet created
+`GPM_3IMERGDL.07/2026/10/`, so the fetch 404ed. The directory existed later
+the same day and catch-up re-owed the day. Self-healing, but it should have
+been visible while it lasted.
+
 ### A stale feed is not always a fault
 
 Added 2 Oct 2026, after the first October run made the gap obvious. ASDMA

@@ -143,8 +143,10 @@ def main() -> int:
     case("a stuck run a later success has already recovered", 0, 200, HEALTHY, {
         "recent_runs": [
             {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-01",
              "status": "success", "started_at": hours_ago(1)},
             {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-01",
              "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS + 1)},
         ],
     })
@@ -153,8 +155,10 @@ def main() -> int:
     case("another feed succeeding does not clear it", 1, 200, HEALTHY, {
         "recent_runs": [
             {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-01",
              "status": "success", "started_at": hours_ago(1)},
             {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-01",
              "status": "running", "started_at": hours_ago(cd.STUCK_AFTER_HOURS + 1)},
         ],
     })
@@ -163,9 +167,47 @@ def main() -> int:
     case("an earlier success does not clear a later failure", 1, 200, HEALTHY, {
         "recent_runs": [
             {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-01",
              "status": "failed", "started_at": hours_ago(2)},
             {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-01",
              "status": "success", "started_at": hours_ago(26)},
+        ],
+    })
+
+    # 3 Oct 2026, from production: one catch-up run works newest day first,
+    # so a success for an older day landed four seconds after a failure for a
+    # newer one and hid it. A day is only recovered by a run for that day.
+    case("a later success for a different day does not clear a failure", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-09-30",
+             "status": "success", "started_at": hours_ago(2)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-01",
+             "status": "failed", "started_at": hours_ago(2.01)},
+        ],
+    })
+
+    # ...and once that same day is refetched, it goes quiet.
+    case("the same day being refetched does clear it", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-01",
+             "status": "success", "started_at": hours_ago(1)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-01",
+             "status": "failed", "started_at": hours_ago(2)},
+        ],
+    })
+
+    # A run with no target day cannot be matched, so it is never excused.
+    case("a failure with no target day is always reported", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "status": "success", "started_at": hours_ago(1)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "status": "failed", "started_at": hours_ago(2)},
         ],
     })
 
@@ -271,7 +313,7 @@ def main() -> int:
     # --- the happy path -----------------------------------------------------
     case("healthy", 0, 200, HEALTHY)
 
-    print("\nall nineteen cases behave correctly")
+    print("\nall twenty-two cases behave correctly")
     return 0
 
 

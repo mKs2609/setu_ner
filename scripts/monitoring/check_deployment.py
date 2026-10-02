@@ -154,22 +154,39 @@ SETTLED = {"success", "no_data"}
 
 
 def superseded(run: dict, runs: list[dict]) -> bool:
-    """True when a later run of the same feed has since settled.
+    """True when this run's own day has since been fetched successfully.
 
     Nothing ever rewrites a row left at `running`, and a failed day is simply
-    re-owed: the scheduler inserts a *new* run for it
-    (services/ingestion/schedule.py). So a later success or no_data on the
-    same source means the problem is over, and saying otherwise every few
-    hours until the row ages out would teach the reader to ignore the alert.
+    re-owed: the scheduler inserts a *new* run for that day
+    (services/ingestion/schedule.py). So a later success or no_data clears
+    it, and saying otherwise every few hours until the row ages out would
+    teach the reader to ignore the alert.
+
+    THE DAY MATTERS, NOT JUST THE FEED
+    This compared only (source, hazard) until 3 Oct 2026, when a real failure
+    showed why that is wrong. One catch-up run works newest day first, so a
+    single job wrote:
+
+        02:00:43  rainfall  target 2026-10-01  failed
+        02:00:47  rainfall  target 2026-09-30  success
+
+    A later success on the same feed -- four seconds later -- hid a failure
+    for a different day. The 1 October rainfall was still missing and the
+    watcher stayed green. A day is only recovered by a run for *that day*.
+
+    A run with no target day cannot be matched this way, so it is never
+    treated as superseded: reporting something already fixed is a smaller
+    mistake than silently dropping something that is not.
     """
     when = started_at(run)
-    if when is None:
+    target = run.get("target_date")
+    if when is None or target is None:
         return False
-    key = (run.get("source"), run.get("hazard_type"))
+    key = (run.get("source"), run.get("hazard_type"), target)
     for other in runs:
         if other is run or other.get("status") not in SETTLED:
             continue
-        if (other.get("source"), other.get("hazard_type")) != key:
+        if (other.get("source"), other.get("hazard_type"), other.get("target_date")) != key:
             continue
         later = started_at(other)
         if later is not None and later > when:
