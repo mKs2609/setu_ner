@@ -103,7 +103,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 function RouteColumn({ title, stats, accent }: { title: string; stats: RouteStats; accent: string }) {
   return (
-    <div className="flex-1 rounded border border-line p-3">
+    <div className="card flex-1 p-3">
       <div className="mb-2 flex items-center gap-2">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: accent }} />
         <span className="text-xs font-semibold text-ink">{title}</span>
@@ -163,7 +163,7 @@ export default function ScenarioPanel({
               key={p.name}
               type="button"
               onClick={() => setForm(p.form)}
-              className="card px-2.5 py-2 text-left text-xs transition hover:border-teal-400 hover:bg-teal-50"
+              className="card px-2.5 py-2 text-left text-xs transition hover:border-accent-mist hover:bg-accent-wash"
             >
               <div className="font-medium text-ink">{p.name}</div>
               <div className="text-[11px] text-muted">{p.blurb}</div>
@@ -303,7 +303,7 @@ export default function ScenarioPanel({
         type="button"
         onClick={onRun}
         disabled={loading}
-        className="rounded-pill bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-gray-400"
+        className="rounded-pill bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
       >
         {loading ? "Running..." : "Run scenario"}
       </button>
@@ -345,7 +345,7 @@ export default function ScenarioPanel({
           </div>
 
           {result.starting_conditions && (
-            <div className="rounded border border-teal-200 bg-accent/10/60 p-3 text-xs">
+            <div className="rounded-card border border-accent-mist bg-accent-wash/60 p-3 text-xs">
               <div className="mb-1 font-semibold text-accent">
                 Already applied before your scenario
               </div>

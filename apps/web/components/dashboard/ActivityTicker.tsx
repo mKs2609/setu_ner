@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchFreshness, type IngestRun } from "@/lib/api";
+import { ago, useTicker } from "@/components/chrome/time";
 
 const REFRESH_MS = 60_000;
 const SHOWN = 6;
@@ -40,18 +41,10 @@ function sourceLabel(run: IngestRun): string {
     : base;
 }
 
-function ago(iso: string): string {
-  const seconds = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
-  if (seconds < 90) return `${seconds}s ago`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 90) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 36) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
-
 export default function ActivityTicker() {
   const [runs, setRuns] = useState<IngestRun[] | null>(null);
+  // The list only reloads every 60s; this keeps "12s ago" true in between.
+  useTicker(15_000);
   const [error, setError] = useState(false);
   const seen = useRef<Set<number>>(new Set());
   const [fresh, setFresh] = useState<Set<number>>(new Set());

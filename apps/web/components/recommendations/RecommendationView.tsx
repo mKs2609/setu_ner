@@ -93,7 +93,7 @@ export default function RecommendationView({ id }: { id: string }) {
             <span className="rounded bg-surface px-1.5 py-0.5">
               Saved {new Date(rec.created_at).toLocaleString()}
             </span>
-            <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-800">
+            <span className="rounded bg-line px-1.5 py-0.5 text-muted">
               Demand from the {rec.data_as_of} report{rec.is_replay ? " (replay)" : ""}
             </span>
             {rec.example_inputs && (
@@ -155,7 +155,7 @@ export default function RecommendationView({ id }: { id: string }) {
       </div>
 
       <aside className="space-y-4">
-        <section className="space-y-2 rounded border border-line p-3">
+        <section className="card space-y-2 p-3">
           <h3 className="font-semibold">Record an override</h3>
           <p className="text-xs text-muted">
             What you did instead of the plan, and why. Appended to the record; nothing here edits the plan.

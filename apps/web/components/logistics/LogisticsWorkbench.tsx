@@ -247,9 +247,9 @@ export default function LogisticsWorkbench() {
 
         {plan && (
           <>
-            <section className="space-y-1 rounded border border-line p-3">
+            <section className="card space-y-1 p-3">
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className={`rounded px-1.5 py-0.5 ${plan.is_replay ? "bg-indigo-50 text-indigo-800" : "bg-accent-wash text-accent"}`}>
+                <span className={`rounded px-1.5 py-0.5 ${plan.is_replay ? "bg-line text-muted" : "bg-accent-wash text-accent"}`}>
                   {plan.is_replay ? `Replay of ${plan.as_of}` : `Live — report of ${plan.as_of}`}
                 </span>
                 {plan.example_inputs && (

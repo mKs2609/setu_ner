@@ -27,7 +27,7 @@ const STATUS_CHOICES: { value: ReportStatus; label: string; hint: string; classe
     value: "clear",
     label: "Clear",
     hint: "Passable as normal",
-    classes: "border-green-300 bg-accent-wash text-accent",
+    classes: "border-ok/40 bg-ok/10 text-ok",
   },
   {
     value: "slow",
@@ -138,7 +138,7 @@ export default function ReportForm({
           type="button"
           onClick={useMyLocation}
           disabled={locating}
-          className="w-full rounded border border-accent/40 bg-accent-wash px-3 py-2 text-sm font-medium text-accent transition hover:bg-teal-100 disabled:opacity-60"
+          className="w-full rounded border border-accent/40 bg-accent-wash px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent-mist disabled:opacity-60"
         >
           {locating ? "Finding you..." : "Use my location"}
         </button>
@@ -183,7 +183,7 @@ export default function ReportForm({
         type="button"
         onClick={submit}
         disabled={sending}
-        className="w-full rounded-pill bg-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-gray-400"
+        className="w-full rounded-pill bg-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
       >
         {sending ? "Sending..." : "Send report"}
       </button>

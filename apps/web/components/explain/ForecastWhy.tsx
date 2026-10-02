@@ -24,7 +24,7 @@ function Bars({ e }: { e: ForecastExplanation }) {
           <div className="flex items-center gap-2">
             <div className="relative h-2 w-24 shrink-0 rounded bg-surface">
               <div
-                className={`absolute top-0 h-2 rounded ${c.log_odds > 0 ? "left-1/2 bg-red-500" : "right-1/2 bg-teal-600"}`}
+                className={`absolute top-0 h-2 rounded ${c.log_odds > 0 ? "left-1/2 bg-alert" : "right-1/2 bg-ok"}`}
                 style={{ width: `${(Math.abs(c.log_odds) / max) * 50}%` }}
               />
             </div>

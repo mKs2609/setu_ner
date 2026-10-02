@@ -26,7 +26,7 @@ export default function RoadWhy({ roadId, onClose }: { roadId: number; onClose: 
     <div className="rounded bg-surface p-3 text-xs border border-line shadow-card">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold">Why this road? (#{roadId})</h3>
-        <button onClick={onClose} className="text-muted hover:text-gray-800" aria-label="Close">
+        <button onClick={onClose} className="text-muted hover:text-ink" aria-label="Close">
           ✕
         </button>
       </div>
