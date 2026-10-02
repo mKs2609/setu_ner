@@ -11,7 +11,14 @@ import {
   DEGRADED_BELOW,
   RAMP,
 } from "@/lib/basemap";
-import { fetchRoadsGeoJSON, KNOWN_DISTRICTS, type RoadsGeoJSON } from "@/lib/api";
+import {
+  fetchModelStatus,
+  fetchRoadsGeoJSON,
+  KNOWN_DISTRICTS,
+  type ModelStatus,
+  type RoadsGeoJSON,
+} from "@/lib/api";
+import { ago, useTicker } from "@/components/chrome/time";
 import { LoadingNote, Skeleton } from "@/components/chrome/Loading";
 
 const INITIAL_CENTER: [number, number] = [92.7, 24.9];
@@ -45,6 +52,82 @@ function colorExpression(metric: AccessibilityMetric): maplibregl.ExpressionSpec
     RAMP.unknown,
     ["interpolate", ["linear"], ["get", metric], 0, RAMP.cutOff, 0.5, RAMP.degraded, 1, RAMP.clear],
   ];
+}
+
+/** How often the page re-asks what the scorer has written. */
+const STATUS_REFRESH_MS = 120_000;
+
+/**
+ * Where the colours came from, and how old they are.
+ *
+ * WHY THE MAP NEEDED THIS AT ALL
+ * It drew 51,839 coloured roads and said nothing about when they were
+ * scored. The as-of date existed only inside a road's popup, so a reader
+ * looking at the map -- the thing this project is for -- had no way to tell
+ * today's forecast from one computed a week ago. Everywhere else in this
+ * project the qualification travels with the number; here it did not.
+ *
+ * It refreshes rather than rendering once, so a tab left open through the
+ * 07:30 job sees the new report arrive instead of quietly ageing.
+ */
+function Provenance({ metric }: { metric: AccessibilityMetric }) {
+  const [status, setStatus] = useState<ModelStatus | null>(null);
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
+  useTicker(30_000); // keeps "checked ..." honest between refreshes
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      fetchModelStatus()
+        .then((s) => {
+          if (cancelled) return;
+          setStatus(s);
+          setCheckedAt(new Date().toISOString());
+        })
+        .catch(() => {
+          /* The map is the point; its provenance strip is not worth an error. */
+        });
+    };
+    load();
+    const id = setInterval(() => {
+      if (!document.hidden) load();
+    }, STATUS_REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  const scoring = status?.scoring;
+  if (!scoring) return null;
+
+  // The baseline is a fixed 2025 proxy; only the forecast has an as-of.
+  const isForecast = metric === "current_accessibility";
+
+  return (
+    <div className="mt-1 border-t border-line/70 pt-2 text-micro text-muted">
+      {isForecast ? (
+        <>
+          <p>
+            Scored from the report of{" "}
+            <span className="text-ink">{scoring.as_of}</span>
+            {scoring.age_days === 0
+              ? " (today)"
+              : ` (${scoring.age_days} day${scoring.age_days === 1 ? "" : "s"} old)`}
+          </p>
+          {scoring.stale && (
+            <p className="mt-0.5 text-caution">
+              Older than the scorer allows — these are not current conditions.
+            </p>
+          )}
+          <p className="mt-0.5">{scoring.roads_scored.toLocaleString()} roads scored</p>
+        </>
+      ) : (
+        <p>A fixed 2025 historical proxy, not a forecast. Switch above for the model.</p>
+      )}
+      {checkedAt && <p className="mt-0.5">checked {ago(checkedAt)}</p>}
+    </div>
+  );
 }
 
 /** Which roads get the dashed overlay: scored, and in the worst band. */
@@ -313,6 +396,8 @@ export default function AccessibilityMap({
           </p>
         )}
         {meta?.note && <p className="text-caution text-xs">{meta.note}</p>}
+
+        <Provenance metric={metric} />
       </div>
 
       {/* The legend is positioned against this, not the whole page, so it

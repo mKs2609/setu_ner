@@ -192,10 +192,86 @@ def main() -> int:
         ],
     })
 
+    # --- a stale feed: ours to fix, or theirs to wait out? ------------------
+    # Outside the monsoon the flood report stops for months. Ingestion keeps
+    # reaching the portal and keeps being told there is nothing, which is a
+    # working pipeline and must not page anyone.
+    case("a feed the source has gone quiet on is not a fault", 0, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "no_data", "started_at": hours_ago(2)},
+        ],
+    })
+
+    # The same staleness with nobody asking is our problem, and must fail.
+    case("the same staleness with no recent fetch does fail", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+        },
+    }, {"recent_runs": []})
+
+    # A fetch so old it no longer counts as "we are still asking".
+    case("a fetch older than the window does not excuse staleness", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "no_data", "started_at": hours_ago(cd.ASKED_WITHIN_HOURS + 6)},
+        ],
+    })
+
+    # Quiet for long enough that a moved URL would look identical. A person
+    # should look, so the alert comes back.
+    case("a very long silence is reported anyway", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-08-01",
+                               "age_days": cd.QUIET_TOLERATED_DAYS + 1, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "no_data", "started_at": hours_ago(2)},
+        ],
+    })
+
+    # A quiet flood feed must not excuse a stale rainfall feed.
+    case("one feed being quiet does not cover another", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+            "rainfall_freshness": {"ok": True, "latest_day": "2026-09-10",
+                                   "age_days": 20, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "status": "no_data", "started_at": hours_ago(2)},
+        ],
+    })
+
     # --- the happy path -----------------------------------------------------
     case("healthy", 0, 200, HEALTHY)
 
-    print("\nall fourteen cases behave correctly")
+    print("\nall nineteen cases behave correctly")
     return 0
 
 

@@ -21,6 +21,14 @@ WHY IT RUNS FROM GITHUB AND NOT THE INGESTION MACHINE
 that PC. It only ever calls this project's own API, so the India-only
 restriction on the ASDMA portal (app/jobs/daily.py) does not apply here.
 
+A STALE FEED IS NOT ALWAYS A FAULT
+Before staleness is allowed to fail the check it has to answer one more
+question: did we stop asking, or did the source stop answering? The run log
+knows the difference -- `no_data` means we reached the portal and it had
+nothing to give. Outside the monsoon the Assam flood report stops for
+months, and a watcher that emails about that four times a day would train
+its reader to delete the emails, including the one that matters.
+
 A COLD START IS NOT AN OUTAGE
 The API runs on a free instance that sleeps when idle, and the first request
 after a quiet spell can take the better part of a minute. So a slow or
@@ -48,6 +56,27 @@ RUNS_PATH = "/api/v1/hazards/freshness"
 # three hours a run is not slow, it is gone: the process was killed, the
 # machine slept, or the network dropped mid-fetch.
 STUCK_AFTER_HOURS = 3
+
+# Which feed each freshness check is about, so a stale check can be asked
+# the follow-up question that decides whether it is anybody's fault.
+FEED_FOR_CHECK = {
+    "data_freshness": ("drims_assam_daily_report", "flood"),
+    "rainfall_freshness": ("nasa_gpm_imerg_late", "rainfall"),
+}
+
+# A run that reached the source and got a straight answer -- including "there
+# is nothing for that day", which is an answer, not a failure.
+ANSWERED = {"success", "no_data"}
+
+# How recently we must have asked before "they are quiet" is a fair reading.
+ASKED_WITHIN_HOURS = 36
+
+# ...and how long that reading stays fair. ASDMA stops publishing daily flood
+# reports outside the monsoon, which is normal and lasts months -- but a feed
+# that has been silent this long is indistinguishable from one whose URL
+# moved and now returns a page we correctly refuse to parse. At that point a
+# person should look, so the alert comes back.
+QUIET_TOLERATED_DAYS = 14
 
 # The run log keeps everything, and nothing ever closes a row left at
 # `running` -- the scheduler simply re-owes that day and inserts a new run
@@ -148,6 +177,65 @@ def superseded(run: dict, runs: list[dict]) -> bool:
     return False
 
 
+def asked_recently(runs: list[dict], source: str, hazard: str) -> float | None:
+    """Hours since this feed last gave a straight answer, or None if it has not.
+
+    `no_data` counts. A day the government did not publish is a successful
+    conversation with the source, not a failed one -- and that distinction is
+    the whole point of this function.
+    """
+    best = None
+    for run in runs:
+        if (run.get("source"), run.get("hazard_type")) != (source, hazard):
+            continue
+        if run.get("status") not in ANSWERED:
+            continue
+        hours = age_hours(run.get("started_at", ""))
+        if hours is not None and (best is None or hours < best):
+            best = hours
+    return best
+
+
+def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]]:
+    """Split stale feeds into ours to fix, and theirs to wait out.
+
+    Staleness alone cannot tell the two apart, and treating them the same
+    makes the alert useless for months at a time: outside the monsoon the
+    flood report simply stops, and a watcher that emails four times a day
+    about that teaches its reader to delete the emails -- including the one
+    that matters.
+    """
+    ours, theirs = [], []
+    for name, check in checks.items():
+        if not check.get("stale"):
+            continue
+        feed = FEED_FOR_CHECK.get(name)
+        if feed is None:
+            ours.append(f"{name}: stale, and no feed is mapped to it")
+            continue
+
+        since = asked_recently(runs, *feed)
+        age_days = check.get("age_days")
+        latest = check.get("latest_report") or check.get("latest_day") or "never"
+
+        if since is None or since > ASKED_WITHIN_HOURS:
+            when = "never" if since is None else f"{since:.0f}h ago"
+            ours.append(
+                f"{name}: newest is {latest} and the last answer from the source was {when}"
+            )
+        elif age_days is not None and age_days > QUIET_TOLERATED_DAYS:
+            ours.append(
+                f"{name}: the source has published nothing for {age_days} days -- long "
+                "enough that a moved URL would look the same. Worth checking by hand"
+            )
+        else:
+            theirs.append(
+                f"{name}: newest is {latest}; ingestion ran {since:.0f}h ago and the "
+                "source published nothing. The feed is quiet, not broken"
+            )
+    return ours, theirs
+
+
 def run_problems(body: dict) -> list[str]:
     """Ingestion runs that a person should be told about.
 
@@ -203,31 +291,39 @@ def main() -> int:
     lines = [describe(name, check) for name, check in checks.items()]
 
     failed = [name for name, check in checks.items() if not check.get("ok")]
-    # Reported by readiness, never failed by it -- see the module docstring.
-    stale = [name for name, check in checks.items() if check.get("stale")]
 
-    # The run log answers a question readiness cannot: did the job run at all,
-    # and did it finish? Its absence is itself worth reporting, since we have
-    # just established the API is up.
+    # The run log answers two questions readiness cannot: did the job run and
+    # finish, and -- when a feed is stale -- was that us or the source?
     try:
-        runs = run_problems(fetch(base + RUNS_PATH))
+        log = fetch(base + RUNS_PATH)
     except Unreachable as exc:
-        runs = [f"could not read the run log ({exc})"]
+        log = {}
+        lines.append(f"  FAIL  could not read the run log ({exc})")
+    runs = run_problems(log)
+    stale_ours, stale_theirs = classify_stale(checks, log.get("recent_runs", []))
 
-    for problem in runs:
+    for problem in runs + stale_ours:
         lines.append(f"  FAIL  {problem}")
+    for quiet in stale_theirs:
+        lines.append(f"  note  {quiet}")
     print("\n".join(lines))
 
     trouble = []
     if failed:
         trouble.append("not ready: " + ", ".join(failed))
-    if stale:
-        trouble.append("stale: " + ", ".join(stale))
+    if stale_ours:
+        trouble.append("stale: " + "; ".join(stale_ours))
     if runs:
         trouble.append("runs: " + "; ".join(runs))
 
     if not trouble:
-        headline = f"HEALTHY: {len(checks)} checks passing, nothing stale, ingestion running"
+        headline = f"HEALTHY: {len(checks)} checks passing, ingestion running"
+        if stale_theirs:
+            n = len(stale_theirs)
+            headline += (
+                f" -- but {n} feed{'' if n == 1 else 's'} "
+                f"{'has' if n == 1 else 'have'} gone quiet at the source"
+            )
         print(headline)
         summarise(headline, lines)
         return 0

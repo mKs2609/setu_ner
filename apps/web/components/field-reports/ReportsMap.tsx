@@ -19,6 +19,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE } from "@/lib/basemap";
 
 import type { StoredReport } from "@/lib/api";
+import EmptyMap from "@/components/chrome/EmptyMap";
 
 const CENTER: [number, number] = [92.8, 24.9];
 const ZOOM = 8.5;
@@ -169,6 +170,20 @@ export default function ReportsMap({
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+      {reports.length === 0 ? (
+        <EmptyMap title="Field reports">
+          <p>
+            Nobody has reported a road in the corridor recently, so there is nothing to
+            plot. Each report would appear here as a point — green, amber or red for
+            clear, slow or blocked.
+          </p>
+          <p className="mt-1.5">
+            On the deployed site, sending one needs an operator token, so this map is
+            usually empty. That is the intended state, not a failure: a report closes a
+            road in live routing, so it is not left open to anyone.
+          </p>
+        </EmptyMap>
+      ) : (
       <div className="pointer-events-none absolute bottom-4 left-4 card px-4 py-3 text-caption">
         <div className="mb-1 font-semibold text-ink">Reports</div>
         {(["clear", "slow", "blocked"] as const).map((s) => (
@@ -184,6 +199,7 @@ export default function ReportsMap({
           Hollow points landed too far from any road to count toward fusion.
         </div>
       </div>
+      )}
     </div>
   );
 }

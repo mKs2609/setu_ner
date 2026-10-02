@@ -20,6 +20,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE } from "@/lib/basemap";
 
 import type { ScenarioResult } from "@/lib/api";
+import EmptyMap from "@/components/chrome/EmptyMap";
 
 const FALLBACK_CENTER: [number, number] = [92.8, 24.95];
 const FALLBACK_ZOOM = 8.5;
@@ -139,6 +140,7 @@ export default function ScenarioMap({ result }: { result: ScenarioResult | null 
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
+      {result && (
       <div className="pointer-events-none absolute bottom-4 left-4 card px-4 py-3 text-caption">
         <div className="mb-1 font-semibold text-ink">Routes</div>
         <div className="flex items-center gap-2">
@@ -161,12 +163,18 @@ export default function ScenarioMap({ result }: { result: ScenarioResult | null 
         )}
       </div>
 
+      )}
       {!result && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="card-pill px-4 py-2 text-caption text-muted">
-            Pick a scenario on the left and run it to see the routes.
+        <EmptyMap title="What-if">
+          <p>
+            Pick a scenario on the left and run it. The route before and after your
+            closures will be drawn here, so the detour is visible rather than only
+            stated in minutes.
           </p>
-        </div>
+          <p className="mt-1.5">
+            Nothing is precomputed: each run routes live over all 110,266 road segments.
+          </p>
+        </EmptyMap>
       )}
     </div>
   );

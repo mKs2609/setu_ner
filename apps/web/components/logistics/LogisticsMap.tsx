@@ -17,6 +17,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAP_ATTRIBUTION, BASEMAP_STYLE } from "@/lib/basemap";
 
 import type { PlanResponse } from "@/lib/api";
+import EmptyMap from "@/components/chrome/EmptyMap";
 
 const CENTER: [number, number] = [92.75, 24.9];
 const ZOOM = 8.6;
@@ -168,6 +169,7 @@ export default function LogisticsMap({ plan }: { plan: PlanResponse | null }) {
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+      {plan && (
       <div className="pointer-events-none absolute bottom-4 left-4 card px-4 py-3 text-caption">
         <div className="mb-1 font-semibold text-ink">Plan</div>
         <div className="flex items-center gap-2">
@@ -198,12 +200,19 @@ export default function LogisticsMap({ plan }: { plan: PlanResponse | null }) {
           <span className="text-muted">The other route, where they differ</span>
         </div>
       </div>
+      )}
       {!plan && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="card-pill px-4 py-2 text-caption text-muted">
-            Choose a report day and run a plan.
+        <EmptyMap title="Supply plan">
+          <p>
+            Pick a report day on the left and run a plan. The depots, the circles that
+            need supplying and the routes between them will be drawn here.
           </p>
-        </div>
+          <p className="mt-1.5">
+            The days offered are the ones the government report actually listed people in
+            relief camps, busiest first — so the planner always has something real to
+            solve.
+          </p>
+        </EmptyMap>
       )}
     </div>
   );

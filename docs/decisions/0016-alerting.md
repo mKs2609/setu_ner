@@ -86,6 +86,39 @@ firing about something already fixed is one the reader learns to delete
 unread. The alert exists to say the machine still has a problem, not to
 recount one it already got over.
 
+### A stale feed is not always a fault
+
+Added 2 Oct 2026, after the first October run made the gap obvious. ASDMA
+published nothing on 30 September; ingestion reached the portal, was told
+there was nothing, and recorded `no_data`. Entirely correct — and three days
+later the flood feed would have crossed the staleness line and started
+emailing four times a day about a pipeline that was working.
+
+Outside the monsoon that silence lasts **months**. An alert that fires
+through all of it is one its reader learns to delete, including the time it
+matters.
+
+So staleness now has to answer one more question before it may fail the
+check: **did we stop asking, or did they stop answering?** The run log knows,
+because `no_data` means the fetch succeeded and the source had nothing to
+give.
+
+| Situation | Verdict |
+|---|---|
+| Stale, and a feed answered within 36 hours | **Quiet, not broken** — reported as a note, exit 0 |
+| Stale, and nothing answered in 36 hours | Ours. Alert |
+| Stale beyond 14 days, even with answers | Alert anyway — see below |
+| One feed quiet, another stale | Only the quiet one is excused |
+
+The 14-day cap matters. A feed silent that long is indistinguishable from one
+whose URL moved and now returns a page the parser correctly refuses — which
+is exactly what `no_data` reports. Past that point a person should look, so
+the alert comes back rather than suppressing itself forever.
+
+The quiet case is never silent, either: it prints as a `note` line and the
+headline says so, so the run page shows the real state even though nothing
+failed.
+
 ## The alert is the workflow failing
 
 GitHub emails the repository owner when a scheduled workflow fails. That is
