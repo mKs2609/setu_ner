@@ -150,12 +150,14 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is negative** — 1-day skill −15.6% over 311 graded
-  forecasts (29 Sep 2026), with only 7 positives in a quiet post-monsoon spell.
-  It is published on the model page rather than hidden, and is the first thing
-  the post-season retrain must address. It has not moved cleanly: −37% at 175
-  graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311, so
-  the small-sample explanation in `docs/retraining.md` is not settled.
+- **The live track record is negative** — 1-day skill −14.8% over 549 graded
+  forecasts (7 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
+  It is published on the forecast page rather than hidden, and is the first
+  thing the post-season retrain must address. It has not moved cleanly: −37% at
+  175 graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311
+  and −14.8% at 549, so the small-sample explanation in `docs/retraining.md` is
+  not settled. The later readings added no new positives at all, which points at
+  quiet days rather than at missed floods.
   Calibration (`0017`) offers a testable alternative: the model says 3.2% on
   days where 2.6% happens, and persistence says 1.9% — which loses on exactly
   the quiet days this stretch is made of.
