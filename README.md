@@ -67,34 +67,15 @@ instead, and why.
 
 ## How it works
 
-```mermaid
-flowchart LR
-  subgraph Sources
-    A[ASDMA DRIMS<br/>daily flood reports]
-    B[NASA GPM IMERG<br/>daily rainfall]
-    C[OpenStreetMap<br/>road graph]
-    D[Copernicus DEM<br/>terrain]
-    E[Field reports<br/>from the ground]
-  end
-  subgraph Pipeline
-    F[Polite ingestion<br/>robots.txt, crawl delay, run log]
-    G[(PostgreSQL 16<br/>+ PostGIS)]
-    H[District flood model<br/>+ terrain exposure]
-    I[Routing<br/>exposure-weighted Dijkstra]
-    J[Relief planner<br/>OR-Tools LP]
-  end
-  subgraph Delivery
-    K[FastAPI]
-    L[Next.js + MapLibre]
-  end
-  A --> F --> G
-  B --> F
-  E --> K
-  C --> G
-  D --> G
-  G --> H --> G
-  G --> I --> J --> K --> L
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture-dark.svg">
+  <img alt="Five stages left to right: four data sources feed a polite ingestion
+    pipeline, which writes to PostgreSQL with PostGIS; the flood model and relief
+    planner read from it and write scores back; FastAPI and a Next.js MapLibre map
+    serve them. Underneath, a daily job runs at 07:30 IST on a machine in India, and
+    an independent GitHub Actions watcher checks the result four times a day."
+    src="docs/images/architecture.svg">
+</picture>
 
 **Forecast → road score.** The model is trained statewide (34 districts) because
 the four corridor districts alone have too few flood onsets to learn from.

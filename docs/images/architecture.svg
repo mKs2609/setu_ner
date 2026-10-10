@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 490" width="1000" height="490" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="SetuNER architecture in five stages: data sources, ingestion, a PostGIS store, the model and relief planner, and the API and map that serve them — with a daily job and an independent watcher underneath.">
+<rect width="1000" height="490" fill="#fbfaff"/>
+<text x="24" y="34" font-size="17" font-weight="700" fill="#100f12">SetuNER — how a government PDF becomes a route</text>
+<text x="24" y="54" font-size="11.5" fill="#6f6b7a">Every stage records what it did, so a failure shows up as a failure rather than as an empty map.</text>
+<text x="24" y="90" font-size="9" font-weight="700" fill="#8d6fde">1</text>
+<text x="38" y="90" font-size="12.5" font-weight="700" fill="#100f12">Sources</text>
+<text x="24" y="107" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">FOUR FEEDS</text>
+<rect x="24" y="112" width="180" height="243" rx="7" fill="#ffffff" stroke="#e7e3f0"/>
+<rect x="33" y="121" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="43" y="132" font-size="10.8" font-weight="600" fill="#100f12">ASDMA DRIMS</text>
+<text x="43" y="145" font-size="9.3" fill="#6f6b7a">daily flood PDF — the one</text>
+<text x="43" y="156" font-size="9.3" fill="#6f6b7a">scraped source</text>
+<rect x="33" y="169" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="43" y="180" font-size="10.8" font-weight="600" fill="#100f12">NASA GPM IMERG</text>
+<text x="43" y="193" font-size="9.3" fill="#6f6b7a">satellite rainfall over OPeNDAP</text>
+<rect x="33" y="206" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="43" y="217" font-size="10.8" font-weight="600" fill="#100f12">OpenStreetMap</text>
+<text x="43" y="230" font-size="9.3" fill="#6f6b7a">road graph via Overpass ·</text>
+<text x="43" y="241" font-size="9.3" fill="#6f6b7a">one-off</text>
+<rect x="33" y="254" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="43" y="265" font-size="10.8" font-weight="600" fill="#100f12">Copernicus DEM</text>
+<text x="43" y="278" font-size="9.3" fill="#6f6b7a">elevation by range request ·</text>
+<text x="43" y="289" font-size="9.3" fill="#6f6b7a">one-off</text>
+<path d="M 210 233.5 L 232 233.5" stroke="#b9b2cc" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+<text x="240" y="90" font-size="9" font-weight="700" fill="#8d6fde">2</text>
+<text x="254" y="90" font-size="12.5" font-weight="700" fill="#100f12">Ingestion</text>
+<text x="240" y="107" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">DATA ENGINEERING</text>
+<rect x="240" y="112" width="172" height="243" rx="7" fill="#ffffff" stroke="#e7e3f0"/>
+<rect x="249" y="121" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="259" y="132" font-size="10.8" font-weight="600" fill="#100f12">Polite client</text>
+<text x="259" y="145" font-size="9.3" fill="#6f6b7a">robots.txt, crawl delay, size</text>
+<text x="259" y="156" font-size="9.3" fill="#6f6b7a">caps</text>
+<rect x="249" y="169" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="259" y="180" font-size="10.8" font-weight="600" fill="#100f12">PDF parser</text>
+<text x="259" y="193" font-size="9.3" fill="#6f6b7a">pdfplumber + district-name</text>
+<text x="259" y="204" font-size="9.3" fill="#6f6b7a">repair</text>
+<rect x="249" y="217" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="259" y="228" font-size="10.8" font-weight="600" fill="#100f12">Grid alignment check</text>
+<text x="259" y="241" font-size="9.3" fill="#6f6b7a">refuses a grid whose axes moved</text>
+<rect x="249" y="254" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="259" y="265" font-size="10.8" font-weight="600" fill="#100f12">Run log</text>
+<text x="259" y="278" font-size="9.3" fill="#6f6b7a">written before each attempt</text>
+<text x="259" y="289" font-size="9.3" fill="#6f6b7a">starts</text>
+<path d="M 418 233.5 L 440 233.5" stroke="#b9b2cc" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+<text x="448" y="90" font-size="9" font-weight="700" fill="#8d6fde">3</text>
+<text x="462" y="90" font-size="12.5" font-weight="700" fill="#100f12">Store</text>
+<text x="448" y="107" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">DATA MODELLING</text>
+<rect x="448" y="112" width="150" height="243" rx="7" fill="#ffffff" stroke="#e7e3f0"/>
+<rect x="457" y="121" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="467" y="132" font-size="10.8" font-weight="600" fill="#100f12">PostgreSQL 16</text>
+<text x="467" y="145" font-size="9.3" fill="#6f6b7a">+ PostGIS 3.3 · Neon,</text>
+<text x="467" y="156" font-size="9.3" fill="#6f6b7a">Singapore</text>
+<rect x="457" y="169" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="467" y="180" font-size="10.8" font-weight="600" fill="#100f12">110,266 roads</text>
+<text x="467" y="193" font-size="9.3" fill="#6f6b7a">graph, terrain, gazetteer</text>
+<rect x="457" y="206" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="467" y="217" font-size="10.8" font-weight="600" fill="#100f12">336 daily reports</text>
+<text x="467" y="230" font-size="9.3" fill="#6f6b7a">observations, runs,</text>
+<text x="467" y="241" font-size="9.3" fill="#6f6b7a">forecasts</text>
+<rect x="457" y="254" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="467" y="265" font-size="10.8" font-weight="600" fill="#100f12">Idempotent migrations</text>
+<text x="467" y="278" font-size="9.3" fill="#6f6b7a">re-runnable, applied on</text>
+<text x="467" y="289" font-size="9.3" fill="#6f6b7a">boot</text>
+<path d="M 604 233.5 L 626 233.5" stroke="#b9b2cc" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+<text x="634" y="90" font-size="9" font-weight="700" fill="#8d6fde">4</text>
+<text x="648" y="90" font-size="12.5" font-weight="700" fill="#100f12">Model &amp; planning</text>
+<text x="634" y="107" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">ML + OPTIMISATION</text>
+<rect x="634" y="112" width="180" height="243" rx="7" fill="#ffffff" stroke="#e7e3f0"/>
+<rect x="643" y="121" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="653" y="132" font-size="10.8" font-weight="600" fill="#100f12">Flood-state model</text>
+<text x="653" y="145" font-size="9.3" fill="#6f6b7a">logistic at 1 day, persistence</text>
+<text x="653" y="156" font-size="9.3" fill="#6f6b7a">at 3</text>
+<rect x="643" y="169" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="653" y="180" font-size="10.8" font-weight="600" fill="#100f12">Shadow challenger</text>
+<text x="653" y="193" font-size="9.3" fill="#6f6b7a">with rainfall · frozen, not</text>
+<text x="653" y="204" font-size="9.3" fill="#6f6b7a">served</text>
+<rect x="643" y="217" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="653" y="228" font-size="10.8" font-weight="600" fill="#100f12">Per-road scoring</text>
+<text x="653" y="241" font-size="9.3" fill="#6f6b7a">terrain exposure prior · 71,520</text>
+<text x="653" y="252" font-size="9.3" fill="#6f6b7a">roads</text>
+<rect x="643" y="265" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="653" y="276" font-size="10.8" font-weight="600" fill="#100f12">Relief planner</text>
+<text x="653" y="289" font-size="9.3" fill="#6f6b7a">OR-Tools lexicographic LP</text>
+<path d="M 820 233.5 L 842 233.5" stroke="#b9b2cc" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+<text x="850" y="90" font-size="9" font-weight="700" fill="#8d6fde">5</text>
+<text x="864" y="90" font-size="12.5" font-weight="700" fill="#100f12">Serve</text>
+<text x="850" y="107" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">BACKEND + FRONTEND</text>
+<rect x="850" y="112" width="126" height="243" rx="7" fill="#ffffff" stroke="#e7e3f0"/>
+<rect x="859" y="121" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="869" y="132" font-size="10.8" font-weight="600" fill="#100f12">FastAPI</text>
+<text x="869" y="145" font-size="9.3" fill="#6f6b7a">31 endpoints · Render</text>
+<rect x="859" y="158" width="2.5" height="24" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="869" y="169" font-size="10.8" font-weight="600" fill="#100f12">Next.js 14</text>
+<text x="869" y="182" font-size="9.3" fill="#6f6b7a">MapLibre GL · Vercel</text>
+<rect x="859" y="195" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="869" y="206" font-size="10.8" font-weight="600" fill="#100f12">Every number</text>
+<text x="869" y="219" font-size="9.3" fill="#6f6b7a">carries its source</text>
+<text x="869" y="230" font-size="9.3" fill="#6f6b7a">and age</text>
+<rect x="859" y="243" width="2.5" height="35" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="869" y="254" font-size="10.8" font-weight="600" fill="#100f12">Readiness endpoint</text>
+<text x="869" y="267" font-size="9.3" fill="#6f6b7a">ten checks · what</text>
+<text x="869" y="278" font-size="9.3" fill="#6f6b7a">Render gates on</text>
+<rect x="859" y="291" width="2.5" height="46" rx="1.2" fill="#8d6fde" opacity="0.55"/>
+<text x="869" y="302" font-size="10.8" font-weight="600" fill="#100f12">Field reports in</text>
+<text x="869" y="315" font-size="9.3" fill="#6f6b7a">public POST ·</text>
+<text x="869" y="326" font-size="9.3" fill="#6f6b7a">corroborated, never</text>
+<text x="869" y="337" font-size="9.3" fill="#6f6b7a">overwrite</text>
+<path d="M 674 355 L 674 366 L 523.0 366 L 523.0 355" stroke="#b9b2cc" stroke-width="1.3" fill="none" stroke-dasharray="3 2.5" marker-end="url(#ar)"/>
+<rect x="519.25" y="358" width="158.5" height="15" fill="#fbfaff"/>
+<text x="598.5" y="369" font-size="8.8" text-anchor="middle" fill="#6f6b7a">scores and forecasts written back</text>
+<rect x="24" y="389" width="952" height="81" rx="7" fill="#f4f1fd" stroke="#e7e3f0"/>
+<text x="40" y="409" font-size="8.6" letter-spacing="0.7" fill="#6f6b7a">OPERATIONS</text>
+<text x="40" y="429" font-size="10.8" font-weight="600" fill="#100f12">Daily job — 07:30 IST, on a machine in India</text>
+<text x="40" y="444" font-size="9.3" fill="#6f6b7a">ASDMA does not answer hosts outside India, so the scheduler</text>
+<text x="40" y="455" font-size="9.3" fill="#6f6b7a">cannot live in the cloud. Catch-up fetches the oldest owed day</text>
+<text x="40" y="466" font-size="9.3" fill="#6f6b7a">first.</text>
+<text x="512" y="429" font-size="10.8" font-weight="600" fill="#100f12">Watcher — GitHub Actions, four times a day</text>
+<text x="512" y="444" font-size="9.3" fill="#6f6b7a">Asks four questions and fails if any answer is wrong, so the</text>
+<text x="512" y="455" font-size="9.3" fill="#6f6b7a">failure is the alert. Deliberately not on the machine it</text>
+<text x="512" y="466" font-size="9.3" fill="#6f6b7a">watches.</text>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b9b2cc"/></marker></defs>
+</svg>

@@ -24,10 +24,31 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+/**
+ * `metadataBase` is what turns the relative card path into the absolute URL a
+ * link preview needs; without it Next emits a relative one and every scraper
+ * ignores it. `app/icon.svg` and `app/opengraph-image.jpg` are picked up by
+ * filename, so they are not listed here.
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL("https://setu-ner-web.vercel.app"),
   title: "SetuNER — Road Accessibility & Relief Logistics",
   description:
     "Flood accessibility forecasting and relief logistics for the Barak Valley corridor, Assam.",
+  openGraph: {
+    type: "website",
+    siteName: "SetuNER",
+    url: "/",
+    title: "SetuNER — which roads will still work tomorrow",
+    description:
+      "Flood accessibility forecasting and relief logistics for the Barak Valley corridor, Assam. Built from government reports, satellite rainfall and terrain, with every number traceable to its source.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SetuNER — which roads will still work tomorrow",
+    description:
+      "Flood accessibility forecasting and relief logistics for the Barak Valley corridor, Assam.",
+  },
 };
 
 export default function RootLayout({
