@@ -45,6 +45,13 @@ def list_roads(
     limit: int = Query(100, le=1000, description="Capped to keep responses reasonable -- this corridor has 100k+ edges"),
     db: Session = Depends(get_db),
 ):
+    """List road segments, with optional district and accessibility filters.
+
+    Returns whole geometries, so the limit is capped: this corridor has over
+    100,000 edges and an unbounded response would not fit in the host's memory.
+    For the map layer use `/roads/geojson`, which is built in PostGIS and
+    gzipped instead of serialised row by row.
+    """
     stmt = select(Road)
     if district:
         stmt = stmt.where(Road.district == district)
@@ -60,6 +67,12 @@ def list_roads(
 
 @router.get("/{road_id}")
 def get_road(road_id: int, db: Session = Depends(get_db)):
+    """One road segment: geometry, class, terrain, and its current score.
+
+    `current_accessibility` is the forecast score and `current_accessibility_as_of`
+    is the report date it was computed from — always read them together, because
+    a score with no date cannot be judged. 404 if the id is unknown.
+    """
     road = db.get(Road, road_id)
     if road is None:
         raise HTTPException(status_code=404, detail=f"Road {road_id} not found")

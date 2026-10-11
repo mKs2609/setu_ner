@@ -53,6 +53,11 @@ def _get(db: Session, rec_id: str) -> Recommendation:
 
 @router.get("")
 def list_recommendations(limit: int = Query(20, ge=1, le=100), db: Session = Depends(get_db)):
+    """Saved plans and scenario runs, newest first.
+
+    The audit trail: each record keeps the inputs and model versions it was
+    built from, so a past decision can be read back as it was made.
+    """
     recs = db.execute(
         select(Recommendation).order_by(Recommendation.created_at.desc()).limit(limit)
     ).scalars().all()
@@ -68,6 +73,11 @@ def list_recommendations(limit: int = Query(20, ge=1, le=100), db: Session = Dep
 
 @router.get("/{rec_id}")
 def get_recommendation(rec_id: str, db: Session = Depends(get_db)):
+    """One saved record in full: inputs, outputs, model versions, data date.
+
+    `data_as_of` is the report date the decision was built from, which is what
+    makes an old record judgeable rather than merely old.
+    """
     rec = _get(db, rec_id)
     return {
         **audit.summary(rec),
@@ -83,12 +93,22 @@ def get_recommendation(rec_id: str, db: Session = Depends(get_db)):
 
 @router.get("/{rec_id}/explanation")
 def get_explanation(rec_id: str, db: Session = Depends(get_db)):
+    """The explanation stored with a record, as it was written at the time.
+
+    Replayed, not recomputed — regenerating it with today's model would
+    describe a decision nobody actually made.
+    """
     rec = _get(db, rec_id)
     return {"id": rec.id, "data_as_of": rec.data_as_of.isoformat(), **rec.explanation}
 
 
 @router.get("/{rec_id}/overrides")
 def list_overrides(rec_id: str, db: Session = Depends(get_db)):
+    """Operator overrides recorded against this record, oldest first.
+
+    An override never edits the original: both the recommendation and the
+    human disagreement with it are kept, which is the point of the log.
+    """
     rec = _get(db, rec_id)
     rows = db.execute(
         select(RecommendationOverride)
@@ -102,6 +122,12 @@ def list_overrides(rec_id: str, db: Session = Depends(get_db)):
     "/{rec_id}/overrides", status_code=201, dependencies=[Depends(security.require_operator)]
 )
 def add_override(rec_id: str, body: OverrideIn, db: Session = Depends(get_db)):
+    """Record an operator's decision to do something other than what was advised.
+
+    Needs an operator token. Appends to the record rather than changing it, so
+    the system can later be asked which of its outputs people actually used —
+    the question it cannot answer about itself.
+    """
     rec = _get(db, rec_id)
     try:
         row = audit.add_override(

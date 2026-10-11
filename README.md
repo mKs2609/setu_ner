@@ -11,14 +11,14 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-313%20api%20%2B%2015%20web-brightgreen)
+![Tests](https://img.shields.io/badge/tests-313%20api%20%2B%2015%20web%20%2B%2022%20monitoring-brightgreen)
 
 | | |
 |---|---|
 | **Live app** | https://setu-ner-web.vercel.app |
 | **API** | https://setuner-api.onrender.com · [interactive docs](https://setuner-api.onrender.com/docs) · [readiness](https://setuner-api.onrender.com/api/v1/health/ready) |
 | **Coverage** | Barak Valley corridor, Assam — Cachar, Karimganj (Sribhumi), Hailakandi, Dima Hasao |
-| **Data** | 110,266 road segments · 321 daily flood reports since May 2025 · 515 days of satellite rainfall · updated every morning |
+| **Data** | 110,266 road segments · 337 daily flood reports and daily satellite rainfall since May 2025 · updated every morning (counts as of 11 Oct 2026) |
 
 > The API runs on a free instance that sleeps when idle. The first request
 > after a quiet spell can take up to a minute.
@@ -131,12 +131,12 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is negative** — 1-day skill −14.8% over 549 graded
-  forecasts (7 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
+- **The live track record is negative** — 1-day skill −14.0% over 651 graded
+  forecasts (11 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
   It is published on the forecast page rather than hidden, and is the first
   thing the post-season retrain must address. It has not moved cleanly: −37% at
   175 graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311
-  and −14.8% at 549, so the small-sample explanation in `docs/retraining.md` is
+  and −14.0% at 651, so the small-sample explanation in `docs/retraining.md` is
   not settled. The later readings added no new positives at all, which points at
   quiet days rather than at missed floods.
   Calibration (`0017`) offers a testable alternative: the model says 3.2% on
@@ -155,7 +155,7 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 313 on the API — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
+| **Tests** | 313 on the API, 22 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
@@ -317,5 +317,5 @@ is to stop.
 
 ## Licence
 
-Source code: [MIT](LICENSE). The data keeps its own terms — in particular,
-anything derived from OpenStreetMap is ODbL 1.0.
+MIT for the code — see [`LICENSE`](LICENSE). The data keeps its own terms,
+listed in [`DATA-LICENCES.md`](DATA-LICENCES.md).

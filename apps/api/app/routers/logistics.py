@@ -81,6 +81,11 @@ class PlanRequest(BaseModel):
 
 @router.get("/supply-days")
 def supply_days(db: Session = Depends(get_db)):
+    """Report days that have enough data to plan against, busiest first.
+
+    Ordered by affected population, so the default day is a real flood day
+    rather than a quiet one that makes the planner look like it does nothing.
+    """
     return {"days": demand_mod.supply_days(db)}
 
 
@@ -90,6 +95,12 @@ def get_demand(
     horizon_days: int = Query(1, ge=1, le=7),
     db: Session = Depends(get_db),
 ):
+    """Estimated relief demand per district, from relief-camp populations.
+
+    Demand is derived from reported camp populations rather than assumed per
+    head of district population, so it reflects who has actually been displaced.
+    404 if the requested day has no report behind it.
+    """
     try:
         est = demand_mod.estimate(db, as_of, horizon_days)
     except ValueError as exc:
@@ -99,6 +110,12 @@ def get_demand(
 
 @router.get("/example-inputs")
 def example_inputs():
+    """Example depots and fleet, for trying `/logistics/plan` without real figures.
+
+    No source publishes depot stock or fleet size, so these are illustrative.
+    Every plan built from them is marked as using example inputs, in the
+    response rather than only in the documentation.
+    """
     return {
         "depots": plan_mod.EXAMPLE_DEPOTS,
         "fleet": FleetIn().model_dump(),
@@ -112,6 +129,16 @@ def make_plan(
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
 ):
+    """Plan relief deliveries over the roads the forecast expects to survive.
+
+    Lexicographic, not weighted: coverage is maximised first, then the worst
+    district shortfall is minimised, then truck-hours — each stage fixed before
+    the next is solved, so a plan cannot quietly trade coverage for convenience.
+    The response names the binding constraint, which is the part an operator can
+    act on: buy stock, hire trucks, or repair a road.
+
+    Planning is open. Saving a plan into the audit trail needs an operator token.
+    """
     # Planning is public; making it part of the audit trail is not.
     if body.save and not security.is_authorised(authorization):
         raise HTTPException(

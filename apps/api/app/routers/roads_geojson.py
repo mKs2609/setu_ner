@@ -77,6 +77,12 @@ def roads_geojson(
     fetch_all: bool = Query(False, description="Required to fetch without a district filter. Still capped."),
     db: Session = Depends(get_db),
 ):
+    """The map layer: road geometries as GeoJSON, assembled inside PostGIS.
+
+    Pass a `district` unless you genuinely need the corridor at once. Without
+    one the response is the whole graph — 28.7 MB before compression — which is
+    why `fetch_all` has to be set explicitly and the result is still capped.
+    """
     if fetch_all:
         limit = HARD_CAP
     elif district:

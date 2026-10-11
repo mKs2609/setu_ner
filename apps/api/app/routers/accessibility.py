@@ -34,6 +34,13 @@ router = APIRouter()
 
 @router.get("/{road_id}")
 def get_accessibility(road_id: int, db: Session = Depends(get_db)):
+    """The accessibility forecast for one road, with the data date behind it.
+
+    The score is the district's flood probability multiplied by a terrain
+    exposure prior. That prior is a stated assumption, not a fitted result —
+    the corridor has only about 25 geolocated damage reports, too few to fit or
+    validate it — so confidence is reported as low throughout.
+    """
     road = db.get(Road, road_id)
     if road is None:
         raise HTTPException(status_code=404, detail=f"Road {road_id} not found")
@@ -94,6 +101,13 @@ def get_accessibility(road_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{road_id}/explanation")
 def explain_accessibility(road_id: int, db: Session = Depends(get_db)):
+    """Why this road scored what it did, in parts that add up to the score.
+
+    Returns the district probability, the terrain exposure prior and the
+    contribution of each model feature. For the linear model the contributions
+    are exact rather than approximated, and a test asserts that they
+    reconstruct the prediction.
+    """
     road = db.get(Road, road_id)
     if road is None:
         raise HTTPException(status_code=404, detail=f"Road {road_id} not found")

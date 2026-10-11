@@ -41,6 +41,8 @@ REQUIRED_ROAD_COLUMNS = ("elevation_m", "accessibility_model_version", "current_
 
 @router.get("/health")
 def health_check():
+    """Liveness: the process is up. Touches nothing else, so it cannot fail
+    for a reason that is not about this process."""
     return {
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -59,6 +61,14 @@ def _latest_success(db, source: str, hazard_type: str) -> date | None:
 
 @router.get("/health/ready")
 def readiness():
+    """Readiness: ten checks over the database, data and model artifacts.
+
+    Staleness is **reported but never failed on**. The host gates traffic on
+    this endpoint, and pulling a working service out of rotation would fix
+    nothing about old data — no restart makes a government report appear. So
+    each check carries its own `stale` flag for monitoring to read, and `ok`
+    stays true. Anything that a restart could fix does fail here.
+    """
     checks: dict[str, dict] = {}
 
     try:

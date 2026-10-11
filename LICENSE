@@ -19,18 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The MIT licence above covers this project's own source code. It does not
-relicense the data it uses, which keeps its own terms:
-
-  * OpenStreetMap-derived data (road graph, district boundaries, gazetteer)
-    is © OpenStreetMap contributors, licensed under the Open Database License
-    (ODbL) 1.0. Derived databases distributed with this project carry that
-    licence: https://www.openstreetmap.org/copyright
-  * ASDMA DRIMS flood reports are public Government of Assam documents.
-  * NASA GPM IMERG precipitation is NASA open data.
-  * Copernicus DEM elevation is Copernicus open data.
-
-See the attribution table in README.md.

@@ -197,6 +197,14 @@ def _exposure_check(db: Session) -> dict:
 
 @router.get("/status")
 def model_status(db: Session = Depends(get_db)):
+    """Everything known about how good the model is, including where it loses.
+
+    Training and validation setup, held-out season scores against persistence
+    and climatology, calibration with the Brier score decomposed, the live
+    track record graded against the same baseline, and the shadow test on the
+    rainfall challenger. Where a model lost to its baseline the baseline is
+    what is served, and this endpoint says so rather than hiding it.
+    """
     history = load_history(db)
     latest_report = max(history.published) if history.published else None
     scored = db.execute(
@@ -338,6 +346,12 @@ def latest_district_forecasts(
     corridor_only: bool = Query(True),
     db: Session = Depends(get_db),
 ):
+    """The latest stored district flood forecasts at 1 and 3 days.
+
+    These are the forecasts as they were served that morning, not a
+    recomputation with today's model. Only the served model appears here; the
+    shadow challenger is stored alongside but deliberately excluded.
+    """
     latest = db.execute(
         select(func.max(DistrictFloodForecast.as_of_date)).where(shadow.served_only())
     ).scalar()
