@@ -170,8 +170,8 @@ distinction is tested against fake servers returning each case.
 
 ## What this is not
 
-It is email, twice a day, to one person. It is not paging, it has no
-escalation, and a failure at 09:05 IST waits until 21:00 for its second look.
+It is email, four times a day, to one person. It is not paging, it has no
+escalation, and a failure just after one slot waits for the next.
 For a project operated by one person that is the right size; an agency
 adopting this would put real monitoring in front of it. The README says so
 under Limitations rather than implying more.
@@ -187,3 +187,33 @@ queued for 03:30 UTC and started at 09:26 UTC, and GitHub documents that runs
 can be dropped under load. Hence four slots a day: not because the data moves
 that fast, but so one late or missing slot does not hide a broken pipeline
 until tomorrow.
+
+## What the NASA outage taught it (12 October 2026)
+
+NASA's OPeNDAP service returned HTTP 500 on everything for two days — the
+service root included, with no credentials involved, while the plain data
+archive on the same host stayed at 200. Nothing here was broken, and the
+alert was correct. But the report it produced was not, in two ways, and
+neither changed an exit code:
+
+**Two owed days printed as the same line.** Catch-up was failing on both 9 and
+10 October, and the message named only the feed, so the output read as one
+line duplicated rather than two days owed. It now names the target day — the
+same lesson as the supersede bug, which also came down to the day mattering.
+
+**An erroring feed was described as quiet.** The quiet-source rule asks
+whether the source answered recently. Catch-up still asked for the newest day
+and got the normal "not published yet", which counts as an answer — so the
+rule concluded the feed was "quiet, not broken" about a feed returning 500s.
+A feed with failed runs inside the window is no longer eligible to be called
+quiet. The failed runs remain the alert; the note simply stops contradicting
+them.
+
+The second one is the more interesting failure. The rule was written to stop
+the alert crying wolf outside the monsoon, and it worked — but it was asking
+"did the source answer?" when the honest question is "is the source working?".
+During a partial outage those differ, because catch-up asks about several days
+at once and one of them can legitimately have nothing to give.
+
+Both are covered by tests that assert on the printed text rather than the exit
+code, because an exit-code test cannot catch an explanation that is wrong.

@@ -213,6 +213,25 @@ def asked_recently(runs: list[dict], source: str, hazard: str) -> float | None:
     return best
 
 
+def failing_recently(runs: list[dict], source: str, hazard: str) -> float | None:
+    """Hours since this feed last returned an error, or None if it has not.
+
+    A feed can be answering for one day and erroring for another at the same
+    time -- catch-up asks for several -- so this is asked separately from
+    `asked_recently` rather than derived from it.
+    """
+    best = None
+    for run in runs:
+        if (run.get("source"), run.get("hazard_type")) != (source, hazard):
+            continue
+        if run.get("status") != "failed":
+            continue
+        hours = age_hours(run.get("started_at", ""))
+        if hours is not None and (best is None or hours < best):
+            best = hours
+    return best
+
+
 def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]]:
     """Split stale feeds into ours to fix, and theirs to wait out.
 
@@ -232,6 +251,7 @@ def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]
             continue
 
         since = asked_recently(runs, *feed)
+        erroring = failing_recently(runs, *feed)
         age_days = check.get("age_days")
         latest = check.get("latest_report") or check.get("latest_day") or "never"
 
@@ -244,6 +264,16 @@ def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]
             ours.append(
                 f"{name}: the source has published nothing for {age_days} days -- long "
                 "enough that a moved URL would look the same. Worth checking by hand"
+            )
+        elif erroring is not None and erroring <= ASKED_WITHIN_HOURS:
+            # The newest day being unpublished is normal and would otherwise
+            # read as "the source is just quiet". It is not quiet if older days
+            # are erroring. The failed runs above are the alert; this only has
+            # to stop contradicting them.
+            theirs.append(
+                f"{name}: newest is {latest}, and the source is returning errors "
+                f"(last failure {erroring:.0f}h ago). Not a quiet feed -- see the "
+                "failed runs above"
             )
         else:
             theirs.append(
@@ -274,7 +304,9 @@ def run_problems(body: dict) -> list[str]:
             problems.append(f"{label}: started {hours:.1f}h ago and never finished")
         elif status == "failed" and (hours is None or hours <= FAILURE_WINDOW_HOURS):
             when = f"{hours:.1f}h ago" if hours is not None else "recently"
-            problems.append(f"{label}: run failed {when}")
+            # Without the day, two owed days read as one line printed twice.
+            day = run.get("target_date") or "no target day"
+            problems.append(f"{label} for {day}: run failed {when}")
     return problems
 
 

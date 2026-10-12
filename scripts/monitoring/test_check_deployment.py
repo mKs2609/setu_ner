@@ -310,10 +310,126 @@ def main() -> int:
         ],
     })
 
+    # --- a source that is erroring, not merely quiet -----------------------
+    # 12 Oct 2026, from production: NASA's OPeNDAP service returned HTTP 500 on
+    # everything for two days. Catch-up still asked for the newest day, got the
+    # normal "not published yet", and the quiet-source rule read that single
+    # answer as proof the source was healthy -- while two older days were
+    # failing. The run failures still failed the check, but the note said the
+    # feed was "quiet, not broken" about a feed that was returning 500s.
+    case("a feed that is erroring is not reported as quiet", 1, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "rainfall_freshness": {"ok": True, "latest_day": "2026-10-08",
+                                   "age_days": 4, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-11",
+             "status": "no_data", "started_at": hours_ago(16)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-10",
+             "status": "failed", "started_at": hours_ago(16)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-09",
+             "status": "failed", "started_at": hours_ago(16)},
+        ],
+    })
+
+    # The genuinely quiet case must keep working: answers, no failures.
+    case("a quiet feed with no failures is still excused", 0, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-04",
+             "status": "no_data", "started_at": hours_ago(2)},
+        ],
+    })
+
+    # An old failure, long since recovered, must not re-label a quiet feed.
+    case("a failure older than the window does not un-quiet a feed", 0, 200, {
+        "ready": True,
+        "checks": {
+            "database": {"ok": True},
+            "data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                               "age_days": 5, "stale": True},
+        },
+    }, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-04",
+             "status": "no_data", "started_at": hours_ago(2)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-09-01",
+             "status": "failed", "started_at": hours_ago(cd.ASKED_WITHIN_HOURS + 12)},
+        ],
+    })
+
     # --- the happy path -----------------------------------------------------
     case("healthy", 0, 200, HEALTHY)
 
-    print("\nall twenty-two cases behave correctly")
+    # --- what the report actually says --------------------------------------
+    # These read the strings. The 12 October bug changed no exit code: the
+    # failed runs failed the check correctly, and only the explanation printed
+    # next to them was wrong. Exit-code cases cannot catch that.
+    print("\n=== wording: a stale feed that is erroring ===")
+    ours, theirs = cd.classify_stale(
+        {"rainfall_freshness": {"ok": True, "latest_day": "2026-10-08",
+                                "age_days": 4, "stale": True}},
+        [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-11", "status": "no_data",
+             "started_at": hours_ago(16)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-09", "status": "failed",
+             "started_at": hours_ago(16)},
+        ],
+    )
+    note = " ".join(theirs)
+    assert "quiet, not broken" not in note, f"still calls an erroring feed quiet: {note}"
+    assert "returning errors" in note, f"does not say the source is erroring: {note}"
+    print(" ", note)
+
+    print("\n=== wording: a genuinely quiet feed ===")
+    ours, theirs = cd.classify_stale(
+        {"data_freshness": {"ok": True, "latest_report": "2026-09-29",
+                            "age_days": 5, "stale": True}},
+        [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-04", "status": "no_data",
+             "started_at": hours_ago(2)},
+        ],
+    )
+    assert not ours, ours
+    assert "quiet, not broken" in " ".join(theirs), theirs
+    print(" ", " ".join(theirs))
+
+    print("\n=== wording: two owed days are two distinct lines ===")
+    problems = cd.run_problems({
+        "recent_runs": [
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-10", "status": "failed",
+             "started_at": hours_ago(16)},
+            {"source": "nasa_gpm_imerg_late", "hazard_type": "rainfall",
+             "target_date": "2026-10-09", "status": "failed",
+             "started_at": hours_ago(16)},
+        ],
+    })
+    assert len(problems) == 2, problems
+    assert len(set(problems)) == 2, f"two owed days printed identically: {problems}"
+    assert "2026-10-09" in " ".join(problems) and "2026-10-10" in " ".join(problems), problems
+    for line in problems:
+        print(" ", line)
+
+    print("\nall twenty-five cases and three wording checks behave correctly")
     return 0
 
 
