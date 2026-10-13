@@ -144,27 +144,42 @@ def ingest_one_day(
     }
 
 
-# Ranked worst to best. When a day has several runs, the best outcome wins:
-# a success after two failures means we have that day.
-_STATUS_RANK = {"failed": 0, "running": 1, "no_data": 2, "success": 3}
-
-
 def existing_run_status(db, source: str, hazard: str) -> dict[date, str]:
-    """Best outcome recorded per target date, for one source and hazard."""
+    """What each target date's history amounts to, for one source and hazard.
+
+    A `success` settles a day outright, however many failures came before it.
+    For every other outcome the **most recent** attempt governs, not the most
+    favourable one.
+
+    That distinction is not academic. On 13 October 2026 the 9 October
+    rainfall went missing for good: it was first asked for before IMERG had
+    published it (`no_data`), then failed twice against a NASA outage. Taking
+    the best of those gave `no_data`, which `plan_catch_up` writes off after
+    three days -- so the day was abandoned while its latest news was a hard
+    failure. `no_data` means "the source has nothing"; a later failure means
+    "we do not know yet", and the newer statement is the true one.
+    """
     rows = db.execute(
-        select(IngestRun.target_date, IngestRun.status).where(
+        select(IngestRun.target_date, IngestRun.status, IngestRun.started_at).where(
             IngestRun.source == source,
             IngestRun.hazard_type == hazard,
             IngestRun.target_date.isnot(None),
         )
     ).all()
 
-    best: dict[date, str] = {}
-    for target_date, status in rows:
-        current = best.get(target_date)
-        if current is None or _STATUS_RANK.get(status, -1) > _STATUS_RANK.get(current, -1):
-            best[target_date] = status
-    return best
+    outcome: dict[date, str] = {}
+    newest: dict[date, object] = {}
+    for target_date, status, started_at in rows:
+        if outcome.get(target_date) == "success":
+            continue
+        if status == "success":
+            outcome[target_date] = "success"
+            continue
+        seen = newest.get(target_date)
+        if seen is None or (started_at is not None and started_at >= seen):
+            newest[target_date] = started_at
+            outcome[target_date] = status
+    return outcome
 
 
 def main(argv: list[str] | None = None) -> int:

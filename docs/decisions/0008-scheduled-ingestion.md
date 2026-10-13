@@ -126,3 +126,39 @@ running, history accumulates on its own. The remaining input it needs is
 labels, which means real reporters on the field-report screen.
 
 The pitch deck's three overflow slides are still outstanding.
+
+## The day that was quietly written off (13 October 2026)
+
+NASA's OPeNDAP service returned 500 for three days. Catch-up handled it the
+way it was meant to — kept asking, recovered 10 and 11 October as soon as the
+service came back — but **9 October was never refetched, and is a permanent
+hole in the rainfall series.**
+
+The cause is the interaction of two rules that are each correct alone:
+
+- `existing_run_status` recorded the *best* outcome per day, so a success
+  after two failures correctly means the day is held.
+- `plan_catch_up` stops retrying a `no_data` day after three days, because a
+  day the source genuinely has nothing for should not be asked about forever.
+
+9 October was first asked for before IMERG had published it, which is the
+normal lag and is recorded as `no_data`. It then failed twice against the
+outage. Best-of made the day read as `no_data`, the three-day cap wrote it
+off, and nothing ever said so.
+
+The flaw is that `no_data` means two different things depending on when it
+was recorded: "the source has nothing for this day" and "not published yet".
+Only the first justifies giving up. Taking the best of all attempts throws
+away the evidence that distinguishes them.
+
+`success` still settles a day outright. For every other outcome the **most
+recent** attempt now governs, because a later failure is newer information
+than an earlier `no_data`, and the newer statement is the true one.
+
+This is the same shape as the supersede bug in [0016](0016-alerting.md): an
+optimistic aggregate hiding a pessimistic fact. Worth remembering as a
+pattern — when several observations of the same thing are collapsed into one,
+ask which of them the collapse is allowed to discard.
+
+The fix also repairs the existing hole without intervention: 9 October now
+reads as `failed`, so it is owed again and the next successful run fetches it.

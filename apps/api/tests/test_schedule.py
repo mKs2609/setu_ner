@@ -7,7 +7,7 @@ the kind of logic that is easy to get subtly wrong and impossible to notice,
 because the symptom is a quiet hole in history rather than an error.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from app.services.ingestion.schedule import (
     MAX_CATCH_UP_DAYS,
@@ -132,11 +132,75 @@ def test_summary_says_so_when_nothing_is_owed():
     assert "Nothing owed" in summarise_plan([], False, {})
 
 
-def test_status_ranking_prefers_the_best_outcome_for_a_day():
-    """A day retried after two failures is ingested. The plan must see the
-    success, not the failures."""
-    from app.services.ingestion.run import _STATUS_RANK
+class _Row(tuple):
+    """A (target_date, status, started_at) row, as the query returns them."""
 
-    assert _STATUS_RANK["success"] > _STATUS_RANK["no_data"]
-    assert _STATUS_RANK["no_data"] > _STATUS_RANK["running"]
-    assert _STATUS_RANK["running"] > _STATUS_RANK["failed"]
+
+class _FakeDb:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def execute(self, _stmt):
+        rows = self._rows
+
+        class R:
+            @staticmethod
+            def all():
+                return rows
+
+        return R()
+
+
+def _status(rows):
+    from app.services.ingestion.run import existing_run_status
+
+    return existing_run_status(_FakeDb(rows), "src", "flood")
+
+
+def test_a_success_settles_a_day_however_many_failures_came_first():
+    day = date(2026, 10, 9)
+    assert _status([
+        (day, "failed", datetime(2026, 10, 11, 2, 0)),
+        (day, "success", datetime(2026, 10, 12, 2, 0)),
+        (day, "failed", datetime(2026, 10, 13, 2, 0)),
+    ])[day] == "success"
+
+
+def test_a_later_failure_outranks_an_earlier_no_data():
+    """13 Oct 2026, from production: 9 October rainfall was lost for good.
+
+    It was asked for before IMERG had published it (`no_data`), then failed
+    twice against a NASA outage. Taking the best outcome gave `no_data`, which
+    plan_catch_up writes off after three days -- so the day was dropped while
+    its most recent news was a hard failure.
+    """
+    day = date(2026, 10, 9)
+    assert _status([
+        (day, "no_data", datetime(2026, 10, 10, 2, 0)),
+        (day, "failed", datetime(2026, 10, 11, 2, 0)),
+        (day, "failed", datetime(2026, 10, 12, 2, 0)),
+    ])[day] == "failed"
+
+
+def test_that_day_is_then_still_owed_four_days_later():
+    """The point of the fix: the plan must still ask for it."""
+    day = date(2026, 10, 9)
+    existing = _status([
+        (day, "no_data", datetime(2026, 10, 10, 2, 0)),
+        (day, "failed", datetime(2026, 10, 11, 2, 0)),
+        (day, "failed", datetime(2026, 10, 12, 2, 0)),
+    ])
+    owed, _ = plan_catch_up(existing, today=date(2026, 10, 13))
+    assert day in owed
+
+
+def test_a_genuine_no_data_is_still_dropped_after_the_retry_window():
+    """The opposite case must keep working: a day the source really has
+    nothing for is not asked about forever."""
+    day = date(2026, 10, 9)
+    existing = _status([
+        (day, "no_data", datetime(2026, 10, 10, 2, 0)),
+        (day, "no_data", datetime(2026, 10, 12, 2, 0)),
+    ])
+    owed, _ = plan_catch_up(existing, today=date(2026, 10, 13))
+    assert day not in owed
