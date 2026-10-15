@@ -11,7 +11,7 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-313%20api%20%2B%2015%20web%20%2B%2022%20monitoring-brightgreen)
+![Tests](https://img.shields.io/badge/tests-316%20api%20%2B%2015%20web%20%2B%2028%20monitoring-brightgreen)
 
 | | |
 |---|---|
@@ -155,7 +155,7 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 313 on the API, 22 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
+| **Tests** | 316 on the API, 28 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
@@ -184,7 +184,7 @@ apps/
         explain/       Per-feature attribution, narratives, audit
         scenario/      What-if engine
       db/              Models, session, migration runner
-    tests/             313 tests
+    tests/             316 tests
   web/                 Next.js 14 + MapLibre
     tests/             15 tests (colour contrast, committed data, charts)
 geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
@@ -222,7 +222,7 @@ OpenStreetMap, and `docs/deployment.md` covers restoring a dump instead.
 **Tests:**
 
 ```bash
-cd apps/api && python -m pytest -q          # 313 API tests
+cd apps/api && python -m pytest -q          # 316 API tests
 pnpm --filter @setu_ner/web test            # 15 web tests
 ```
 
