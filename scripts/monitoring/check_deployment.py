@@ -224,7 +224,7 @@ def failing_recently(runs: list[dict], source: str, hazard: str) -> float | None
     for run in runs:
         if (run.get("source"), run.get("hazard_type")) != (source, hazard):
             continue
-        if run.get("status") != "failed":
+        if run.get("status") not in ("failed", "rejected"):
             continue
         hours = age_hours(run.get("started_at", ""))
         if hours is not None and (best is None or hours < best):
@@ -297,7 +297,7 @@ def run_problems(body: dict) -> list[str]:
         hours = age_hours(run.get("started_at", ""))
         status = run.get("status")
 
-        if status not in ("running", "failed") or superseded(run, runs):
+        if status not in ("running", "failed", "rejected") or superseded(run, runs):
             continue
 
         if status == "running" and hours is not None and STUCK_AFTER_HOURS < hours <= FAILURE_WINDOW_HOURS:
@@ -307,6 +307,16 @@ def run_problems(body: dict) -> list[str]:
             # Without the day, two owed days read as one line printed twice.
             day = run.get("target_date") or "no target day"
             problems.append(f"{label} for {day}: run failed {when}")
+        elif status == "rejected" and (hours is None or hours <= FAILURE_WINDOW_HOURS):
+            # Reported, because silently dropping a day is worse. But catch-up
+            # stops asking after REJECTED_RETRY_DAYS, so this says its piece
+            # for a day and a half and then goes quiet on its own.
+            when = f"{hours:.1f}h ago" if hours is not None else "recently"
+            day = run.get("target_date") or "no target day"
+            problems.append(
+                f"{label} for {day}: the source served the wrong day and it was "
+                f"refused {when}. Needs a person -- retrying will not fix it"
+            )
     return problems
 
 

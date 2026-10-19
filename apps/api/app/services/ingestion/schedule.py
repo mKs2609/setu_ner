@@ -49,6 +49,17 @@ MAX_CATCH_UP_DAYS = 14
 # How late a district can submit and still be worth re-asking for.
 NO_DATA_RETRY_DAYS = 3
 
+# How long to keep re-asking for a day the source answered wrongly.
+#
+# A `rejected` day is one where the portal served a document printed with a
+# different date. That is deterministic: the same request tomorrow returns the
+# same wrong file. Two days covers a genuinely transient publishing glitch,
+# after which continuing to ask is noise that trains the reader to ignore the
+# alert. Recovering the day later, if the source is ever fixed, is a manual
+# run with --start and --end, which is the right shape for something that
+# needs a human to confirm first.
+REJECTED_RETRY_DAYS = 2
+
 # Statuses that mean "we already have this day, leave it alone".
 SETTLED_STATUSES = {"success"}
 
@@ -59,6 +70,7 @@ def plan_catch_up(
     today: date,
     max_days: int = MAX_CATCH_UP_DAYS,
     no_data_retry_days: int = NO_DATA_RETRY_DAYS,
+    rejected_retry_days: int = REJECTED_RETRY_DAYS,
     lookback_days: int | None = None,
 ) -> tuple[list[date], bool]:
     """Days still owed, newest first, and whether the plan was truncated.
@@ -80,6 +92,8 @@ def plan_catch_up(
         if status in SETTLED_STATUSES:
             continue
         if status == "no_data" and (today - day).days > no_data_retry_days:
+            continue
+        if status == "rejected" and (today - day).days > rejected_retry_days:
             continue
         if status == "running":
             # A run that never finished. Almost always a killed process; the

@@ -162,3 +162,51 @@ ask which of them the collapse is allowed to discard.
 
 The fix also repairs the existing hole without intervention: 9 October now
 reads as `failed`, so it is owed again and the next successful run fetches it.
+
+## When the source answers, and the answer is wrong (20 October 2026)
+
+From 16 October, ASDMA served the flood report printed **2025-05-16** whenever
+we asked for **2026-10-16** — seventeen months stale, same day of the month,
+which smells like a lookup fault in their archive. The landslide report for
+that date was correct, and every other date was correct. Reproducible on
+demand, and still reproducible four days later.
+
+The date guard refused it, which is the whole point of comparing the date
+printed inside the document against the date requested. Without it the system
+would have filed May 2025 flood conditions under 16 October 2026: a map of
+last year's floods presented as today's, with nothing anywhere to say so.
+
+But it was **recorded as `failed`**, and that was wrong. `failed` means "we
+could not get it" and invites a retry — which is correct for the NASA outage,
+where patience was the whole answer. Here the retry fetches the identical
+wrong document every morning, so the scheduler asked four days running and the
+watcher emailed sixteen times about a thing no retry can fix.
+
+Two events, one status:
+
+| | What happened | What helps |
+|---|---|---|
+| `failed` | We could not reach the source, or it errored | Retry tomorrow |
+| `rejected` | We reached it, it answered, the answer was wrong | A person |
+
+A date mismatch is now recorded as **`rejected`**. Catch-up retries such a day
+for `REJECTED_RETRY_DAYS` (2) — enough to cover a transient publishing glitch
+— and then leaves it alone. The watcher reports it with what it is and what to
+do, rather than as a generic failure, and because no new `rejected` run is
+created after the window the alert ages out and goes quiet on its own. Nothing
+is suppressed; the scheduler simply stops asking a question that has been
+answered.
+
+A `rejected` day is **not** settled. It is genuinely missing, and a later
+success still wins, so if ASDMA ever fixes that file a manual
+`--start 2026-10-16 --end 2026-10-16` collects it — which is the right shape
+for something a person should confirm before trusting.
+
+This is the third time one status has carried two meanings in this project:
+`no_data` meaning both "nothing happened" and "not published yet", the
+supersede rule treating any later success as covering an earlier failure, and
+now `failed` meaning both "unreachable" and "answered wrongly". The pattern is
+the same each time — **a category wide enough to hold two causes will be
+treated as the more comfortable one.** The guard that caught this was written
+because the same question was asked of the data: can this document be
+something other than what we asked for?

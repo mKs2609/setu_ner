@@ -373,6 +373,40 @@ def main() -> int:
         ],
     })
 
+    # --- a source that answered with the wrong document ---------------------
+    # 16 Oct 2026: ASDMA served the report printed 2025-05-16 when asked for
+    # 2026-10-16. Refusing it is correct, and a person has to know -- but it
+    # is not the same event as "we could not reach them".
+    case("a rejected day is reported", 1, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16",
+             "status": "rejected", "started_at": hours_ago(16)},
+        ],
+    })
+
+    # Catch-up stops creating these after two days, so the last one ages out
+    # of the window and the alerting goes quiet without anyone silencing it.
+    case("an old rejection has gone quiet by itself", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16",
+             "status": "rejected", "started_at": hours_ago(cd.FAILURE_WINDOW_HOURS + 6)},
+        ],
+    })
+
+    # A refetch of that same day clears it, exactly as for a failure.
+    case("a success for the same day clears a rejection", 0, 200, HEALTHY, {
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16",
+             "status": "success", "started_at": hours_ago(1)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16",
+             "status": "rejected", "started_at": hours_ago(16)},
+        ],
+    })
+
     # --- the happy path -----------------------------------------------------
     case("healthy", 0, 200, HEALTHY)
 
@@ -429,7 +463,40 @@ def main() -> int:
     for line in problems:
         print(" ", line)
 
-    print("\nall twenty-five cases and three wording checks behave correctly")
+    print("\n=== wording: a rejection says what to do about it ===")
+    problems = cd.run_problems({
+        "recent_runs": [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16",
+             "status": "rejected", "started_at": hours_ago(16)},
+        ],
+    })
+    assert len(problems) == 1, problems
+    line = problems[0]
+    assert "2026-10-16" in line, line
+    assert "wrong day" in line, line
+    assert "Needs a person" in line, line
+    assert "run failed" not in line, f"a rejection must not read as a failure: {line}"
+    print(" ", line)
+
+    print("\n=== wording: a feed serving wrong documents is not quiet ===")
+    ours, theirs = cd.classify_stale(
+        {"data_freshness": {"ok": True, "latest_report": "2026-10-15",
+                            "age_days": 5, "stale": True}},
+        [
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-20", "status": "no_data",
+             "started_at": hours_ago(16)},
+            {"source": "drims_assam_daily_report", "hazard_type": "flood",
+             "target_date": "2026-10-16", "status": "rejected",
+             "started_at": hours_ago(16)},
+        ],
+    )
+    note = " ".join(theirs)
+    assert "quiet, not broken" not in note, f"still calls it quiet: {note}"
+    print(" ", note)
+
+    print("\nall twenty-eight cases and five wording checks behave correctly")
     return 0
 
 

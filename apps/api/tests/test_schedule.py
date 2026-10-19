@@ -194,6 +194,46 @@ def test_that_day_is_then_still_owed_four_days_later():
     assert day in owed
 
 
+def test_a_rejected_day_is_retried_briefly_then_left_alone():
+    """16 Oct 2026, from production: ASDMA served the report printed
+    2025-05-16 whenever we asked for 2026-10-16. The date guard refused it.
+
+    Recorded as `failed` it was re-asked every morning for the identical wrong
+    document, and the watcher emailed about it four times a day. Two days of
+    retries covers a transient publishing glitch; after that it needs a person,
+    not a scheduler.
+    """
+    day = date(2026, 10, 16)
+    existing = {day: "rejected"}
+
+    owed, _ = plan_catch_up(existing, today=date(2026, 10, 17))
+    assert day in owed, "a fresh rejection is still worth one more try"
+
+    owed, _ = plan_catch_up(existing, today=date(2026, 10, 18))
+    assert day in owed, "the boundary is inclusive"
+
+    owed, _ = plan_catch_up(existing, today=date(2026, 10, 19))
+    assert day not in owed, "past the window it must stop asking"
+
+
+def test_a_rejected_day_is_not_treated_as_settled():
+    """It is not a success. The day is genuinely missing, and anything that
+    reports coverage must not count it as held."""
+    from app.services.ingestion.schedule import SETTLED_STATUSES
+
+    assert "rejected" not in SETTLED_STATUSES
+    assert "success" in SETTLED_STATUSES
+
+
+def test_a_later_success_still_wins_over_a_rejection():
+    """If the source is fixed and the day is refetched, that settles it."""
+    day = date(2026, 10, 16)
+    assert _status([
+        (day, "rejected", datetime(2026, 10, 17, 2, 0)),
+        (day, "success", datetime(2026, 10, 25, 2, 0)),
+    ])[day] == "success"
+
+
 def test_a_genuine_no_data_is_still_dropped_after_the_retry_window():
     """The opposite case must keep working: a day the source really has
     nothing for is not asked about forever."""

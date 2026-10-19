@@ -109,12 +109,17 @@ def ingest_one_day(
     if printed_date and printed_date != report_date:
         # The portal served a different day than we asked for. Refuse it
         # rather than filing those numbers under the wrong date.
+        #
+        # Recorded as `rejected`, not `failed`: we reached the source and it
+        # answered, the answer was simply wrong. Asking again tomorrow gets
+        # the same wrong document, so this needs a person, not a retry.
         msg = (
             f"Report says {printed_date.isoformat()} but we asked for "
-            f"{report_date.isoformat()}; refusing to store it."
+            f"{report_date.isoformat()}; refusing to store it. The source "
+            f"served the wrong day -- retrying will not fix this."
         )
-        finish_run(db, run, status="failed", rows_parsed=len(observations), error=msg)
-        return {"date": report_date, "status": "failed", "detail": msg}
+        finish_run(db, run, status="rejected", rows_parsed=len(observations), error=msg)
+        return {"date": report_date, "status": "rejected", "detail": msg}
 
     written, duplicate = store_observations(
         db,
