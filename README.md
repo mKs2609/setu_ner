@@ -11,14 +11,14 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-316%20api%20%2B%2015%20web%20%2B%2028%20monitoring-brightgreen)
+![Tests](https://img.shields.io/badge/tests-319%20api%20%2B%2015%20web%20%2B%2033%20monitoring-brightgreen)
 
 | | |
 |---|---|
 | **Live app** | https://setu-ner-web.vercel.app |
 | **API** | https://setuner-api.onrender.com · [interactive docs](https://setuner-api.onrender.com/docs) · [readiness](https://setuner-api.onrender.com/api/v1/health/ready) |
 | **Coverage** | Barak Valley corridor, Assam — Cachar, Karimganj (Sribhumi), Hailakandi, Dima Hasao |
-| **Data** | 110,266 road segments · 337 daily flood reports and daily satellite rainfall since May 2025 · updated every morning (counts as of 11 Oct 2026) |
+| **Data** | 110,266 road segments · 346 daily flood reports and daily satellite rainfall since May 2025 · updated every morning (counts as of 20 Oct 2026) |
 
 > The API runs on a free instance that sleeps when idle. The first request
 > after a quiet spell can take up to a minute.
@@ -131,14 +131,15 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is negative** — 1-day skill −14.0% over 651 graded
-  forecasts (11 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
+- **The live track record is negative** — 1-day skill −11.6% over 923 graded
+  forecasts (20 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
   It is published on the forecast page rather than hidden, and is the first
   thing the post-season retrain must address. It has not moved cleanly: −37% at
-  175 graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311
-  and −14.0% at 651, so the small-sample explanation in `docs/retraining.md` is
-  not settled. The later readings added no new positives at all, which points at
-  quiet days rather than at missed floods.
+  175 graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311,
+  −14.0% at 651 and −11.6% at 923, so the small-sample explanation in
+  `docs/retraining.md` is not settled. Every reading since 345 has added **no new
+  positives at all** — the deficit is not shrinking, arithmetic is diluting it,
+  which points at quiet days rather than at missed floods.
   Calibration (`0017`) offers a testable alternative: the model says 3.2% on
   days where 2.6% happens, and persistence says 1.9% — which loses on exactly
   the quiet days this stretch is made of.
@@ -155,9 +156,9 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 316 on the API, 28 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
+| **Tests** | 319 on the API, 33 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
-| **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear" |
+| **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear". Every report is checked against the date printed inside it and refused on a mismatch — in October 2026 the portal served a report printed 16 May 2025 for a request for 16 October 2026, and it was refused rather than filed under the wrong day |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
 | **Security** | Operator tokens stored as SHA-256 hashes, compared in constant time; writes require a token, refused before the body is parsed; a production config guard refuses to start with default credentials, a local database, wildcard CORS or no tokens; every public input is bounded |
 | **Operations** | `/health/ready` checks database, PostGIS, tables, migrations, road data, freshness per feed, model artifacts and data files; one entrypoint (`app.jobs.daily`) for every scheduler |
@@ -184,7 +185,7 @@ apps/
         explain/       Per-feature attribution, narratives, audit
         scenario/      What-if engine
       db/              Models, session, migration runner
-    tests/             316 tests
+    tests/             319 tests
   web/                 Next.js 14 + MapLibre
     tests/             15 tests (colour contrast, committed data, charts)
 geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
@@ -222,7 +223,7 @@ OpenStreetMap, and `docs/deployment.md` covers restoring a dump instead.
 **Tests:**
 
 ```bash
-cd apps/api && python -m pytest -q          # 316 API tests
+cd apps/api && python -m pytest -q          # 319 API tests
 pnpm --filter @setu_ner/web test            # 15 web tests
 ```
 
