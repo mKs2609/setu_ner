@@ -19,7 +19,7 @@ export default function AccessibilityWorkbench() {
       <aside className="w-full border-line md:w-[28rem] md:overflow-y-auto md:border-r">
         <ModelPanel />
       </aside>
-      <div className="relative h-[60vh] flex-1 md:h-auto">
+      <div className="relative h-[60vh] shrink-0 md:h-auto md:flex-1">
         <AccessibilityMap initialMetric="current_accessibility" onSelectRoad={setRoadId} />
         {roadId !== null && (
           <div className="absolute right-3 top-14 z-10 max-h-[80%] w-80 overflow-y-auto">

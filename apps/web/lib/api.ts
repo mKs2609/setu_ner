@@ -1,5 +1,27 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/** True when this build talks to a developer's own machine. */
+const API_IS_LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(API_BASE);
+
+/**
+ * What to tell someone when a request fails.
+ *
+ * These two situations look identical to fetch() and need opposite advice.
+ * Running locally, an unreachable API almost always means the backend is not
+ * started. In production there is no port to start: the free instance sleeps
+ * when idle, and the honest answer is to wait. The live site used to give the
+ * developer's answer to everybody, which is advice nobody outside this
+ * repository can act on.
+ */
+export function apiErrorHint(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error);
+  return API_IS_LOCAL
+    ? `${detail} — is the API running on ${API_BASE}?`
+    : `${detail} — the API runs on a free instance that sleeps when idle, so ` +
+      `the first request after a quiet spell can take up to a minute. ` +
+      `Try again in a moment.`;
+}
+
 // ---------------------------------------------------------------------------
 // Operator token (docs/deployment.md). Writes that change what the system
 // believes -- field reports in production, saved plans, overrides -- need it.

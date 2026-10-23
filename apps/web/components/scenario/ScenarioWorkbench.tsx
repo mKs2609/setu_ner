@@ -16,6 +16,7 @@ import {
   simulateScenario,
   type Landmark,
   type ScenarioResult,
+  apiErrorHint,
 } from "@/lib/api";
 import ScenarioMap from "./ScenarioMap";
 import ScenarioPanel, { PRESETS, type ScenarioForm } from "./ScenarioPanel";
@@ -35,7 +36,7 @@ export default function ScenarioWorkbench() {
         !cancelled &&
         setError(
           e instanceof Error
-            ? `${e.message} — is the API running on port 8000?`
+            ? apiErrorHint(e)
             : "Could not reach the API."
         )
       );

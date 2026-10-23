@@ -11,7 +11,7 @@ field reports, with every number traceable to its source.
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![Next.js 14](https://img.shields.io/badge/next.js-14-black)
 ![PostGIS](https://img.shields.io/badge/postgres-16%20%2B%20PostGIS-336791)
-![Tests](https://img.shields.io/badge/tests-319%20api%20%2B%2015%20web%20%2B%2033%20monitoring-brightgreen)
+![Tests](https://img.shields.io/badge/tests-319%20api%20%2B%2021%20web%20%2B%2033%20monitoring-brightgreen)
 
 | | |
 |---|---|
@@ -156,7 +156,7 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 
 | Area | What is in place |
 |---|---|
-| **Tests** | 319 on the API, 33 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 15 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
+| **Tests** | 319 on the API, 33 standalone on the monitoring — label rules, validation leakage, artifact loading, optimiser behaviour, auth, deployment invariants — and 21 on the web, including a guard that fails if the map's colour contrast regresses. CI runs all of them, both Docker builds and the web build on every push |
 | **Ingestion** | robots.txt honoured per host, crawl delay, retries only on transient failures, size caps, honest user agent; every attempt written to a run log before it starts, so a killed run is visible and still owed |
 | **Data integrity** | Ingestion only ever inserts. A source going down shows as rising staleness plus a failed run, never as an empty map that could read as "all clear". Every report is checked against the date printed inside it and refused on a mismatch — in October 2026 the portal served a report printed 16 May 2025 for a request for 16 October 2026, and it was refused rather than filed under the wrong day |
 | **Model safety** | Artifacts are JSON (not pickle), carry their own feature list, and are refused if they name an input the code cannot compute. A model that loses to its baseline serves the baseline |
@@ -187,7 +187,7 @@ apps/
       db/              Models, session, migration runner
     tests/             319 tests
   web/                 Next.js 14 + MapLibre
-    tests/             15 tests (colour contrast, committed data, charts)
+    tests/             21 tests (colour contrast, committed data, charts, error wording)
 geo/                   One-off builders: road graph, terrain, gazetteer, rainfall boxes
 ml/models/             Trained model artifacts (JSON, versioned)
 infra/migrations/      Idempotent SQL migrations

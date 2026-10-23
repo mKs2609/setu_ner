@@ -17,6 +17,7 @@ import {
   KNOWN_DISTRICTS,
   type ModelStatus,
   type RoadsGeoJSON,
+  apiErrorHint,
 } from "@/lib/api";
 import { ago, useTicker } from "@/components/chrome/time";
 import { LoadingNote, Skeleton } from "@/components/chrome/Loading";
@@ -386,7 +387,7 @@ export default function AccessibilityMap({
         />
         {error && (
           <p className="text-alert">
-            Couldn&apos;t reach the API ({error}). Is the backend running on port 8000?
+            {apiErrorHint(error)}
           </p>
         )}
         {meta && !loading && !error && (

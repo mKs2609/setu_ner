@@ -26,6 +26,7 @@ import {
   type ExampleInputs,
   type PlanResponse,
   type SupplyDay,
+  apiErrorHint,
 } from "@/lib/api";
 import LogisticsMap from "./LogisticsMap";
 
@@ -62,7 +63,7 @@ export default function LogisticsWorkbench() {
         setDepots(ex.depots);
       })
       .catch((e) =>
-        setError(e instanceof Error ? `${e.message} — is the API running on port 8000?` : "API unreachable")
+        setError(apiErrorHint(e))
       );
   }, []);
 
@@ -404,7 +405,11 @@ export default function LogisticsWorkbench() {
           </>
         )}
       </aside>
-      <div className="h-[60vh] flex-1 md:h-auto">
+      {/* flex-1 must not apply while the container is a column: it sets
+          flex-basis:0%, which beats height on the main axis, so h-[60vh]
+          was ignored and this collapsed to zero. The legend inside is
+          positioned against it, so it then drew over the sidebar. */}
+      <div className="h-[60vh] shrink-0 md:h-auto md:flex-1">
         <LogisticsMap plan={plan} />
       </div>
     </div>

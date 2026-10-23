@@ -20,6 +20,7 @@ import {
   type FieldReportAck,
   type RoadReportView,
   type StoredReport,
+  apiErrorHint,
 } from "@/lib/api";
 import ReportForm from "./ReportForm";
 import ReportsMap from "./ReportsMap";
@@ -48,7 +49,7 @@ export default function FieldReportsWorkbench() {
     } catch (e) {
       setError(
         e instanceof Error
-          ? `${e.message} — is the API running on port 8000?`
+          ? apiErrorHint(e)
           : "Could not reach the API."
       );
     }

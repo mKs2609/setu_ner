@@ -24,6 +24,7 @@ import {
   type ModelArtifact,
   type ModelStatus,
   type ShadowTest,
+  apiErrorHint,
 } from "@/lib/api";
 import ForecastWhy from "@/components/explain/ForecastWhy";
 import ForecastReplay from "@/components/model/ForecastReplay";
@@ -205,7 +206,7 @@ export default function ModelPanel() {
   if (error) {
     return (
       <p className="p-4 text-sm text-alert">
-        Couldn&apos;t reach the API ({error}). Is the backend running on port 8000?
+        {apiErrorHint(error)}
       </p>
     );
   }
