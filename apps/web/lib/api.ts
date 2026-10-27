@@ -22,6 +22,52 @@ export function apiErrorHint(error: unknown): string {
       `Try again in a moment.`;
 }
 
+/**
+ * How long to wait before each retry. The API sleeps on a free instance, and
+ * the first request after a quiet spell is routinely refused before the host
+ * has finished waking it -- so the honest response to one failure is to ask
+ * again, not to make the reader reload the page themselves.
+ */
+export const RETRY_DELAYS_MS = [1000, 3000, 8000];
+
+const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/**
+ * fetch(), with retries for the cold start.
+ *
+ * **Reads only.** A GET that is repeated costs a little time; a POST that is
+ * repeated can file the same field report twice or save a second copy of a
+ * plan into the audit trail. The one is a nuisance and the other is a
+ * corrupted record, so writes are sent exactly once and their failures are
+ * reported to the person who asked for them.
+ *
+ * A 4xx is not retried either: a 404 does not become a 200 by asking again.
+ * Only a network failure or a 5xx is treated as "the host may still be
+ * waking".
+ */
+export async function retryingFetch(
+  url: string,
+  init?: RequestInit,
+  delays: readonly number[] = RETRY_DELAYS_MS,
+): Promise<Response> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const mayRetry = method === "GET" || method === "HEAD";
+
+  let lastError: unknown;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok || !mayRetry || res.status < 500 || attempt >= delays.length) {
+        return res;
+      }
+    } catch (error) {
+      lastError = error;
+      if (!mayRetry || attempt >= delays.length) throw error;
+    }
+    await sleep(delays[attempt]);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Operator token (docs/deployment.md). Writes that change what the system
 // believes -- field reports in production, saved plans, overrides -- need it.
@@ -93,7 +139,7 @@ export async function fetchRoadsGeoJSON(params: FetchRoadsParams = {}): Promise<
   if (params.maxAccessibility !== undefined) search.set("max_accessibility", String(params.maxAccessibility));
 
   const url = `${API_BASE}/api/v1/roads/geojson${search.toString() ? `?${search}` : ""}`;
-  const res = await fetch(url);
+  const res = await retryingFetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch roads: ${res.status} ${res.statusText}`);
   }
@@ -200,13 +246,13 @@ export interface SimulateRequest {
 }
 
 export async function fetchLandmarks(): Promise<Landmark[]> {
-  const res = await fetch(`${API_BASE}/api/v1/scenarios/landmarks`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/scenarios/landmarks`);
   if (!res.ok) throw new Error(`Failed to load landmarks: ${res.status}`);
   return (await res.json()).landmarks;
 }
 
 export async function simulateScenario(body: SimulateRequest): Promise<ScenarioResult> {
-  const res = await fetch(`${API_BASE}/api/v1/scenarios/simulate`, {
+  const res = await retryingFetch(`${API_BASE}/api/v1/scenarios/simulate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ include_geometry: true, ...body }),
@@ -331,7 +377,7 @@ export function getReporterId(): string {
 }
 
 export async function submitFieldReport(body: FieldReportIn): Promise<FieldReportAck> {
-  const res = await fetch(`${API_BASE}/api/v1/field-reports`, {
+  const res = await retryingFetch(`${API_BASE}/api/v1/field-reports`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify(body),
@@ -350,13 +396,13 @@ export async function submitFieldReport(body: FieldReportIn): Promise<FieldRepor
 }
 
 export async function fetchRecentReports(limit = 100): Promise<StoredReport[]> {
-  const res = await fetch(`${API_BASE}/api/v1/field-reports/recent?limit=${limit}`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/field-reports/recent?limit=${limit}`);
   if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
   return (await res.json()).reports;
 }
 
 export async function fetchRoadReports(roadId: number): Promise<RoadReportView> {
-  const res = await fetch(`${API_BASE}/api/v1/field-reports/road/${roadId}`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/field-reports/road/${roadId}`);
   if (!res.ok) throw new Error(`Failed to load road ${roadId}: ${res.status}`);
   return res.json();
 }
@@ -588,7 +634,7 @@ export async function fetchForecastHistory(
   days = 30,
   horizonDays = 1,
 ): Promise<ForecastHistory> {
-  const res = await fetch(
+  const res = await retryingFetch(
     `${API_BASE}/api/v1/model/history?days=${days}&horizon_days=${horizonDays}`,
   );
   if (!res.ok) throw new Error(`Failed to load forecast history: ${res.status}`);
@@ -624,7 +670,7 @@ export interface Freshness {
 }
 
 export async function fetchFreshness(): Promise<Freshness> {
-  const res = await fetch(`${API_BASE}/api/v1/hazards/freshness`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/hazards/freshness`);
   if (!res.ok) throw new Error(`Failed to load freshness: ${res.status}`);
   return res.json();
 }
@@ -632,7 +678,7 @@ export async function fetchFreshness(): Promise<Freshness> {
 export async function fetchReadiness(): Promise<Readiness> {
   // 503 is a real answer here ("not ready"), not a transport failure, so the
   // body is read either way and only a genuinely broken response throws.
-  const res = await fetch(`${API_BASE}/api/v1/health/ready`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/health/ready`);
   if (res.status !== 200 && res.status !== 503) {
     throw new Error(`Failed to load readiness: ${res.status}`);
   }
@@ -640,13 +686,13 @@ export async function fetchReadiness(): Promise<Readiness> {
 }
 
 export async function fetchModelStatus(): Promise<ModelStatus> {
-  const res = await fetch(`${API_BASE}/api/v1/model/status`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/model/status`);
   if (!res.ok) throw new Error(`Failed to load model status: ${res.status}`);
   return res.json();
 }
 
 export async function fetchDistrictForecasts(): Promise<DistrictForecasts> {
-  const res = await fetch(`${API_BASE}/api/v1/model/districts`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/model/districts`);
   if (!res.ok) throw new Error(`Failed to load forecasts: ${res.status}`);
   return res.json();
 }
@@ -820,19 +866,19 @@ export interface PlanResponse {
 }
 
 export async function fetchSupplyDays(): Promise<SupplyDay[]> {
-  const res = await fetch(`${API_BASE}/api/v1/logistics/supply-days`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/logistics/supply-days`);
   if (!res.ok) throw new Error(`Failed to load supply days: ${res.status}`);
   return (await res.json()).days;
 }
 
 export async function fetchExampleInputs(): Promise<ExampleInputs> {
-  const res = await fetch(`${API_BASE}/api/v1/logistics/example-inputs`);
+  const res = await retryingFetch(`${API_BASE}/api/v1/logistics/example-inputs`);
   if (!res.ok) throw new Error(`Failed to load example inputs: ${res.status}`);
   return res.json();
 }
 
 export async function requestPlan(body: PlanRequest): Promise<PlanResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/logistics/plan`, {
+  const res = await retryingFetch(`${API_BASE}/api/v1/logistics/plan`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify(body),
@@ -950,7 +996,7 @@ export interface OverrideRecord {
 }
 
 async function getJson<T>(path: string, what: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
+  const res = await retryingFetch(`${API_BASE}${path}`);
   if (!res.ok) {
     const detail = await res.json().catch(() => null);
     throw new Error(typeof detail?.detail === "string" ? detail.detail : `Failed to load ${what}: ${res.status}`);
@@ -1011,7 +1057,7 @@ export async function postOverride(
   id: string,
   body: { action: OverrideAction; reason_category: string; reason: string; target?: string }
 ): Promise<OverrideRecord> {
-  const res = await fetch(`${API_BASE}/api/v1/recommendations/${encodeURIComponent(id)}/overrides`, {
+  const res = await retryingFetch(`${API_BASE}/api/v1/recommendations/${encodeURIComponent(id)}/overrides`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...operatorAuthHeaders() },
     body: JSON.stringify({ ...body, operator_id: getOperatorId() }),
