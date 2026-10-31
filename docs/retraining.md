@@ -33,11 +33,22 @@ season, and the number has not settled:
 | 26 Sep 2026 | 209 | 6 | −4.7% |
 | 27 Sep 2026 | 243 | 7 | −1.8% |
 | 29 Sep 2026 | 311 | 7 | **−15.6%** |
+| 11 Oct 2026 | 651 | 7 | −14.0% |
+| 20 Oct 2026 | 923 | 7 | −11.6% |
+| 1 Nov 2026 | 1,297 | 7 | −7.0% |
 
 That is the first thing to understand, because a retrain that ignores it just
-re-learns the same mistake. Note the last row: 68 more forecasts, no new
-positives, and the skill got *worse* — so whatever is happening is happening
-on quiet days, not on floods. Work through, in order:
+re-learns the same mistake.
+
+**Read the recent rows carefully.** The skill appears to be recovering, and it
+is not. Every reading since 29 September has added *no new positives at all* —
+nearly a thousand more forecasts, the same seven floods. The numerator has not
+moved; the denominator has. Arithmetic is diluting a constant deficit, which
+is not the same thing as a model getting better, and treating it as recovery
+is exactly the mistake this file exists to prevent.
+
+So whatever is happening is happening on quiet days, not on floods. Work
+through, in order:
 
 1. **Is it real, or small numbers?** 7 positives is very few, and the series
    above moves too much to read a trend into. Recompute after the season.

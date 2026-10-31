@@ -18,7 +18,7 @@ field reports, with every number traceable to its source.
 | **Live app** | https://setu-ner-web.vercel.app |
 | **API** | https://setuner-api.onrender.com · [interactive docs](https://setuner-api.onrender.com/docs) · [readiness](https://setuner-api.onrender.com/api/v1/health/ready) |
 | **Coverage** | Barak Valley corridor, Assam — Cachar, Karimganj (Sribhumi), Hailakandi, Dima Hasao |
-| **Data** | 110,266 road segments · 346 daily flood reports and daily satellite rainfall since May 2025 · updated every morning (counts as of 20 Oct 2026) |
+| **Data** | 110,266 road segments · 357 daily flood reports and daily satellite rainfall since May 2025 · updated every morning (counts as of 1 Nov 2026) |
 
 > The API runs on a free instance that sleeps when idle. The first request
 > after a quiet spell can take up to a minute.
@@ -131,15 +131,15 @@ negative live skill below ([0017](docs/decisions/0017-calibration.md)).
 - **3 days out, persistence is served.** The logistic model did not beat it on
   validation, so the baseline is what runs. That is the honest outcome, not a
   bug to hide.
-- **The live track record is negative** — 1-day skill −11.6% over 923 graded
-  forecasts (20 Oct 2026), with only 7 positives in a quiet post-monsoon spell.
+- **The live track record is negative** — 1-day skill −7.0% over 1,297 graded
+  forecasts (1 Nov 2026), with only 7 positives in a quiet post-monsoon spell.
   It is published on the forecast page rather than hidden, and is the first
   thing the post-season retrain must address. It has not moved cleanly: −37% at
   175 graded forecasts, −4.7% at 209, −1.8% at 243, then back to −15.6% at 311,
-  −14.0% at 651 and −11.6% at 923, so the small-sample explanation in
-  `docs/retraining.md` is not settled. Every reading since 345 has added **no new
-  positives at all** — the deficit is not shrinking, arithmetic is diluting it,
-  which points at quiet days rather than at missed floods.
+  −14.0% at 651, −11.6% at 923 and −7.0% at 1,297, so the small-sample
+  explanation in `docs/retraining.md` is not settled. Every reading since 345 has
+  added **no new positives at all** — the deficit is not shrinking, arithmetic is
+  diluting it, which points at quiet days rather than at missed floods.
   Calibration (`0017`) offers a testable alternative: the model says 3.2% on
   days where 2.6% happens, and persistence says 1.9% — which loses on exactly
   the quiet days this stretch is made of.
