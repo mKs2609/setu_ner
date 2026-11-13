@@ -91,6 +91,20 @@ python docs/handbook/build.py
 **Stop any dev server before running `pnpm build`.** Building while `next dev`
 holds `.next` has produced a completely unstyled page before now.
 
+**CI is not your machine, and the difference has bitten.** It runs on Ubuntu
+with **Python 3.12** and **no database** — 55 tests skip there that run here.
+A change touching a database path passes locally for the wrong reason if your
+Postgres happens to be up. Prove it the way CI will:
+
+```bash
+cd apps/api && DATABASE_URL="postgresql://nobody:nothing@127.0.0.1:1/none" pytest -q
+```
+
+Adding a database probe to `app.jobs.daily` broke two existing tests exactly
+this way: both stubbed the portal and nothing else, so `main()` returned early
+in CI. One of them had been asserting the right exit code for the wrong
+reason, which is the worse half of that story.
+
 ---
 
 ## Conventions

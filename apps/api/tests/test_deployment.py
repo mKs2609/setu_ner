@@ -430,6 +430,7 @@ def test_daily_job_skips_ingestion_when_the_portal_does_not_answer(monkeypatch, 
     class Done:
         returncode, stdout, stderr = 0, "", ""
 
+    monkeypatch.setattr(daily, "database_awake", lambda: (True, "stubbed"))
     monkeypatch.setattr(daily, "portal_reachable", lambda: (False, "TimeoutError: timed out"))
     monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
 
@@ -454,6 +455,7 @@ def test_daily_job_runs_every_step_when_the_portal_answers(monkeypatch):
     class Done:
         returncode, stdout, stderr = 0, "", ""
 
+    monkeypatch.setattr(daily, "database_awake", lambda: (True, "stubbed"))
     monkeypatch.setattr(daily, "portal_reachable", lambda: (True, "ok"))
     monkeypatch.setattr(subprocess, "run", lambda args, **kw: ran.append(args[2]) or Done())
 
