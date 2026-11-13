@@ -11,6 +11,14 @@ steps. Each step runs in its own process, in order, and a failure in one does
 not stop the next: a landslide-report outage should not prevent flood data
 from being scored.
 
+WAKING THE DATABASE FIRST
+Neon suspends compute when idle, and the first connection of the day is
+routinely refused while it wakes. Whichever step ran first used to absorb
+that and fail -- on 12 and 13 November 2026 it was flood ingestion, twice,
+and the watcher correctly reported that we had stopped asking the portal for
+flood reports. So the job now wakes the database itself before any step runs,
+the same way it probes the portal.
+
 WHERE IT CAN RUN
 The ASDMA portal answers from India in under a second and does not answer
 GitHub's US runners at all -- found on the first hosted run, which sat 17
@@ -50,6 +58,12 @@ STEP_TIMEOUT_S = 45 * 60
 PORTAL_PROBE_TIMEOUT_S = 20
 INGESTION_STEPS = {"flood ingestion", "landslide ingestion"}
 
+# How long to keep knocking before deciding the database is genuinely down.
+# A suspended Neon instance answers within a few seconds; these delays cover
+# roughly forty, which is far more than one has ever needed and still short
+# enough that a real outage is reported promptly rather than hung on.
+DB_WAKE_DELAYS_S = (2, 5, 10, 20)
+
 
 def portal_reachable(timeout: float = PORTAL_PROBE_TIMEOUT_S) -> tuple[bool, str]:
     """One quick request to the DRIMS portal, no retries."""
@@ -63,10 +77,58 @@ def portal_reachable(timeout: float = PORTAL_PROBE_TIMEOUT_S) -> tuple[bool, str
         return False, f"{type(exc).__name__}: {str(exc)[:160]}"
 
 
+def database_awake(delays: tuple[int, ...] = DB_WAKE_DELAYS_S) -> tuple[bool, str]:
+    """Knock until the database answers, or give up and say why.
+
+    Every step opens its own connection in its own process, so this does not
+    hand anything to them -- it wakes the *server*, so that the first step of
+    the day is no longer the one that pays for the cold start.
+    """
+    from sqlalchemy import text
+
+    from app.db.session import SessionLocal
+
+    last = ""
+    for attempt, delay in enumerate((*delays, None)):
+        try:
+            with SessionLocal() as db:
+                db.execute(text("SELECT 1"))
+            if attempt:
+                return True, f"answered on attempt {attempt + 1}"
+            return True, "answered immediately"
+        except Exception as exc:  # noqa: BLE001 -- the reason is reported
+            last = f"{type(exc).__name__}: {str(exc)[:160]}"
+            if delay is None:
+                break
+            print(
+                f"    database not awake yet ({last}); waiting {delay}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    return False, last
+
+
 def main() -> int:
     started = time.monotonic()
     print(f"[{datetime.now(timezone.utc).isoformat(timespec='seconds')}] daily job starting", flush=True)
     failures = []
+
+    # Before anything else: every step below needs the database, and the one
+    # that runs first should not be the one that absorbs its cold start.
+    awake, db_why = database_awake()
+    if awake:
+        print(f"--- database: {db_why}", flush=True)
+    else:
+        print(
+            f"--- database did not answer after {len(DB_WAKE_DELAYS_S)} retries "
+            f"({db_why}). Every step needs it, so none are run.",
+            flush=True,
+        )
+        print(
+            f"daily job finished WITH FAILURES in {time.monotonic() - started:.0f}s: database",
+            flush=True,
+        )
+        return 1
 
     reachable, why = portal_reachable()
     if not reachable:

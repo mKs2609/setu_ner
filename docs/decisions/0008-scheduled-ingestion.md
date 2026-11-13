@@ -210,3 +210,49 @@ the same each time — **a category wide enough to hold two causes will be
 treated as the more comfortable one.** The guard that caught this was written
 because the same question was asked of the data: can this document be
 something other than what we asked for?
+
+## Waking the database first (13 November 2026)
+
+On 12 and 13 November, flood ingestion failed both mornings:
+
+```
+--- flood ingestion: FAILED (exit 1) in 225s
+psycopg2.OperationalError: ... SSL error: unexpected eof while reading
+```
+
+Landslide, starting seconds later against the same database, succeeded both
+times. So did rainfall. Nothing was wrong with the portal, the parser or the
+query — the database was simply asleep, and **whichever step ran first
+absorbed the cold start and lost**.
+
+Neon suspends compute when idle. The first connection of the day wakes it and
+is routinely refused while that happens. Flood ingestion is first in `STEPS`,
+so flood ingestion is what died — twice, for 225s and 148s, which is most of
+a morning spent failing.
+
+The visible symptom was two days with no flood fetch recorded at all. The
+deployment watcher reported it correctly, and notably reported it as *ours*
+rather than the source going quiet: the quiet-source rule asks whether the
+feed answered recently, and it had not, because nothing had asked it. That
+distinction is the one added in 0016, working on an incident it was not
+written for.
+
+The job already probes the ASDMA portal before ingesting, because that portal
+does not answer from outside India. It did nothing equivalent for the
+database, which every step needs. It does now: `database_awake()` knocks with
+backoff over roughly forty seconds before any step runs.
+
+Two details worth keeping:
+
+**It wakes the server, not the pool.** Every step is a separate process with
+its own engine, so nothing is handed down. The point is only that the first
+real step no longer pays the cold-start cost.
+
+**A database that never answers skips every step.** All five need it, and
+answering a dead database with five slow failures wastes twenty minutes and
+buries the reason. One line, one failure, exit 1.
+
+The shape is the same as the web client's `retryingFetch`: something sleeps,
+the first caller is refused, and the honest response is to knock again rather
+than to report an outage. Both were written after the same lesson arrived
+from a different direction.
