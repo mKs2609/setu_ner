@@ -30,12 +30,18 @@ from __future__ import annotations
 import json
 import sys
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import check_deployment as cd  # noqa: E402
+
+# The acknowledgements an operator has actually committed. Captured before the
+# suite neutralises them: the exit-code cases below test the rules, not
+# whichever feeds happen to be acknowledged today, and a real entry for
+# data_freshness would otherwise silence the 14-day-cap case.
+SHIPPED_ACKNOWLEDGEMENTS = cd.ACKNOWLEDGED_FILE
 
 cd.BACKOFF_S = 0
 cd.TIMEOUT_S = 5
@@ -92,6 +98,8 @@ def case(name: str, expect: int, *args, requests: int | None = None):
 
 
 def main() -> int:
+    cd.ACKNOWLEDGED_FILE = Path("tests-use-no-acknowledgements.json")
+
     # --- retrying -----------------------------------------------------------
     # A 503 carrying a readiness body is a verdict, not a hiccup.
     case("503 with a body is believed immediately", 1, 503,
@@ -496,7 +504,149 @@ def main() -> int:
     assert "quiet, not broken" not in note, f"still calls it quiet: {note}"
     print(" ", note)
 
-    print("\nall twenty-eight cases and five wording checks behave correctly")
+    # --- an operator who looked, and said so --------------------------------
+    # 15 Nov 2026: the 14-day cap fired on the flood feed, as designed, and
+    # the by-hand check found the benign answer -- ASDMA stopped for the
+    # season, the URL had not moved. There was nowhere to put that answer, so
+    # the rule would have asked again four times a day until the monsoon.
+    # --- an operator who looked, and said so --------------------------------
+    # 15 Nov 2026: the 14-day cap fired on the flood feed, as designed, and
+    # the by-hand check found the benign answer -- ASDMA stopped for the
+    # season, the URL had not moved. There was nowhere to put that answer, so
+    # the rule would have asked again four times a day until the monsoon.
+    print("\n=== acknowledgement: a checked silence is a note, not a failure ===")
+    import json as _json
+    import os as _os
+    import tempfile as _tempfile
+
+    def _temp_file(text):
+        """A throwaway file holding `text`. mkstemp's descriptor is closed
+        first: Windows will not unlink a file that is still open."""
+        fd, name = _tempfile.mkstemp(suffix=".json")
+        _os.close(fd)
+        path = Path(name)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def _with_ack(entries, today):
+        """Ask acknowledged_quiet about a temporary acknowledgements file."""
+        original = cd.ACKNOWLEDGED_FILE
+        cd.ACKNOWLEDGED_FILE = _temp_file(_json.dumps(entries))
+        try:
+            return cd.acknowledged_quiet("data_freshness", today=today)
+        finally:
+            cd.ACKNOWLEDGED_FILE.unlink(missing_ok=True)
+            cd.ACKNOWLEDGED_FILE = original
+
+    ok, live = _with_ack(
+        {"data_freshness": {"quiet_until": "2026-12-20", "checked_on": "2026-11-15",
+                            "note": "off-season"}},
+        date(2026, 11, 20),
+    )
+    assert ok and "2026-11-15" in live and "off-season" in live, live
+    print(" ", live)
+
+    # A note is free text. An earlier version decided whether a feed was
+    # acknowledged by looking for "not acknowledged" inside the message, so an
+    # operator writing that phrase would have silently un-acknowledged it.
+    awkward, _ = _with_ack(
+        {"data_freshness": {"quiet_until": "2026-12-20", "checked_on": "2026-11-15",
+                            "note": "previously not acknowledged; now checked"}},
+        date(2026, 11, 20),
+    )
+    assert awkward is True, "the note's wording must not change the verdict"
+
+    # It expires. Silence is never permanent, and the backstop returns on its
+    # own rather than needing someone to remember to remove it.
+    expired, _ = _with_ack(
+        {"data_freshness": {"quiet_until": "2026-12-20", "checked_on": "2026-11-15"}},
+        date(2026, 12, 21),
+    )
+    assert expired is False, "an expired acknowledgement must not silence"
+    print("  expired -> not acknowledged, as it should be")
+
+    # On its last day it still counts.
+    assert _with_ack(
+        {"data_freshness": {"quiet_until": "2026-12-20", "checked_on": "2026-11-15"}},
+        date(2026, 12, 20),
+    )[0] is True, "quiet_until should be inclusive"
+
+    # Another feed's acknowledgement says nothing about this one.
+    assert _with_ack(
+        {"rainfall_freshness": {"quiet_until": "2027-01-01", "checked_on": "2026-11-15"}},
+        date(2026, 11, 20),
+    )[0] is False, "an acknowledgement must not cover a feed it does not name"
+
+    # A file that cannot be parsed must not silence anything.
+    original = cd.ACKNOWLEDGED_FILE
+    broken = _temp_file("{not json")
+    cd.ACKNOWLEDGED_FILE = broken
+    try:
+        ok, said = cd.acknowledged_quiet("data_freshness", today=date(2026, 11, 20))
+    finally:
+        cd.ACKNOWLEDGED_FILE = original
+        broken.unlink(missing_ok=True)
+    assert ok is False and "could not read" in said, said
+    print("  malformed file ->", said[:60])
+
+    # No file at all is simply no acknowledgement.
+    cd.ACKNOWLEDGED_FILE = Path("does-not-exist-anywhere.json")
+    try:
+        assert cd.acknowledged_quiet("data_freshness", today=date(2026, 11, 20))[0] is False
+    finally:
+        cd.ACKNOWLEDGED_FILE = original
+    print("  missing file -> not acknowledged")
+
+    # And the committed file must be valid, or it silences nothing in production.
+    shipped = _json.loads(SHIPPED_ACKNOWLEDGEMENTS.read_text(encoding="utf-8"))
+    for key, entry in shipped.items():
+        if key.startswith("_"):
+            continue
+        assert "quiet_until" in entry and "checked_on" in entry, key
+        date.fromisoformat(entry["quiet_until"])
+        date.fromisoformat(entry["checked_on"])
+    print(f"  shipped acknowledged.json parses, {len(shipped) - 1} live entry/entries")
+
+
+    # The safety property of the whole feature: an acknowledgement excuses a
+    # source that has gone quiet, and nothing else. A feed nobody is asking is
+    # our fault whatever anyone has written down about it.
+    print("\n=== acknowledgement: covers a quiet source, and nothing else ===")
+    live_ack = _temp_file(_json.dumps(
+        {"data_freshness": {"quiet_until": "2099-01-01",
+                            "checked_on": "2026-11-15"}}
+    ))
+    cd.ACKNOWLEDGED_FILE = live_ack
+    try:
+        stale_check = {"data_freshness": {"ok": True, "latest_report": "2026-10-31",
+                                          "age_days": 40, "stale": True}}
+        # Nobody has asked the source in days: ours, acknowledgement or not.
+        ours, theirs = cd.classify_stale(stale_check, [])
+        assert ours and not theirs, f"an unasked feed must stay ours: {ours} {theirs}"
+        print("  nobody asking   ->", ours[0][:72])
+
+        # Asked recently and genuinely quiet: the acknowledgement applies.
+        asked = [{"source": "drims_assam_daily_report", "hazard_type": "flood",
+                  "status": "no_data", "started_at": hours_ago(2)}]
+        ours, theirs = cd.classify_stale(stale_check, asked)
+        assert theirs and not ours, f"an acknowledged quiet feed is a note: {ours}"
+        print("  asked, quiet    ->", theirs[0][:72])
+
+        # Asked recently but erroring: still reported, acknowledgement or not.
+        erroring = asked + [{"source": "drims_assam_daily_report",
+                             "hazard_type": "flood", "status": "failed",
+                             "started_at": hours_ago(2)}]
+        ours, theirs = cd.classify_stale(stale_check, erroring)
+        assert not any("checked by hand" in t for t in theirs), (
+            f"an erroring feed must not read as acknowledged: {theirs}"
+        )
+        print("  asked, erroring ->", (theirs or ours)[0][:72])
+    finally:
+        cd.ACKNOWLEDGED_FILE = Path("tests-use-no-acknowledgements.json")
+        live_ack.unlink(missing_ok=True)
+
+
+    print("\nall twenty-eight cases and six wording checks behave correctly")
     return 0
 
 

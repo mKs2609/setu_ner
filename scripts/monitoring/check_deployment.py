@@ -42,11 +42,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 DEFAULT_BASE = "https://setuner-api.onrender.com"
 READY_PATH = "/api/v1/health/ready"
@@ -70,6 +71,9 @@ ANSWERED = {"success", "no_data"}
 
 # How recently we must have asked before "they are quiet" is a fair reading.
 ASKED_WITHIN_HOURS = 36
+
+# Where an operator records that they looked. See acknowledged_quiet().
+ACKNOWLEDGED_FILE = pathlib.Path(__file__).with_name("acknowledged.json")
 
 # ...and how long that reading stays fair. ASDMA stops publishing daily flood
 # reports outside the monsoon, which is normal and lasts months -- but a feed
@@ -232,6 +236,53 @@ def failing_recently(runs: list[dict], source: str, hazard: str) -> float | None
     return best
 
 
+def acknowledged_quiet(name: str, today: date | None = None) -> tuple[bool, str]:
+    """An operator's note that this feed's silence was checked and is expected.
+
+    The 14-day cap asks a person to look. It had no way to hear the answer,
+    so a benign finding -- the source stopped for the season -- left it asking
+    the same question four times a day for months.
+
+    An acknowledgement is deliberately not a mute button:
+
+      * it expires on a date the operator chose, so silence is never
+        permanent and the backstop comes back by itself;
+      * it lives in the repository, so it carries an author, a date and a
+        diff rather than being a setting someone toggled;
+      * it covers only the "they have been quiet a long time" case. A feed
+        nobody is asking, a feed returning errors, a failed run and an
+        unreachable service are all still reported.
+
+    Returns (acknowledged, what to say). The caller must not have to read the
+    message to learn the answer: an earlier version returned one string for
+    both and was disambiguated by looking for "not acknowledged" inside it,
+    which an operator's own note could have contained.
+    """
+    today = today or date.today()
+    try:
+        entries = json.loads(ACKNOWLEDGED_FILE.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return False, ""
+    except (OSError, ValueError) as exc:
+        # A malformed file must not quietly silence anything.
+        return False, f"could not read {ACKNOWLEDGED_FILE.name} ({exc})"
+
+    entry = entries.get(name)
+    if not isinstance(entry, dict):
+        return False, ""
+    try:
+        until = date.fromisoformat(str(entry.get("quiet_until")))
+    except ValueError:
+        return False, f"{name}: acknowledgement has no usable quiet_until"
+    if until < today:
+        return False, ""
+
+    checked = entry.get("checked_on", "an unrecorded date")
+    note = str(entry.get("note", "")).strip()
+    said = f"checked by hand on {checked} and expected until {until.isoformat()}"
+    return True, said + (f" -- {note}" if note else "")
+
+
 def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]]:
     """Split stale feeds into ours to fix, and theirs to wait out.
 
@@ -260,11 +311,6 @@ def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]
             ours.append(
                 f"{name}: newest is {latest} and the last answer from the source was {when}"
             )
-        elif age_days is not None and age_days > QUIET_TOLERATED_DAYS:
-            ours.append(
-                f"{name}: the source has published nothing for {age_days} days -- long "
-                "enough that a moved URL would look the same. Worth checking by hand"
-            )
         elif erroring is not None and erroring <= ASKED_WITHIN_HOURS:
             # The newest day being unpublished is normal and would otherwise
             # read as "the source is just quiet". It is not quiet if older days
@@ -275,6 +321,18 @@ def classify_stale(checks: dict, runs: list[dict]) -> tuple[list[str], list[str]
                 f"(last failure {erroring:.0f}h ago). Not a quiet feed -- see the "
                 "failed runs above"
             )
+        elif age_days is not None and age_days > QUIET_TOLERATED_DAYS:
+            acknowledged, said = acknowledged_quiet(name)
+            if acknowledged:
+                theirs.append(
+                    f"{name}: the source has published nothing for {age_days} days; {said}"
+                )
+            else:
+                ours.append(
+                    f"{name}: the source has published nothing for {age_days} days -- long "
+                    "enough that a moved URL would look the same. Worth checking by hand"
+                    + (f". ({said})" if said else "")
+                )
         else:
             theirs.append(
                 f"{name}: newest is {latest}; ingestion ran {since:.0f}h ago and the "

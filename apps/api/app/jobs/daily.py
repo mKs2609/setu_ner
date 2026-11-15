@@ -89,21 +89,20 @@ def database_awake(delays: tuple[int, ...] = DB_WAKE_DELAYS_S) -> tuple[bool, st
     from app.db.session import SessionLocal
 
     last = ""
-    for attempt, delay in enumerate((*delays, None)):
+    # One attempt per delay, then a final attempt with nothing to wait for
+    # after it -- which is what the trailing None marks.
+    for attempt, delay in enumerate([*delays, None], start=1):
         try:
             with SessionLocal() as db:
                 db.execute(text("SELECT 1"))
-            if attempt:
-                return True, f"answered on attempt {attempt + 1}"
-            return True, "answered immediately"
+            if attempt == 1:
+                return True, "answered immediately"
+            return True, f"answered on attempt {attempt}"
         except Exception as exc:  # noqa: BLE001 -- the reason is reported
             last = f"{type(exc).__name__}: {str(exc)[:160]}"
             if delay is None:
                 break
-            print(
-                f"    database not awake yet ({last}); waiting {delay}s",
-                flush=True,
-            )
+            print(f"    database not awake yet ({last}); waiting {delay}s", flush=True)
             time.sleep(delay)
     return False, last
 

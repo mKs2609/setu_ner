@@ -217,3 +217,54 @@ at once and one of them can legitimately have nothing to give.
 
 Both are covered by tests that assert on the printed text rather than the exit
 code, because an exit-code test cannot catch an explanation that is wrong.
+
+## Letting the operator answer (15 November 2026)
+
+The 14-day cap fired on 15 November, exactly as designed: ASDMA had published
+no flood report since 31 October, and the watcher stopped excusing the silence
+and asked for a person.
+
+The by-hand check it asked for found the benign answer. The portal is up and
+the URL has not moved: landslide reports for 1, 8, 12, 13 and 14 November all
+return correctly dated PDFs from the same base, and 25 October still serves a
+flood PDF, so the flood path itself works. ASDMA has simply stopped for the
+season.
+
+**There was nowhere to put that answer.** The rule would have gone on asking
+the same question four times a day until the monsoon — which is precisely the
+alert fatigue the quiet-source rule exists to prevent, arrived at from the
+other end. A monitor that cannot be told "yes, I looked" eventually trains its
+reader to stop looking.
+
+So a feed past the cap now consults
+`scripts/monitoring/acknowledged.json`, and three properties keep that from
+being a mute button:
+
+| | |
+|---|---|
+| **It expires** | `quiet_until` is a date the operator chose. The backstop returns by itself; nobody has to remember to remove anything |
+| **It is in git** | An acknowledgement carries an author, a date and a diff, rather than being a setting someone toggled |
+| **It is narrow** | It covers only "they have been quiet a long time". A feed nobody is asking, a feed returning errors, a failed run and an unreachable service are all still reported |
+
+A malformed or unreadable file silences nothing and says so, because the
+failure mode of an acknowledgement must never be silence.
+
+Set `quiet_until` to when you next want to be asked, not to when the source is
+expected back. The current entry runs to 20 December, though flood reports are
+not expected before the 2027 monsoon — the point is to be asked again in a
+month, not to assume the answer holds for six.
+
+One thing this exposed: the suite's exit-code cases were reading whatever an
+operator happened to have acknowledged that day. They test the rules, so they
+now point at a file that does not exist, and the committed acknowledgements
+are validated separately.
+
+**Erroring beats a long silence.** The acknowledgement check was written as a
+branch above the "this feed is returning errors" one, so a feed that was both
+past the cap and erroring read as *checked by hand* while its failed runs were
+reported underneath. That is the contradiction the erroring rule was added to
+remove, reintroduced three weeks later from the other direction. Errors are
+now checked first: a feed handing back failures is never a quiet one, however
+long it has been silent and whatever anyone acknowledged about it. The test
+that caught it asserts the three cases side by side -- unasked, quiet,
+erroring -- because the ordering between them is the whole behaviour.

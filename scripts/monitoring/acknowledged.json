@@ -1,0 +1,21 @@
+{
+  "_README": [
+    "An operator's record that a long-quiet feed was checked by hand and the",
+    "silence is expected. Read by check_deployment.py when a feed passes",
+    "QUIET_TOLERATED_DAYS; see acknowledged_quiet() there.",
+    "",
+    "This is not a mute button. It expires on quiet_until, it lives in git so",
+    "it carries an author and a date, and it covers only 'they have been quiet",
+    "a long time'. A feed nobody is asking, a feed returning errors, a failed",
+    "run and an unreachable service are all still reported.",
+    "",
+    "Set quiet_until to when you next want to be asked, not to when you expect",
+    "the source to come back. Delete an entry once the feed is publishing again."
+  ],
+
+  "data_freshness": {
+    "quiet_until": "2026-12-20",
+    "checked_on": "2026-11-15",
+    "note": "ASDMA stopped publishing daily flood reports after 2026-10-31, which is normal outside the monsoon. Checked by hand: the portal is up and the URL has not moved -- landslide reports for 1, 8, 12, 13 and 14 November all return correctly dated PDFs from the same base, and 2026-10-25 still serves a flood PDF, so the flood path itself works. Re-check in December; flood reports are not expected back before the 2027 monsoon."
+  }
+}
