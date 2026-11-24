@@ -21,6 +21,7 @@ import Link from "next/link";
 
 import { CountUp } from "@/components/chrome/ScrollEffects";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ago } from "@/components/chrome/time";
 
 import {
   fetchDistrictForecasts,
@@ -195,6 +196,11 @@ export default function LiveConsole() {
   const { status, forecasts, readiness } = snap;
   const freshness = readiness.checks.data_freshness;
   const stale = Boolean(freshness?.stale ?? forecasts.stale);
+  // Old because the source stopped publishing is not the same as old because
+  // nobody fetched: the first is a working pipeline waiting for a season, the
+  // second is a fault. The run log on this very page distinguishes them; the
+  // status strip used to say "stale" to both.
+  const quietSource = stale && forecasts.source_published_nothing;
   const corridor = forecasts.districts
     .map((d) => ({
       district: d.district,
@@ -216,7 +222,7 @@ export default function LiveConsole() {
         <span className="flex items-center gap-2">
           <span
             className={`live-dot inline-block h-2 w-2 rounded-full ${
-              readiness.ready && !stale ? "bg-accent" : "bg-caution"
+              readiness.ready && (!stale || quietSource) ? "bg-accent" : "bg-caution"
             }`}
           />
           <span className="text-ink">{readiness.ready ? "Systems ready" : "Degraded"}</span>
@@ -224,7 +230,7 @@ export default function LiveConsole() {
         <span className={stale ? "text-caution" : "text-muted"}>
           Report {forecasts.as_of ?? "—"}
           {forecasts.age_days != null && ` · ${forecasts.age_days}d old`}
-          {stale && " · stale"}
+          {stale && (quietSource ? " · source quiet" : " · stale")}
         </span>
         <span className="text-muted">
           Rain {readiness.checks.rainfall_freshness?.latest_day ?? "—"}
@@ -234,6 +240,16 @@ export default function LiveConsole() {
         </span>
         <span className="ml-auto text-muted">Checked {updated}</span>
       </div>
+
+      {quietSource && (
+        <p className="text-caption text-muted">
+          The flood report is old because ASDMA has published none since{" "}
+          {forecasts.as_of}
+          {forecasts.last_checked ? `; last checked ${ago(forecasts.last_checked)}` : ""}.
+          Outside the monsoon it stops, which is expected — ingestion is still
+          running, and every attempt is in the log below.
+        </p>
+      )}
 
       {/* The heartbeat: fills over the refresh interval, resets on new data. */}
       <div className="h-px w-full overflow-hidden bg-line/70">
