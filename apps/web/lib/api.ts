@@ -576,6 +576,10 @@ export interface DistrictForecast {
 }
 
 export interface DistrictForecasts {
+  /** When ingestion last asked the source, ISO-8601, or null if never. */
+  last_checked: string | null;
+  /** The last attempt reached the portal and it had nothing to give. */
+  source_published_nothing: boolean;
   as_of: string | null;
   age_days?: number;
   stale?: boolean;

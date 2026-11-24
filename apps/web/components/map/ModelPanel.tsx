@@ -30,6 +30,7 @@ import ForecastWhy from "@/components/explain/ForecastWhy";
 import ForecastReplay from "@/components/model/ForecastReplay";
 import { LoadingNote, SkeletonCard } from "@/components/chrome/Loading";
 import ReliabilityChart from "@/components/model/ReliabilityChart";
+import { ago, useTicker } from "@/components/chrome/time";
 
 function pct(p: number | null | undefined): string {
   return p == null ? "—" : `${Math.round(p * 100)}%`;
@@ -189,6 +190,9 @@ function CalibrationSection({ status }: { status: ModelStatus }) {
 }
 
 export default function ModelPanel() {
+  // Keeps "last checked 7h ago" true between refreshes rather than freezing
+  // at whatever it said when the panel mounted.
+  useTicker(60_000);
   const [status, setStatus] = useState<ModelStatus | null>(null);
   const [forecasts, setForecasts] = useState<DistrictForecasts | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -230,11 +234,24 @@ export default function ModelPanel() {
           <p className={`text-xs ${forecasts.stale ? "text-alert" : "text-muted"}`}>
             From the DRIMS report of {forecasts.as_of}
             {forecasts.stale
-              ? ` — ${forecasts.age_days} days old. Stale: do not read as current.`
+              ? ` — ${forecasts.age_days} days old. Not current conditions.`
               : ` (${forecasts.age_days} day${forecasts.age_days === 1 ? "" : "s"} ago).`}
           </p>
         ) : (
           <p className="text-xs text-caution">No forecasts stored yet. Run the scoring job.</p>
+        )}
+        {forecasts.stale && forecasts.source_published_nothing && (
+          // Old because the source stopped, not because nobody looked. Those
+          // need opposite reactions from a reader, and the page used to say
+          // the same thing about both.
+          <p className="mt-1 text-xs text-muted">
+            The source has published nothing since then
+            {forecasts.last_checked
+              ? `; last checked ${ago(forecasts.last_checked)}`
+              : ""}
+            . Outside the monsoon ASDMA stops publishing daily flood reports,
+            which is expected — the pipeline is still running.
+          </p>
         )}
         <div className="mt-2 grid grid-cols-1 gap-2">
           {forecasts.districts.map((d) => {

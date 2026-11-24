@@ -18,7 +18,7 @@ from datetime import date, timedelta
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.db.models import DistrictFloodForecast, Road, RoadDamageMatch
@@ -261,6 +261,37 @@ def model_status(db: Session = Depends(get_db)):
 
 MAX_HISTORY_DAYS = 60
 
+# The feed the district forecast is built from.
+FLOOD_SOURCE = ("drims_assam_daily_report", "flood")
+
+
+def _why_old(db) -> dict:
+    """When the source was last asked, and what it said.
+
+    A reader seeing a three-week-old forecast deserves to know which of two
+    very different things happened: nobody fetched, or the portal was asked
+    and had nothing to give. Outside the monsoon it is always the second, and
+    a page that cannot say so reads as abandoned rather than as a working
+    pipeline waiting for its source.
+    """
+    row = db.execute(
+        text(
+            "SELECT started_at, status FROM ingest_runs "
+            "WHERE source = :source AND hazard_type = :hazard "
+            "ORDER BY started_at DESC LIMIT 1"
+        ),
+        {"source": FLOOD_SOURCE[0], "hazard": FLOOD_SOURCE[1]},
+    ).first()
+    if row is None:
+        return {"last_checked": None, "source_published_nothing": False}
+    started_at, status = row
+    return {
+        "last_checked": started_at.isoformat() if started_at else None,
+        # `no_data` means we reached the portal and it had nothing for that
+        # day -- a successful conversation, not a failed one.
+        "source_published_nothing": status == "no_data",
+    }
+
 
 @router.get("/history")
 def forecast_history(
@@ -284,16 +315,27 @@ def forecast_history(
 
     Each day carries the outcome once the target day's report exists, so the
     replay can show where the forecast was right and where it was not.
+
+    `days` is counted back from the newest stored forecast, not from today.
+    The source stops publishing outside the monsoon, and a window anchored on
+    today would quietly empty itself a month later.
     """
-    since = date.today() - timedelta(days=days)
+    # Anchored on the newest stored forecast, not on today. Counting back from
+    # today slides the window off the end of the record whenever the source
+    # goes quiet -- and after an off-season it would show nothing at all,
+    # which reads as a broken page rather than a source that has stopped.
+    scope = [
+        shadow.served_only(),
+        DistrictFloodForecast.horizon_days == horizon_days,
+        *([DistrictFloodForecast.in_corridor.is_(True)] if corridor_only else []),
+    ]
+    newest = db.execute(
+        select(func.max(DistrictFloodForecast.as_of_date)).where(*scope)
+    ).scalar()
+    since = (newest or date.today()) - timedelta(days=days)
     rows = db.execute(
         select(DistrictFloodForecast)
-        .where(
-            shadow.served_only(),
-            DistrictFloodForecast.horizon_days == horizon_days,
-            DistrictFloodForecast.as_of_date >= since,
-            *([DistrictFloodForecast.in_corridor.is_(True)] if corridor_only else []),
-        )
+        .where(*scope, DistrictFloodForecast.as_of_date >= since)
         .order_by(DistrictFloodForecast.as_of_date, DistrictFloodForecast.district_key)
     ).scalars().all()
 
@@ -404,6 +446,7 @@ def latest_district_forecasts(
         "as_of": latest.isoformat(),
         "age_days": age,
         "stale": age > scoring.MAX_STALE_DAYS,
+        **_why_old(db),
         "districts": sorted(grouped.values(), key=lambda d: d["district"]),
         "caveat": CAVEATS["what_is_predicted"],
     }
